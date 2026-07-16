@@ -1,6 +1,6 @@
 export const apiFetch = async <T>(path: string, options?: RequestInit): Promise<T> => {
-    const BASE_URL = "http://localhost:8080";
-    const url = `${BASE_URL}/${path}`;
+    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+    const url = `http://localhost:8080/${cleanPath}`;
 
     const mergedOptions: RequestInit = {
         credentials: "include",
@@ -14,7 +14,7 @@ export const apiFetch = async <T>(path: string, options?: RequestInit): Promise<
     const response = await fetch(url, mergedOptions);
 
     if (response.status === 401) {
-        const refreshResponse = await fetch(`${BASE_URL}/api/auth/refresh`, {
+        const refreshResponse = await fetch(`http://localhost:8080/api/auth/refresh`, {
             method: "POST",
             ...mergedOptions
         });
