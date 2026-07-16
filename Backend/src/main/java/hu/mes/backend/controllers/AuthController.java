@@ -11,6 +11,7 @@ import hu.mes.backend.security.CustomUserDetails;
 import hu.mes.backend.services.AuthService;
 import lombok.RequiredArgsConstructor;
 
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,7 +23,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         CustomUserDetails userDetails = authService.authenticateUser(
                 loginRequest.getUsername(),
                 loginRequest.getPassword());
