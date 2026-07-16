@@ -1,13 +1,14 @@
 import type { Props } from "../types/Props";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/UseAuth";
+import { LoadingSpinner } from "./LoadingSpinner";
 
 export const ProtectedRoute = ({ children, allowedRoles }: Props) => {
     const { user, loading } = useAuth();
     const location = useLocation();
 
     if (loading) {
-        return <div>Loading...</div>
+        return <LoadingSpinner />
     }
 
     if (!user) {

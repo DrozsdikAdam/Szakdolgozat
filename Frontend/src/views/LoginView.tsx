@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { useAuth } from "../hooks/UseAuth";
 import { Navigate, useLocation } from "react-router-dom";
 import { LoaderCircle, Eye, EyeOff } from "lucide-react";
+import { LoadingSpinner } from "../components/LoadingSpinner";
 
 export const LoginView = () => {
     const [username, setUsername] = useState("");
@@ -64,6 +65,7 @@ export const LoginView = () => {
         setShowPassword(false);
     }, [user]);
 
+    if (loading) return <LoadingSpinner />;
     if (user) return <Navigate to={from} replace />;
 
     return (
