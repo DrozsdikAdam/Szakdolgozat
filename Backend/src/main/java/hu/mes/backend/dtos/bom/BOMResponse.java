@@ -1,7 +1,6 @@
-package hu.mes.backend.dtos;
+package hu.mes.backend.dtos.bom;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 
 import lombok.AllArgsConstructor;
@@ -15,13 +14,13 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class BOMTreeNode {
+public class BOMResponse {
 
-    private UUID productId;
-    private String productName;
-    private String productSku;
-    private String unit;
+    private UUID id;
+    private UUID parentProductId;
+    private UUID componentProductId;
+    private String componentProductName;
+    private String componentProductSku;
     private BigDecimal quantity;
-    private List<BOMTreeNode> children;
-
+    private Boolean active;
 }

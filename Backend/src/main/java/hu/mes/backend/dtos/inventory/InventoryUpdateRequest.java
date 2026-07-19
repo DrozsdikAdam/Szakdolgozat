@@ -1,4 +1,4 @@
-package hu.mes.backend.dtos;
+package hu.mes.backend.dtos.inventory;
 
 import java.math.BigDecimal;
 import java.util.UUID;

@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import hu.mes.backend.dtos.ProductResponse;
+import hu.mes.backend.dtos.product.ProductResponse;
 import hu.mes.backend.models.Product;
 
 @Component

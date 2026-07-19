@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import hu.mes.backend.dtos.InventoryResponse;
+import hu.mes.backend.dtos.inventory.InventoryResponse;
 import hu.mes.backend.models.Inventory;
 import hu.mes.backend.models.Product;
 

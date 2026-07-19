@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import hu.mes.backend.dtos.BOMResponse;
+import hu.mes.backend.dtos.bom.BOMResponse;
 import hu.mes.backend.models.BOMItem;
 import hu.mes.backend.models.Product;
 

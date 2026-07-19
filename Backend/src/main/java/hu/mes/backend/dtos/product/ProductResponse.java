@@ -1,4 +1,4 @@
-package hu.mes.backend.dtos;
+package hu.mes.backend.dtos.product;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

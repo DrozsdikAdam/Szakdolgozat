@@ -1,4 +1,4 @@
-package hu.mes.backend.dtos;
+package hu.mes.backend.dtos.product;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

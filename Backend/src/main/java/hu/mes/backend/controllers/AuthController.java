@@ -5,8 +5,8 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import hu.mes.backend.dtos.LoginRequest;
-import hu.mes.backend.dtos.LoginResponse;
+import hu.mes.backend.dtos.auth.LoginRequest;
+import hu.mes.backend.dtos.auth.LoginResponse;
 import hu.mes.backend.security.CustomUserDetails;
 import hu.mes.backend.services.AuthService;
 import lombok.RequiredArgsConstructor;

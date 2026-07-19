@@ -5,8 +5,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import hu.mes.backend.dtos.ProductCreateRequest;
-import hu.mes.backend.dtos.ProductResponse;
+import hu.mes.backend.dtos.product.ProductCreateRequest;
+import hu.mes.backend.dtos.product.ProductResponse;
 import hu.mes.backend.mappers.ProductMapper;
 import hu.mes.backend.models.Product;
 import hu.mes.backend.repositories.ProductRepository;
