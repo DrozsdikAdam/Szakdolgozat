@@ -5,6 +5,9 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import hu.mes.backend.dtos.ProductCreateRequest;
+import hu.mes.backend.dtos.ProductResponse;
+import hu.mes.backend.mappers.ProductMapper;
 import hu.mes.backend.models.Product;
 import hu.mes.backend.repositories.ProductRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -16,21 +19,31 @@ import lombok.RequiredArgsConstructor;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final ProductMapper productMapper;
 
     @Transactional
-    public Product createProduct(Product product) {
-        if (product == null || productRepository.existsBySku(product.getSku())) {
+    public ProductResponse createProduct(ProductCreateRequest request) {
+        if (request == null || productRepository.existsBySku(request.getSku()))
             throw new IllegalArgumentException("A termék nem létezik vagy a SKU már létezik.");
-        }
-        return productRepository.save(product);
+
+        Product product = Product.builder()
+                .name(request.getName())
+                .sku(request.getSku())
+                .description(request.getDescription())
+                .unit(request.getUnit())
+                .active(true)
+                .deleted(false)
+                .build();
+
+        return productMapper.convertToResponse(productRepository.save(product));
     }
 
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+    public List<ProductResponse> getAllProducts() {
+        return productMapper.convertToResponses(productRepository.findAll());
     }
 
-    public List<Product> getActiveProducts() {
-        return productRepository.findByActiveTrue();
+    public List<ProductResponse> getActiveProducts() {
+        return productMapper.convertToResponses(productRepository.findByActiveTrue());
     }
 
     public Product getProductById(UUID id) {
@@ -46,29 +59,27 @@ public class ProductService {
     }
 
     @Transactional
-    public void updateProduct(UUID id, Product product) {
+    public ProductResponse updateProduct(UUID id, ProductCreateRequest request) {
         Product existingProduct = getProductById(id);
 
-        if (!product.getSku().equals(existingProduct.getSku())
-                && productRepository.existsBySku(product.getSku())) {
+        if (!request.getSku().equals(existingProduct.getSku())
+                && productRepository.existsBySku(request.getSku()))
             throw new IllegalArgumentException("A termék SKU-ja már létezik!");
-        }
 
-        existingProduct.setName(product.getName());
-        existingProduct.setDescription(product.getDescription());
-        existingProduct.setSku(product.getSku());
-        existingProduct.setUnit(product.getUnit());
-        existingProduct.setActive(product.getActive());
+        existingProduct.setName(request.getName());
+        existingProduct.setDescription(request.getDescription());
+        existingProduct.setSku(request.getSku());
+        existingProduct.setUnit(request.getUnit());
 
-        productRepository.save(existingProduct);
+        return productMapper.convertToResponse(productRepository.save(existingProduct));
     }
 
-    public List<Product> getDeletedProducts() {
-        return productRepository.findDeletedProducts();
+    public List<ProductResponse> getDeletedProducts() {
+        return productMapper.convertToResponses(productRepository.findDeletedProducts());
     }
 
-    public List<Product> getInactiveProducts() {
-        return productRepository.findByActiveFalse();
+    public List<ProductResponse> getInactiveProducts() {
+        return productMapper.convertToResponses(productRepository.findByActiveFalse());
     }
 
     @Transactional
@@ -93,5 +104,4 @@ public class ProductService {
         product.setActive(true);
         productRepository.save(product);
     }
-
 }
