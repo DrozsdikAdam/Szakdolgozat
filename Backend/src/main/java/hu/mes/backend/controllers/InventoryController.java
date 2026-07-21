@@ -3,6 +3,7 @@ package hu.mes.backend.controllers;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,28 +42,28 @@ public class InventoryController {
     public ResponseEntity<InventoryResponse> adjustStock(
             @Valid @RequestBody InventoryUpdateRequest request) {
         InventoryResponse response = inventoryService.adjustStock(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/reserve")
     public ResponseEntity<InventoryResponse> reserveStock(
             @Valid @RequestBody InventoryUpdateRequest request) {
         InventoryResponse response = inventoryService.reserveStock(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/consume")
     public ResponseEntity<InventoryResponse> consumeStock(
             @Valid @RequestBody InventoryUpdateRequest request) {
         InventoryResponse response = inventoryService.consumeReservedStock(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/release")
     public ResponseEntity<InventoryResponse> releaseStock(
             @Valid @RequestBody InventoryUpdateRequest request) {
         InventoryResponse response = inventoryService.releaseReservedStock(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
 }
