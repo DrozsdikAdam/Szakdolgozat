@@ -42,5 +42,4 @@ public class InventoryMapper {
     public List<InventoryResponse> convertToResponses(List<Inventory> inventories) {
         return inventories.stream().map(this::convertToResponse).toList();
     }
-
 }

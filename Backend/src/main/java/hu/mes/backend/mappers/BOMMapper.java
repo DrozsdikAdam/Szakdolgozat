@@ -31,5 +31,4 @@ public class BOMMapper {
 
         return items.stream().map(this::convertToResponse).toList();
     }
-
 }

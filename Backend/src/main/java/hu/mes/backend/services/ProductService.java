@@ -46,13 +46,17 @@ public class ProductService {
         return productMapper.convertToResponses(productRepository.findByActiveTrue());
     }
 
-    public Product getProductById(UUID id) {
+    public Product getProductEntityById(UUID id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("A keresett termék nem található!"));
     }
 
+    public ProductResponse getProductById(UUID id) {
+        return productMapper.convertToResponse(getProductEntityById(id));
+    }
+
     public void deleteProduct(UUID id) {
-        Product product = getProductById(id);
+        Product product = getProductEntityById(id);
         product.setDeleted(true);
         product.setActive(false);
         productRepository.save(product);
@@ -60,7 +64,7 @@ public class ProductService {
 
     @Transactional
     public ProductResponse updateProduct(UUID id, ProductCreateRequest request) {
-        Product existingProduct = getProductById(id);
+        Product existingProduct = getProductEntityById(id);
 
         if (!request.getSku().equals(existingProduct.getSku())
                 && productRepository.existsBySku(request.getSku()))
@@ -84,14 +88,14 @@ public class ProductService {
 
     @Transactional
     public void deactivateProduct(UUID id) {
-        Product product = getProductById(id);
+        Product product = getProductEntityById(id);
         product.setActive(false);
         productRepository.save(product);
     }
 
     @Transactional
     public void activateProduct(UUID id) {
-        Product product = getProductById(id);
+        Product product = getProductEntityById(id);
         product.setActive(true);
         productRepository.save(product);
     }

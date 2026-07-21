@@ -27,8 +27,8 @@ public class BOMService {
 
     @Transactional
     public BOMResponse addComponentToBOM(BOMItemRequest request) {
-        Product parent = productService.getProductById(request.getParentProductId());
-        Product component = productService.getProductById(request.getComponentProductId());
+        Product parent = productService.getProductEntityById(request.getParentProductId());
+        Product component = productService.getProductEntityById(request.getComponentProductId());
 
         if (parent.getId().equals(component.getId()))
             throw new IllegalArgumentException("A szülő és a komponens nem lehet ugyanaz.");
@@ -55,9 +55,7 @@ public class BOMService {
         if (multiplier == null)
             multiplier = BigDecimal.ONE;
 
-        Product product = productService.getProductById(parentProductId);
-        if (product == null)
-            return null;
+        Product product = productService.getProductEntityById(parentProductId);
 
         BOMTreeNode node = new BOMTreeNode();
         node.setProductId(product.getId());

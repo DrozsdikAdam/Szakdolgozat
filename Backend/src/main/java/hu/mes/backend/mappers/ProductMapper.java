@@ -24,5 +24,4 @@ public class ProductMapper {
     public List<ProductResponse> convertToResponses(List<Product> products) {
         return products.stream().map(this::convertToResponse).toList();
     }
-
 }
