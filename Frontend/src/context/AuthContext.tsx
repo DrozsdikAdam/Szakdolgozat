@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(true);
         setError(null);
         try {
-            const response: User = await apiFetch("/api/users/me");
+            const response: User = await apiFetch("/api/auth/me");
             setUser(response);
         } catch (error) {
             setUser(null);

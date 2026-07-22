@@ -3,6 +3,9 @@ import "./index.css"
 import { LoginView } from "./views/LoginView"
 import { AuthProvider } from "./context/AuthContext"
 import { ProtectedRoute } from "./components/ProtectedRoute"
+import { ProductView } from "./views/ProductView"
+import { BOMView } from "./views/BOMView"
+import { InventoryView } from "./views/InventoryView"
 
 function App() {
   return (
@@ -13,9 +16,31 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <div className="flex flex-col items-center justify-center min-h-screen bg-[#0f172a] text-white">
-                  <h1 className="text-3xl font-bold">Placeholder</h1>
-                </div>
+                <Navigate to="/product" replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/product"
+            element={
+              <ProtectedRoute>
+                <ProductView />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bom"
+            element={
+              <ProtectedRoute>
+                <BOMView />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/inventory"
+            element={
+              <ProtectedRoute>
+                <InventoryView />
               </ProtectedRoute>
             }
           />

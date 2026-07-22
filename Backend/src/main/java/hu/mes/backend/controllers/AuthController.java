@@ -1,8 +1,10 @@
 package hu.mes.backend.controllers;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import hu.mes.backend.dtos.auth.LoginRequest;
@@ -67,4 +69,19 @@ public class AuthController {
             return ResponseEntity.status(401).body("Hiba a token frissítésekor: " + e.getMessage());
         }
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<LoginResponse> getMe(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        if (userDetails == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(authority -> authority.getAuthority().replace("ROLE_", ""))
+                .collect(Collectors.toList());
+
+        LoginResponse response = new LoginResponse(userDetails.getUsername(), roles);
+
+        return ResponseEntity.ok(response);
+    }
+
 }
