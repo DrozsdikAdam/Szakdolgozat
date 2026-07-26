@@ -71,13 +71,25 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(
+            org.springframework.dao.DataIntegrityViolationException exception) {
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Adatbázis korlátozási hiba: A megadott cikkszám (SKU) vagy adat már létezik!");
+        response.put("timestamp", LocalDateTime.now().toString());
+        response.put("error", "Data Integrity Violation");
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleException(
             Exception exception) {
 
         Map<String, String> response = new HashMap<>();
-        response.put("message",
-                "Valami nem várt történt.");
+        String msg = exception.getMessage() != null ? exception.getMessage() : "Váratlan szerveroldali hiba történt.";
+        response.put("message", msg);
         response.put("timestamp", LocalDateTime.now().toString());
         response.put("error", "Váratlan hiba");
 

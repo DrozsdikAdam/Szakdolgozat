@@ -27,13 +27,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class ProductController {
     private final ProductService productService;
 
-    @PostMapping("/")
+    @PostMapping
     public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody ProductCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(productService.createProduct(request));
     }
 
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<List<ProductResponse>> getAllProducts() {
         return ResponseEntity.ok(productService.getAllProducts());
     }
