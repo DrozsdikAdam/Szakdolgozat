@@ -50,3 +50,9 @@ export interface FilterBarProps {
     setActiveTab: (tab: 'active' | 'inactive' | 'deleted') => void;
     openModal: (product: ProductResponse | null) => void;
 }
+
+export interface StatsProps {
+    active: number;
+    inactive: number;
+    deleted: number;
+}

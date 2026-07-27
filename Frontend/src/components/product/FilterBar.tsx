@@ -1,8 +1,6 @@
 import { Plus, Search } from "lucide-react"
 import type { FilterBarProps } from "../../types/ProductButtonProps";
 
-
-
 export const FilterBar = ({ activeTab, searchTerm, setSearchTerm, setActiveTab, openModal }: FilterBarProps) => {
     return (
         <div className="flex flex-col lg:flex-row items-center justify-between gap-3 pt-1">
@@ -35,5 +33,4 @@ export const FilterBar = ({ activeTab, searchTerm, setSearchTerm, setActiveTab, 
             </button>
         </div>
     )
-
 }

@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/UseAuth";
 import { Navigate, useLocation } from "react-router-dom";
 import { LoaderCircle, Eye, EyeOff } from "lucide-react";
 import { LoadingSpinner } from "../components/LoadingSpinner";
+import { Background } from "../components/Background";
 
 export const LoginView = () => {
     const [username, setUsername] = useState("");
@@ -70,9 +71,8 @@ export const LoginView = () => {
 
     return (
         <div className="relative min-h-screen w-screen flex items-center justify-center bg-[#0f172a] overflow-hidden font-sans">
-            {/* Glowing Decorative Background Blobs */}
-            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500/20 blur-[120px] pointer-events-none"></div>
-            <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-500/20 blur-[120px] pointer-events-none"></div>
+
+            <Background />
 
             <div className="relative z-10 w-full max-w-md p-8 mx-4 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 shadow-2xl transition-all duration-300 hover:border-white/15">
                 <div className="flex flex-col items-center mb-8">

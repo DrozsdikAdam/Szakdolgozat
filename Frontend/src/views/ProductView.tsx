@@ -13,7 +13,7 @@ import { LoadingSpinner } from "../components/LoadingSpinner"
 import { Title } from "../components/product/Title"
 import { Stats } from "../components/product/Stats"
 import { FilterBar } from "../components/product/FilterBar"
-import type { FilterBarProps, TableProps } from "../types/ProductButtonProps"
+import type { FilterBarProps, StatsProps, TableProps } from "../types/ProductButtonProps"
 import { Table } from "../components/product/Table"
 
 export const ProductView = () => {
@@ -26,6 +26,29 @@ export const ProductView = () => {
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
     const [modalType, setModalType] = useState<'create' | 'edit' | null>(null)
     const [editingProduct, setEditingProduct] = useState<ProductResponse | null>(null)
+
+    const [stats, setStats] = useState<StatsProps>({
+        active: 0,
+        inactive: 0,
+        deleted: 0
+    })
+
+    const loadStats = async () => {
+        try {
+            const [active, inactive, deleted] = await Promise.all([
+                getActiveProducts(),
+                getInactiveProducts(),
+                getDeletedProducts()
+            ])
+            setStats({
+                active: active.length,
+                inactive: inactive.length,
+                deleted: deleted.length
+            })
+        } catch (error) {
+            setError(error instanceof Error ? error.message : String(error))
+        }
+    }
 
     const openModal = (product: ProductResponse | null) => {
         if (product) {
@@ -45,14 +68,13 @@ export const ProductView = () => {
     }
 
     const loadProducts = async () => {
-
         setIsLoading(true)
         setError(null)
 
         let response: ProductResponse[] = []
         try {
-            if (activeTab == "active") response = await getActiveProducts();
-            else if (activeTab == "inactive") response = await getInactiveProducts();
+            if (activeTab === "active") response = await getActiveProducts();
+            else if (activeTab === "inactive") response = await getInactiveProducts();
             else response = await getDeletedProducts();
         } catch (error) {
             setError(error instanceof Error ? error.message : String(error))
@@ -61,6 +83,20 @@ export const ProductView = () => {
             setIsLoading(false)
         }
     }
+
+    const refreshAll = async () => {
+        await Promise.all([loadProducts(), loadStats()])
+    }
+
+    useEffect(() => {
+        loadProducts()
+        loadStats()
+    }, [activeTab])
+
+    const filteredProducts = products.filter(product =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.sku.toLowerCase().includes(searchTerm.toLowerCase())
+    )
 
     const FilterBarProps: FilterBarProps = {
         activeTab,
@@ -71,26 +107,21 @@ export const ProductView = () => {
     }
 
     const TableProps: TableProps = {
-        products,
+        products: filteredProducts,
         activeTab,
-        loadProducts,
+        loadProducts: refreshAll,
         openModal,
         setError,
         setIsLoading
     }
-
-    useEffect(() => {
-        loadProducts()
-    }, [activeTab])
-
 
     return (
         <div className="relative min-h-screen w-full flex flex-col items-center justify-start bg-[#0f172a] text-slate-100 p-4 sm:p-6 font-sans">
 
             <Background />
 
-            <CreateModal isOpen={isModalOpen && modalType === 'create'} onClose={closeModal} onSuccess={loadProducts} />
-            <EditModal product={editingProduct} isOpen={isModalOpen && modalType === 'edit'} onClose={closeModal} onSuccess={loadProducts} />
+            <CreateModal isOpen={isModalOpen && modalType === 'create'} onClose={closeModal} onSuccess={refreshAll} />
+            <EditModal product={editingProduct} isOpen={isModalOpen && modalType === 'edit'} onClose={closeModal} onSuccess={refreshAll} />
 
             {isLoading && <LoadingSpinner />}
 
@@ -99,7 +130,7 @@ export const ProductView = () => {
 
                     <Title />
 
-                    <Stats />
+                    <Stats {...stats} />
 
                     <FilterBar {...FilterBarProps} />
 
@@ -111,7 +142,11 @@ export const ProductView = () => {
                         <div className="text-left text-slate-400 text-sm font-medium">Nincs termék</div>
                     }
 
-                    {products.length > 0 && <Table {...TableProps} />}
+                    {products.length > 0 && filteredProducts.length === 0 && (
+                        <div className="text-left text-slate-400 text-sm font-medium">Nincs a keresésnek megfelelő termék</div>
+                    )}
+
+                    {filteredProducts.length > 0 && <Table {...TableProps} />}
                 </div>
             }
         </div>

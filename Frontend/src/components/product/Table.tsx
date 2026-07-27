@@ -25,9 +25,19 @@ export const Table = ({ products, activeTab, loadProducts, openModal, setError, 
                             <td className="px-4 py-2.5 text-center text-slate-300">{product.unit}</td>
                             <td className="px-4 py-2.5 text-center text-slate-400 text-xs">{new Date(product.createdAt).toLocaleString()}</td>
                             <td className="px-4 py-2.5 text-center">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.active ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"}`}>
-                                    {product.active === true ? "Aktív" : "Inaktív"}
-                                </span>
+                                {activeTab === "deleted" ? (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                        Törölt
+                                    </span>
+                                ) : product.active ? (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                        Aktív
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                        Inaktív
+                                    </span>
+                                )}
                             </td>
                             <td className="px-4 py-2.5 text-center">
                                 <OperationButtons
