@@ -27,7 +27,7 @@ public class BOMController {
 
     private final BOMService bomService;
 
-    @PostMapping("/")
+    @PostMapping
     public ResponseEntity<BOMResponse> addComponentToBOM(@Valid @RequestBody BOMItemRequest request) {
         BOMResponse response = bomService.addComponentToBOM(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
