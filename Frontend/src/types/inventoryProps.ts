@@ -19,8 +19,6 @@ export interface InventoryFilterBarProps {
 export interface InventoryTableProps {
     data: InventoryResponse[],
     openModal: (inventoryId: string) => void
-    closeModal: () => void
-    onUpdate: () => void
 }
 
 export interface AdjustModalProps {
