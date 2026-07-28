@@ -22,8 +22,7 @@ export interface InventoryTableProps {
 }
 
 export interface AdjustModalProps {
-    inventoryId: string | null,
-    currentQuantity: number,
+    inventory: InventoryResponse | null,
     isOpen: boolean,
     closeModal: () => void,
     onUpdate: () => void
