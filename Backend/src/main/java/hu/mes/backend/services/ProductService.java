@@ -20,6 +20,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
+    private final InventoryService inventoryService;
 
     @Transactional
     public ProductResponse createProduct(ProductCreateRequest request) {
@@ -35,7 +36,10 @@ public class ProductService {
                 .deleted(false)
                 .build();
 
-        return productMapper.convertToResponse(productRepository.save(product));
+        Product savedProduct = productRepository.save(product);
+        inventoryService.initializeInventory(savedProduct);
+
+        return productMapper.convertToResponse(savedProduct);
     }
 
     public List<ProductResponse> getAllProducts() {
