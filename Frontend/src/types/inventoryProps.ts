@@ -27,3 +27,7 @@ export interface AdjustModalProps {
     closeModal: () => void,
     onUpdate: () => void
 }
+
+export interface TitleProps {
+    page: "inventory" | "product" | "bom"
+}

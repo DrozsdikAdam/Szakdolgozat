@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
 import { useAuth } from "../hooks/UseAuth";
 import { Navigate, useLocation } from "react-router-dom";
@@ -15,7 +15,8 @@ export const LoginView = () => {
     const [error, setError] = useState("");
     const { user, login, loading } = useAuth();
     const location = useLocation();
-    const from = location.state?.from || "/";
+    const targetPath = location.state?.from?.pathname || (typeof location.state?.from === "string" ? location.state.from : "/product");
+    const from = (targetPath !== "/" && targetPath !== "/login" && targetPath !== "/unauthorized") ? targetPath : "/product";
 
     const handleLogin = async (e: FormEvent) => {
         e.preventDefault();
@@ -57,14 +58,6 @@ export const LoginView = () => {
         return true;
     }
 
-    useEffect(() => {
-        setUsername("");
-        setPassword("");
-        setUsernameError("");
-        setPasswordError("");
-        setError("");
-        setShowPassword(false);
-    }, [user]);
 
     if (loading) return <LoadingSpinner />;
     if (user) return <Navigate to={from} replace />;

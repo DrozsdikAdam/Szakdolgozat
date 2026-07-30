@@ -10,7 +10,7 @@ import { CreateModal } from "../components/product/modals/Create"
 import { EditModal } from "../components/product/modals/Edit"
 import { LoadingSpinner } from "../components/LoadingSpinner"
 
-import { Title } from "../components/product/Title"
+import { Title } from "../components/Title"
 import { Stats } from "../components/product/Stats"
 import { FilterBar } from "../components/product/FilterBar"
 import type { FilterBarProps, StatsProps, TableProps } from "../types/ProductButtonProps"
@@ -128,7 +128,7 @@ export const ProductView = () => {
             {!isLoading &&
                 <div className="w-full max-w-7xl backdrop-blur-xl bg-slate-900/60 border border-slate-800 shadow-2xl rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-5 relative z-10">
 
-                    <Title />
+                    <Title page="product" />
 
                     <Stats {...stats} />
 

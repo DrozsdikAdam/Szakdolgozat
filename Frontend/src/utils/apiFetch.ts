@@ -13,7 +13,9 @@ export const apiFetch = async <T>(path: string, options?: RequestInit): Promise<
 
     const response = await fetch(url, mergedOptions);
 
-    if (response.status === 401) {
+    const isAuthEndpoint = cleanPath.includes("api/auth/login") || cleanPath.includes("api/auth/me") || cleanPath.includes("api/auth/refresh");
+
+    if (response.status === 401 && !isAuthEndpoint) {
         const refreshResponse = await fetch(`http://localhost:8080/api/auth/refresh`, {
             method: "POST",
             ...mergedOptions

@@ -14,11 +14,7 @@ function App() {
         <Routes>
           <Route
             path="/"
-            element={
-              <ProtectedRoute>
-                <Navigate to="/product" replace />
-              </ProtectedRoute>
-            }
+            element={<Navigate to="/product" replace />}
           />
           <Route
             path="/product"
@@ -45,6 +41,11 @@ function App() {
             }
           />
           <Route path="/login" element={<LoginView />} />
+          <Route path="/unauthorized" element={
+            <div className="min-h-screen w-full flex items-center justify-center bg-[#0f172a] text-slate-100 text-lg font-semibold">
+              Nincs jogosultsága az oldal megtekintéséhez.
+            </div>
+          } />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

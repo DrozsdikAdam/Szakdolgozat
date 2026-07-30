@@ -12,6 +12,7 @@ export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: Adj
     const [error, setError] = useState<string | null>(null)
 
     const isValid = (): boolean => {
+        if (!inventory) return false
         if (quantity < 0) {
             setError("A készlet nem lehet negatív.")
             return false
@@ -25,14 +26,16 @@ export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: Adj
     }
 
     const handleSubmit = async () => {
-        if (!isValid()) return
+        if (!inventory || !inventory.productId || !isValid()) return
         setIsLoading(true)
         setError(null)
 
+        const delta = quantity - inventory.quantity
+
         const req: InventoryUpdateRequest = {
             productId: inventory.productId,
-            quantity: quantity,
-            location: location
+            amount: delta,
+            location: location || undefined
         }
 
         try {
@@ -48,9 +51,11 @@ export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: Adj
     }
 
     useEffect(() => {
-        setQuantity(inventory.quantity)
-        setLocation(inventory.location)
-        setError(null)
+        if (inventory) {
+            setQuantity(inventory.quantity)
+            setLocation(inventory.location)
+            setError(null)
+        }
     }, [inventory, isOpen])
 
     if (!isOpen || !inventory) {

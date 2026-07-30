@@ -11,6 +11,6 @@ export interface InventoryResponse {
 
 export interface InventoryUpdateRequest {
     productId: string,
-    quantity: number,
+    amount: number,
     location?: string
 }

@@ -10,10 +10,7 @@ export const InventoryChartCards = ({ productName, productSku, quantity, reserve
     const reservedPercentage = quantity > 0 ? Math.min(100, Math.max(0, (reservedQuantity / quantity) * 100)) : 0
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsAnimated(true)
-        }, 100)
-        return () => clearTimeout(timer)
+        setIsAnimated(true)
     }, [])
 
     return (
