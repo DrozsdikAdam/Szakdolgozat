@@ -1,5 +1,5 @@
 import { Pencil, Power, RotateCcw, Trash2 } from "lucide-react"
-import type { ActivateProps, DeactivateProps, DeleteProps, EditProps, RestoreProps } from "../../types/ProductButtonProps"
+import type { ActivateProps, DeactivateProps, DeleteProps, EditProps, RestoreProps } from "../../types/ProductProps"
 
 export const ActivateButton = ({ id, handleActivateProduct }: ActivateProps) => {
 

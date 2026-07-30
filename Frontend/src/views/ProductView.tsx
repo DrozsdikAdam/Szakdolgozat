@@ -13,7 +13,7 @@ import { LoadingSpinner } from "../components/LoadingSpinner"
 import { Title } from "../components/Title"
 import { Stats } from "../components/product/Stats"
 import { FilterBar } from "../components/product/FilterBar"
-import type { FilterBarProps, StatsProps, TableProps } from "../types/ProductButtonProps"
+import type { FilterBarProps, StatsProps, TableProps } from "../types/ProductProps"
 import { Table } from "../components/product/Table"
 
 export const ProductView = () => {

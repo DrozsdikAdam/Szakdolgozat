@@ -1,5 +1,5 @@
 import { Plus, Search } from "lucide-react"
-import type { FilterBarProps } from "../../types/ProductButtonProps";
+import type { FilterBarProps } from "../../types/ProductProps";
 
 export const FilterBar = ({ activeTab, searchTerm, setSearchTerm, setActiveTab, openModal }: FilterBarProps) => {
     return (
