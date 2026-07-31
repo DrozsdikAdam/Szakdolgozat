@@ -3,15 +3,20 @@ import type { ProductResponse } from "./Product";
 
 export interface BOMSelectProps {
     products: ProductResponse[],
-    selectedProductId: string,
+    selectedProductId: string | null,
     setSelectedProductId: (id: string) => void,
     quantity: number,
-    setQuantity: (quantity: number) => void
+    setQuantity: (quantity: number) => void,
     openAddModal: () => void
 }
 
 export interface BOMTreeViewProps {
-    treeNode: BOMTreeNode | null
+    treeNodes: BOMTreeNode | null
+}
+
+export interface TreeNodeCardProps {
+    node: BOMTreeNode
+    level: number
 }
 
 export interface AddBOMComponentModalProps {
