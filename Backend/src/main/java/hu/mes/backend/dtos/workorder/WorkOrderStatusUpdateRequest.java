@@ -1,10 +1,8 @@
 package hu.mes.backend.dtos.workorder;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 import hu.mes.backend.models.enums.WorkOrderStatus;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
@@ -27,7 +25,4 @@ public class WorkOrderStatusUpdateRequest {
     @NotNull(message = "A hulladék mennyiség nem lehet null!")
     @PositiveOrZero(message = "A hulladék mennyiségnek pozitívnak vagy nullának kell lennie!")
     private BigDecimal scrapQuantity;
-    @NotNull(message = "A felelős felhasználó ID-ja nem lehet null!")
-    @Valid
-    private UUID responsibleUserId;
 }
