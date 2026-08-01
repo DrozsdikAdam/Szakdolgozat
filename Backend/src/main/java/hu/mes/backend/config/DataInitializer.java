@@ -9,8 +9,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import hu.mes.backend.models.Role;
-import hu.mes.backend.models.RolesEnum;
 import hu.mes.backend.models.User;
+import hu.mes.backend.models.enums.RolesEnum;
 import hu.mes.backend.repositories.RoleRepository;
 import hu.mes.backend.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
