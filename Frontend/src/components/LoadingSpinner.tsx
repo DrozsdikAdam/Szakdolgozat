@@ -2,9 +2,9 @@ import { LoaderCircle } from "lucide-react";
 
 export const LoadingSpinner = () => {
     return (
-        <div className="flex flex-col items-center justify-center h-screen bg-[#0f172a] overflow-hidden">
-            <LoaderCircle className="animate-spin" color="#3b82f6" size={40} />
-            <span className="text-white text-sm font-semibold mt-2 animate-pulse">Betöltés...</span>
+        <div className="fixed inset-0 bg-[#0f172a] z-50 flex flex-col items-center justify-center overflow-hidden">
+            <LoaderCircle className="animate-spin text-indigo-500" size={40} />
+            <span className="text-slate-200 text-sm font-semibold mt-3 tracking-wide animate-pulse">Betöltés...</span>
         </div>
     );
 }

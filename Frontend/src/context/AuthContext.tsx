@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useCallback } from "react";
+import { createContext, useState, useEffect, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
 import { apiFetch } from "../utils/apiFetch";
 import type { User } from "../types/User";
@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(true);
         setError(null);
         try {
-            const response: User = await apiFetch("/api/users/me");
+            const response: User = await apiFetch("/api/auth/me");
             setUser(response);
         } catch (error) {
             setUser(null);
@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     }, []);
 
-    const values = { user, loading, error, login, logout }
+    const values = useMemo(() => ({ user, loading, error, login, logout }), [user, loading, error, login, logout]);
 
     useEffect(() => {
         checkSession();

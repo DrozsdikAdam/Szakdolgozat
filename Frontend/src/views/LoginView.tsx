@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
 import { useAuth } from "../hooks/UseAuth";
 import { Navigate, useLocation } from "react-router-dom";
 import { LoaderCircle, Eye, EyeOff } from "lucide-react";
 import { LoadingSpinner } from "../components/LoadingSpinner";
+import { Background } from "../components/Background";
 
 export const LoginView = () => {
     const [username, setUsername] = useState("");
@@ -14,7 +15,8 @@ export const LoginView = () => {
     const [error, setError] = useState("");
     const { user, login, loading } = useAuth();
     const location = useLocation();
-    const from = location.state?.from || "/";
+    const targetPath = location.state?.from?.pathname || (typeof location.state?.from === "string" ? location.state.from : "/product");
+    const from = (targetPath !== "/" && targetPath !== "/login" && targetPath !== "/unauthorized") ? targetPath : "/product";
 
     const handleLogin = async (e: FormEvent) => {
         e.preventDefault();
@@ -56,23 +58,14 @@ export const LoginView = () => {
         return true;
     }
 
-    useEffect(() => {
-        setUsername("");
-        setPassword("");
-        setUsernameError("");
-        setPasswordError("");
-        setError("");
-        setShowPassword(false);
-    }, [user]);
 
     if (loading) return <LoadingSpinner />;
     if (user) return <Navigate to={from} replace />;
 
     return (
         <div className="relative min-h-screen w-screen flex items-center justify-center bg-[#0f172a] overflow-hidden font-sans">
-            {/* Glowing Decorative Background Blobs */}
-            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500/20 blur-[120px] pointer-events-none"></div>
-            <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-500/20 blur-[120px] pointer-events-none"></div>
+
+            <Background />
 
             <div className="relative z-10 w-full max-w-md p-8 mx-4 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 shadow-2xl transition-all duration-300 hover:border-white/15">
                 <div className="flex flex-col items-center mb-8">
