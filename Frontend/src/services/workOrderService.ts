@@ -1,5 +1,5 @@
 import { apiFetch } from "../utils/apiFetch";
-import type { WorkOrderCreateRequest, WorkOrderPriority, WorkOrderResponse, WorkOrderStatus, WorkOrderStatusUpdateRequest, WorkOrderUpdateRequest } from "../types/workOrder";
+import type { WorkOrderCreateRequest, WorkOrderPriority, WorkOrderResponse, WorkOrderStatus, WorkOrderStatusUpdateRequest, WorkOrderUpdateRequest } from "../types/workorder/workOrder";
 
 const WORK_ORDER_BASE_URL = "/api/work-orders";
 
