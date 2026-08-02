@@ -1,5 +1,5 @@
 import { LoaderCircle, Plus, X } from "lucide-react"
-import type { ProductCreateRequest } from "../../../types/Product"
+import type { ProductCreateRequest } from "../../../types/product/Product"
 import { useState } from "react"
 import { createProduct } from "../../../services/productService"
 

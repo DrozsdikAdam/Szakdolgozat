@@ -1,4 +1,4 @@
-import type { StatsProps } from "../../types/ProductProps"
+import type { StatsProps } from "../../types/product/ProductProps"
 
 export const Stats = ({ active, inactive, deleted }: StatsProps) => {
     return (

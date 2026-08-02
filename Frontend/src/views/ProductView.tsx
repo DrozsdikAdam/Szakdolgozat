@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import type { ProductResponse } from "../types/Product"
+import type { ProductResponse } from "../types/product/Product"
 import {
     getActiveProducts,
     getDeletedProducts,
@@ -13,7 +13,7 @@ import { LoadingSpinner } from "../components/LoadingSpinner"
 import { Title } from "../components/Title"
 import { Stats } from "../components/product/Stats"
 import { FilterBar } from "../components/product/FilterBar"
-import type { FilterBarProps, StatsProps, TableProps } from "../types/ProductProps"
+import type { FilterBarProps, StatsProps, TableProps } from "../types/product/ProductProps"
 import { Table } from "../components/product/Table"
 
 export const ProductView = () => {

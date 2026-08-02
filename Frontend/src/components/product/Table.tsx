@@ -1,4 +1,4 @@
-import type { TableProps } from "../../types/ProductProps"
+import type { TableProps } from "../../types/product/ProductProps"
 import { OperationButtons } from "./OperationButtons"
 
 export const Table = ({ products, activeTab, loadProducts, openModal, setError, setIsLoading }: TableProps) => {

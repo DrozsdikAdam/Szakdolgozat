@@ -1,5 +1,5 @@
 import type { BOMTreeNode } from "./bom";
-import type { ProductResponse } from "./Product";
+import type { ProductResponse } from "../product/Product";
 
 export interface BOMSelectProps {
     products: ProductResponse[],

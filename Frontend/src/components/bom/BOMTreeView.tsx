@@ -1,4 +1,4 @@
-import type { BOMTreeViewProps } from "../../types/bomProps"
+import type { BOMTreeViewProps } from "../../types/bom/bomProps"
 import { Package } from "lucide-react"
 import { TreeNodeCard } from "./TreeNodeCard"
 

@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react"
-import type { AdjustModalProps } from "../../../types/inventoryProps"
+import type { AdjustModalProps } from "../../../types/inventory/inventoryProps"
 import { LoaderCircle, Pencil, X } from "lucide-react"
 import { adjustStock } from "../../../services/inventoryService"
-import type { InventoryUpdateRequest } from "../../../types/inventory"
+import type { InventoryUpdateRequest } from "../../../types/inventory/inventory"
 
 export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: AdjustModalProps) => {
 
