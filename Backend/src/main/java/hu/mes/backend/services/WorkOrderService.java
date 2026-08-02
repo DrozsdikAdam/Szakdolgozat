@@ -32,136 +32,143 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class WorkOrderService {
 
-    private final InventoryService inventoryService;
-    private final WorkOrderRepository workOrderRepository;
-    private final ProductRepository productRepository;
-    private final WorkOrderMapper workOrderMapper;
-    private final UserRepository userRepository;
+        private final InventoryService inventoryService;
+        private final WorkOrderRepository workOrderRepository;
+        private final ProductRepository productRepository;
+        private final WorkOrderMapper workOrderMapper;
+        private final UserRepository userRepository;
 
-    public WorkOrderResponse createWorkOrder(WorkOrderCreateRequest request) {
-        String orderNumber = generateOrderNumber();
+        public WorkOrderResponse createWorkOrder(WorkOrderCreateRequest request) {
+                String orderNumber = generateOrderNumber();
 
-        Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new EntityNotFoundException("Termék nem található!"));
+                Product product = productRepository.findById(request.getProductId())
+                                .orElseThrow(() -> new EntityNotFoundException("Termék nem található!"));
 
-        User user = userRepository.findById(request.getAssignedUserId())
-                .orElseThrow(() -> new EntityNotFoundException("Felhasználó nem található!"));
+                User user = userRepository.findById(request.getAssignedUserId())
+                                .orElseThrow(() -> new EntityNotFoundException("Felhasználó nem található!"));
 
-        WorkOrder workOrder = WorkOrder.builder()
-                .orderNumber(orderNumber)
-                .product(product)
-                .targetQuantity(request.getTargetQuantity())
-                .status(request.getStatus())
-                .priority(request.getPriority())
-                .customerName(request.getCustomerName())
-                .assignedUser(user)
-                .build();
-        workOrderRepository.save(workOrder);
-        return workOrderMapper.convertToResponse(workOrder);
-    }
-
-    public WorkOrderResponse updateWorkOrderStatus(UUID id, WorkOrderStatusUpdateRequest request) {
-        WorkOrder workOrder = workOrderRepository.findById(id).orElseThrow(
-                () -> new EntityNotFoundException("Rendelés nem található!"));
-
-        if (request.getStatus().equals(WorkOrderStatus.COMPLETED))
-            workOrder.setEndDate(LocalDateTime.now());
-
-        else if (request.getStatus().equals(WorkOrderStatus.IN_PROGRESS))
-            workOrder.setStartDate(LocalDateTime.now());
-
-        else if (request.getStatus().equals(WorkOrderStatus.CANCELLED))
-            workOrder.setEndDate(LocalDateTime.now());
-
-        if (request.getStatus().equals(WorkOrderStatus.COMPLETED)) {
-            InventoryUpdateRequest stockUpdate = new InventoryUpdateRequest(
-                    workOrder.getProduct().getId(),
-                    request.getProducedQuantity(),
-                    null);
-            inventoryService.adjustStock(stockUpdate);
+                WorkOrder workOrder = WorkOrder.builder()
+                                .orderNumber(orderNumber)
+                                .product(product)
+                                .targetQuantity(request.getTargetQuantity())
+                                .status(request.getStatus())
+                                .priority(request.getPriority())
+                                .customerName(request.getCustomerName())
+                                .assignedUser(user)
+                                .build();
+                workOrderRepository.save(workOrder);
+                return workOrderMapper.convertToResponse(workOrder);
         }
 
-        workOrder.setStatus(request.getStatus());
-        workOrder.setProducedQuantity(request.getProducedQuantity());
-        workOrder.setScrapQuantity(request.getScrapQuantity());
+        public WorkOrderResponse updateWorkOrderStatus(UUID id, WorkOrderStatusUpdateRequest request) {
+                WorkOrder workOrder = workOrderRepository.findById(id).orElseThrow(
+                                () -> new EntityNotFoundException("Rendelés nem található!"));
 
-        workOrderRepository.save(workOrder);
-        return workOrderMapper.convertToResponse(workOrder);
-    }
+                if (request.getStatus().equals(WorkOrderStatus.COMPLETED))
+                        workOrder.setEndDate(LocalDateTime.now());
 
-    public List<WorkOrderResponse> getAllWorkOrders() {
-        return workOrderMapper.convertToResponses(
-                workOrderRepository.findAllByOrderByCreatedAtDesc());
-    }
+                else if (request.getStatus().equals(WorkOrderStatus.IN_PROGRESS))
+                        workOrder.setStartDate(LocalDateTime.now());
 
-    public WorkOrderResponse getWorkOrderById(UUID id) {
-        WorkOrder order = workOrderRepository.findById(id).orElseThrow(
-                () -> new EntityNotFoundException("Rendelés nem található!"));
-        return workOrderMapper.convertToResponse(order);
-    }
+                else if (request.getStatus().equals(WorkOrderStatus.CANCELLED))
+                        workOrder.setEndDate(LocalDateTime.now());
 
-    public List<WorkOrderResponse> getWorkOrdersByStatus(WorkOrderStatus status) {
-        return workOrderMapper.convertToResponses(
-                workOrderRepository.findByStatus(status));
-    }
+                if (request.getStatus().equals(WorkOrderStatus.COMPLETED)) {
+                        InventoryUpdateRequest stockUpdate = new InventoryUpdateRequest(
+                                        workOrder.getProduct().getId(),
+                                        request.getProducedQuantity(),
+                                        null);
+                        inventoryService.adjustStock(stockUpdate);
+                }
 
-    public List<WorkOrderResponse> getWorkOrdersByPriority(WorkOrderPriority priority) {
-        return workOrderMapper.convertToResponses(
-                workOrderRepository.findByPriority(priority));
-    }
+                workOrder.setStatus(request.getStatus());
+                workOrder.setProducedQuantity(request.getProducedQuantity());
+                workOrder.setScrapQuantity(request.getScrapQuantity());
 
-    public List<WorkOrderResponse> getWorkOrdersByCustomerName(String customerName) {
-        return workOrderMapper.convertToResponses(
-                workOrderRepository.findByCustomerName(customerName));
-    }
+                workOrderRepository.save(workOrder);
+                return workOrderMapper.convertToResponse(workOrder);
+        }
 
-    public List<WorkOrderResponse> getWorkOrdersByAssignedUser(UUID userId) {
-        User user = userRepository.findById(userId).orElseThrow(
-                () -> new EntityNotFoundException("Felhasználó nem található!"));
+        public List<WorkOrderResponse> getAllWorkOrders() {
+                return workOrderMapper.convertToResponses(
+                                workOrderRepository.findAllByOrderByCreatedAtDesc());
+        }
 
-        return workOrderMapper.convertToResponses(
-                workOrderRepository.findByAssignedUser(user));
-    }
+        public WorkOrderResponse getWorkOrderById(UUID id) {
+                WorkOrder order = workOrderRepository.findById(id).orElseThrow(
+                                () -> new EntityNotFoundException("Rendelés nem található!"));
+                return workOrderMapper.convertToResponse(order);
+        }
 
-    public WorkOrderResponse updateWorkOrder(UUID id, WorkOrderUpdateRequest request) {
-        WorkOrder workOrder = workOrderRepository.findById(id).orElseThrow(
-                () -> new EntityNotFoundException("Rendelés nem található!"));
+        public List<WorkOrderResponse> getWorkOrdersByStatus(WorkOrderStatus status) {
+                return workOrderMapper.convertToResponses(
+                                workOrderRepository.findByStatus(status));
+        }
 
-        User user = userRepository.findById(request.getAssignedUserId())
-                .orElseThrow(() -> new EntityNotFoundException("Felhasználó nem található!"));
+        public List<WorkOrderResponse> getWorkOrdersByPriority(WorkOrderPriority priority) {
+                return workOrderMapper.convertToResponses(
+                                workOrderRepository.findByPriority(priority));
+        }
 
-        workOrder.setAssignedUser(user);
-        workOrder.setTargetQuantity(request.getTargetQuantity());
-        workOrder.setPriority(request.getPriority());
-        workOrder.setCustomerName(request.getCustomerName());
+        public List<WorkOrderResponse> getWorkOrdersByCustomerName(String customerName) {
+                return workOrderMapper.convertToResponses(
+                                workOrderRepository.findByCustomerName(customerName));
+        }
 
-        workOrderRepository.save(workOrder);
-        return workOrderMapper.convertToResponse(workOrder);
-    }
+        public List<WorkOrderResponse> getWorkOrdersByAssignedUser(UUID userId) {
+                User user = userRepository.findById(userId).orElseThrow(
+                                () -> new EntityNotFoundException("Felhasználó nem található!"));
 
-    public WorkOrderResponse updateWorkOrderUser(UUID id, UUID userId) {
-        WorkOrder workOrder = workOrderRepository.findById(id).orElseThrow(
-                () -> new EntityNotFoundException("Rendelés nem található!"));
+                return workOrderMapper.convertToResponses(
+                                workOrderRepository.findByAssignedUser(user));
+        }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Felhasználó nem található!"));
+        public WorkOrderResponse updateWorkOrder(UUID id, WorkOrderUpdateRequest request) {
+                WorkOrder workOrder = workOrderRepository.findById(id).orElseThrow(
+                                () -> new EntityNotFoundException("Rendelés nem található!"));
 
-        workOrder.setAssignedUser(user);
-        workOrderRepository.save(workOrder);
-        return workOrderMapper.convertToResponse(workOrder);
-    }
+                User user = userRepository.findById(request.getAssignedUserId())
+                                .orElseThrow(() -> new EntityNotFoundException("Felhasználó nem található!"));
 
-    public List<WorkOrderResponse> getWorkOrdersByStatusAndPriority(WorkOrderStatus status,
-            WorkOrderPriority priority) {
-        return workOrderMapper.convertToResponses(
-                workOrderRepository.findByStatusAndPriority(status, priority));
-    }
+                workOrder.setAssignedUser(user);
+                workOrder.setTargetQuantity(request.getTargetQuantity());
+                workOrder.setPriority(request.getPriority());
+                workOrder.setCustomerName(request.getCustomerName());
 
-    private String generateOrderNumber() {
-        String prefix = "WO-";
-        String dateSuffix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String uuidSuffix = UUID.randomUUID().toString().substring(0, 8);
-        return prefix + dateSuffix + "-" + uuidSuffix;
-    }
+                workOrderRepository.save(workOrder);
+                return workOrderMapper.convertToResponse(workOrder);
+        }
+
+        public WorkOrderResponse updateWorkOrderUser(UUID id, UUID userId) {
+                WorkOrder workOrder = workOrderRepository.findById(id).orElseThrow(
+                                () -> new EntityNotFoundException("Rendelés nem található!"));
+
+                User user = userRepository.findById(userId)
+                                .orElseThrow(() -> new EntityNotFoundException("Felhasználó nem található!"));
+
+                workOrder.setAssignedUser(user);
+                workOrderRepository.save(workOrder);
+                return workOrderMapper.convertToResponse(workOrder);
+        }
+
+        public List<WorkOrderResponse> getWorkOrdersByStatusAndPriority(WorkOrderStatus status,
+                        WorkOrderPriority priority) {
+                return workOrderMapper.convertToResponses(
+                                workOrderRepository.findByStatusAndPriority(status, priority));
+        }
+
+        public List<WorkOrderResponse> getWorkOrdersByProductId(UUID productId) {
+                Product product = productRepository.findById(productId).orElseThrow(
+                                () -> new EntityNotFoundException("Termék nem található!"));
+                return workOrderMapper.convertToResponses(
+                                workOrderRepository.findByProductId(product.getId()));
+        }
+
+        private String generateOrderNumber() {
+                String prefix = "WO-";
+                String dateSuffix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                String uuidSuffix = UUID.randomUUID().toString().substring(0, 8);
+                return prefix + dateSuffix + "-" + uuidSuffix;
+        }
 
 }

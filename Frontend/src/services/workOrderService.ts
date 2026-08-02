@@ -1,5 +1,5 @@
 import { apiFetch } from "../utils/apiFetch";
-import type { WorkOrderCreateRequest, WorkOrderResponse, WorkOrderStatus, WorkOrderStatusUpdateRequest } from "../types/workOrder";
+import type { WorkOrderCreateRequest, WorkOrderPriority, WorkOrderResponse, WorkOrderStatus, WorkOrderStatusUpdateRequest, WorkOrderUpdateRequest } from "../types/workOrder";
 
 const WORK_ORDER_BASE_URL = "/api/work-orders";
 
@@ -31,4 +31,44 @@ export const updateWorkOrderStatus = async (id: string, request: WorkOrderStatus
         method: "PATCH",
         body: JSON.stringify(request)
     })
+}
+
+export const updateWorkOrderUser = async (id: string, userId: string) => {
+    const url = `${WORK_ORDER_BASE_URL}/${id}/user/${userId}`;
+    return apiFetch(url, {
+        method: "PATCH"
+    })
+}
+
+export const getWorkOrdersByStatusAndPriority = async (status: WorkOrderStatus, priority: WorkOrderPriority) => {
+    const url = `${WORK_ORDER_BASE_URL}/status/${status}/priority/${priority}`;
+    return apiFetch(url)
+}
+
+export const updateWorkOrder = async (id: string, request: WorkOrderUpdateRequest) => {
+    const url = `${WORK_ORDER_BASE_URL}/${id}`;
+    return apiFetch(url, {
+        method: "PATCH",
+        body: JSON.stringify(request)
+    })
+}
+
+export const getWorkOrdersByProduct = async (productId: string) => {
+    const url = `${WORK_ORDER_BASE_URL}/product/${productId}`;
+    return apiFetch(url)
+}
+
+export const getWorkOrdersByPriority = async (priority: WorkOrderPriority) => {
+    const url = `${WORK_ORDER_BASE_URL}/priority/${priority}`;
+    return apiFetch(url)
+}
+
+export const getWorkOrdersByUser = async (userId: string) => {
+    const url = `${WORK_ORDER_BASE_URL}/user/${userId}`;
+    return apiFetch(url)
+}
+
+export const getWorkOrdersByCustomer = async (customerName: string) => {
+    const url = `${WORK_ORDER_BASE_URL}/customer/${customerName}`;
+    return apiFetch(url)
 }

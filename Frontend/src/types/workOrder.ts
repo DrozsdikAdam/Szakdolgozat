@@ -20,6 +20,9 @@ export interface WorkOrderResponse {
     targetQuantity: number,
     producedQuantity: number,
     scrapQuantity: number,
+    customerName: string,
+    assignedUserId: string | null,
+    assignedUserName: string | null,
     status: WorkOrderStatus,
     priority: WorkOrderPriority,
     createdAt: string,
@@ -31,12 +34,21 @@ export interface WorkOrderResponse {
 export interface WorkOrderCreateRequest {
     productId: string,
     targetQuantity: number,
+    customerName: string,
     status: WorkOrderStatus,
-    priority: WorkOrderPriority
+    priority: WorkOrderPriority,
+    assignedUserId?: string
 }
 
 export interface WorkOrderStatusUpdateRequest {
     status: WorkOrderStatus,
     producedQuantity: number,
     scrapQuantity: number
+}
+
+export interface WorkOrderUpdateRequest {
+    targetQuantity: number,
+    priority: WorkOrderPriority,
+    customerName: string,
+    assignedUserId?: string
 }
