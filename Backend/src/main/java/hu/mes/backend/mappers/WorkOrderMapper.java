@@ -26,6 +26,10 @@ public class WorkOrderMapper {
                 .status(order.getStatus())
                 .priority(order.getPriority())
 
+                .customerName(order.getCustomerName())
+                .assignedUserId(order.getAssignedUser() != null ? order.getAssignedUser().getId() : null)
+                .assignedUserName(order.getAssignedUser() != null ? order.getAssignedUser().getName() : null)
+
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
                 .startDate(order.getStartDate())

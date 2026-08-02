@@ -7,6 +7,7 @@ import hu.mes.backend.models.enums.WorkOrderPriority;
 import hu.mes.backend.models.enums.WorkOrderStatus;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -28,4 +29,9 @@ public class WorkOrderCreateRequest {
     private WorkOrderStatus status;
     @NotNull(message = "A prioritás nem lehet null!")
     private WorkOrderPriority priority;
+    @NotNull(message = "A vevő neve nem lehet null!")
+    @Size(min = 1, max = 100, message = "A vevő neve minimum 1 és maximum 100 karakter hosszú lehet!")
+    private String customerName;
+    @NotNull(message = "A felelős felhasználó ID-je nem lehet null!")
+    private UUID assignedUserId;
 }

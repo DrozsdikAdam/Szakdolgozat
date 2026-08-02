@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import hu.mes.backend.models.User;
 import hu.mes.backend.models.WorkOrder;
 import hu.mes.backend.models.enums.WorkOrderPriority;
 import hu.mes.backend.models.enums.WorkOrderStatus;
@@ -15,6 +16,10 @@ import hu.mes.backend.models.enums.WorkOrderStatus;
 public interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
 
     Optional<WorkOrder> findByOrderNumber(String orderNumber);
+
+    List<WorkOrder> findByCustomerName(String customerName);
+
+    List<WorkOrder> findByAssignedUser(User assignedUser);
 
     boolean existsByOrderNumber(String orderNumber);
 

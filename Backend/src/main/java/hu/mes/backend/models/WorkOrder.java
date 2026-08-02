@@ -41,6 +41,12 @@ public class WorkOrder {
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = true)
+    private User assignedUser;
+
+    @Column(nullable = false, length = 100)
+    private String customerName;
 
     @Column(nullable = false, precision = 19, scale = 4)
     @Builder.Default

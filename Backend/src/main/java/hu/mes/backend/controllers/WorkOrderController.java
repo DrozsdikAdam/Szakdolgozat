@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.RestController;
 import hu.mes.backend.dtos.workorder.WorkOrderCreateRequest;
 import hu.mes.backend.dtos.workorder.WorkOrderResponse;
 import hu.mes.backend.dtos.workorder.WorkOrderStatusUpdateRequest;
+import hu.mes.backend.dtos.workorder.WorkOrderUpdateRequest;
+import hu.mes.backend.models.enums.WorkOrderPriority;
 import hu.mes.backend.models.enums.WorkOrderStatus;
 import hu.mes.backend.services.WorkOrderService;
 import jakarta.validation.Valid;
@@ -49,6 +51,44 @@ public class WorkOrderController {
     @GetMapping("/status/{status}")
     public ResponseEntity<List<WorkOrderResponse>> getByStatus(@PathVariable WorkOrderStatus status) {
         return ResponseEntity.ok(workOrderService.getWorkOrdersByStatus(status));
+    }
+
+    @GetMapping("/customer/{customerName}")
+    public ResponseEntity<List<WorkOrderResponse>> getByCustomerName(
+            @PathVariable String customerName) {
+        return ResponseEntity.ok(workOrderService.getWorkOrdersByCustomerName(customerName));
+    }
+
+    @GetMapping("/priority/{priority}")
+    public ResponseEntity<List<WorkOrderResponse>> getByPriority(
+            @PathVariable WorkOrderPriority priority) {
+        return ResponseEntity.ok(workOrderService.getWorkOrdersByPriority(priority));
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<WorkOrderResponse>> getByUserId(@PathVariable UUID userId) {
+        return ResponseEntity.ok(workOrderService.getWorkOrdersByAssignedUser(userId));
+    }
+
+    @PatchMapping("{id}")
+    public ResponseEntity<WorkOrderResponse> updateWorkOrder(
+            @PathVariable UUID id,
+            @Valid @RequestBody WorkOrderUpdateRequest request) {
+        return ResponseEntity.ok(workOrderService.updateWorkOrder(id, request));
+    }
+
+    @PatchMapping("{id}/user/{userId}")
+    public ResponseEntity<WorkOrderResponse> updateWorkOrderUser(
+            @PathVariable UUID id,
+            @PathVariable UUID userId) {
+        return ResponseEntity.ok(workOrderService.updateWorkOrderUser(id, userId));
+    }
+
+    @GetMapping("/status/{status}/priority/{priority}")
+    public ResponseEntity<List<WorkOrderResponse>> getByStatusAndPriority(
+            @PathVariable WorkOrderStatus status,
+            @PathVariable WorkOrderPriority priority) {
+        return ResponseEntity.ok(workOrderService.getWorkOrdersByStatusAndPriority(status, priority));
     }
 
     @PatchMapping("{id}/status")

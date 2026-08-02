@@ -31,6 +31,9 @@ public class WorkOrderResponse {
 
     private WorkOrderStatus status;
     private WorkOrderPriority priority;
+    private String customerName;
+    private UUID assignedUserId;
+    private String assignedUserName;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
