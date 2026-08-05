@@ -79,7 +79,7 @@ export const InventoryView = () => {
     }
 
     return (
-        <div className="relative min-h-screen w-full flex flex-col items-center justify-start bg-[#0f172a] text-slate-100 p-4 sm:p-6 font-sans">
+        <div className="relative flex-1 w-full flex flex-col items-center justify-start p-4 sm:p-6 font-sans">
             <Background />
 
             <AdjustInventory
