@@ -29,11 +29,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmailAndActiveTrue(String email);
 
     @EntityGraph(attributePaths = "roles")
-    Set<User> findByActiveFalse();
+    List<User> findByActiveFalse();
 
     @EntityGraph(attributePaths = "roles")
-    Set<User> findByActiveTrueAndRoles_Name(RolesEnum roleName);
+    List<User> findByActiveTrueAndRoles_Name(RolesEnum roleName);
 
     @EntityGraph(attributePaths = "roles")
-    Set<User> findByActiveFalseAndRoles_Name(RolesEnum roleName);
+    List<User> findByActiveFalseAndRoles_Name(RolesEnum roleName);
 }
