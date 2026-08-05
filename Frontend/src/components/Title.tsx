@@ -1,8 +1,27 @@
-import type { TitleProps } from "../types/inventory/inventoryProps"
+import type { TitleProps } from "../types/Props"
 
 export const Title = ({ page }: TitleProps) => {
     let title = ""
     let subTitle = ""
+
+    switch (page) {
+        case "inventory":
+            title = "Raktárkészlet"
+            subTitle = "Itt lehet a raktárkészletet megnézni és módosítani"
+            break;
+        case "product":
+            title = "Terméknyilvántartás és Cikktörzs"
+            subTitle = "Katalógus cikkek, alkatrészek és törzsadatok kezelése"
+            break;
+        case "bom":
+            title = "Gyártási tervek"
+            subTitle = "Itt lehet a gyártási terveket megnézni és módosítani"
+            break;
+        case "workorder":
+            title = "Rendelések"
+            subTitle = "Itt lehet a rendeléseket megnézni és módosítani"
+            break;
+    }
 
     if (page === "inventory") {
         title = "Raktárkészlet"

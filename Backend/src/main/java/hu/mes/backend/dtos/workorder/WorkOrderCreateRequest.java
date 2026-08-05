@@ -32,6 +32,5 @@ public class WorkOrderCreateRequest {
     @NotNull(message = "A vevő neve nem lehet null!")
     @Size(min = 1, max = 100, message = "A vevő neve minimum 1 és maximum 100 karakter hosszú lehet!")
     private String customerName;
-    @NotNull(message = "A felelős felhasználó ID-je nem lehet null!")
     private UUID assignedUserId;
 }

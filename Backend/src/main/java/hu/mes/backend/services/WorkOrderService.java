@@ -44,8 +44,9 @@ public class WorkOrderService {
                 Product product = productRepository.findById(request.getProductId())
                                 .orElseThrow(() -> new EntityNotFoundException("Termék nem található!"));
 
-                User user = userRepository.findById(request.getAssignedUserId())
-                                .orElseThrow(() -> new EntityNotFoundException("Felhasználó nem található!"));
+                User user = request.getAssignedUserId() != null
+                                ? userRepository.findById(request.getAssignedUserId()).orElse(null)
+                                : null;
 
                 WorkOrder workOrder = WorkOrder.builder()
                                 .orderNumber(orderNumber)
@@ -63,6 +64,12 @@ public class WorkOrderService {
         public WorkOrderResponse updateWorkOrderStatus(UUID id, WorkOrderStatusUpdateRequest request) {
                 WorkOrder workOrder = workOrderRepository.findById(id).orElseThrow(
                                 () -> new EntityNotFoundException("Rendelés nem található!"));
+
+                if (request.getStatus() != WorkOrderStatus.PLANNED && request.getStatus() != WorkOrderStatus.CANCELLED) {
+                        if (workOrder.getAssignedUser() == null) {
+                                throw new IllegalStateException("A gyártási folyamat nem indítható el felelős operátor hozzárendelése nélkül! Kérjük, előbb rendeljen hozzá felelőst a szerkesztés gombra kattintva.");
+                        }
+                }
 
                 if (request.getStatus().equals(WorkOrderStatus.COMPLETED))
                         workOrder.setEndDate(LocalDateTime.now());
@@ -127,8 +134,9 @@ public class WorkOrderService {
                 WorkOrder workOrder = workOrderRepository.findById(id).orElseThrow(
                                 () -> new EntityNotFoundException("Rendelés nem található!"));
 
-                User user = userRepository.findById(request.getAssignedUserId())
-                                .orElseThrow(() -> new EntityNotFoundException("Felhasználó nem található!"));
+                User user = request.getAssignedUserId() != null
+                                ? userRepository.findById(request.getAssignedUserId()).orElse(null)
+                                : null;
 
                 workOrder.setAssignedUser(user);
                 workOrder.setTargetQuantity(request.getTargetQuantity());

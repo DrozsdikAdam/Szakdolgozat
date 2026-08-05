@@ -25,6 +25,5 @@ public class WorkOrderUpdateRequest {
     @NotNull
     @Size(min = 1, max = 100)
     private String customerName;
-    @NotNull
     private UUID assignedUserId;
 }
