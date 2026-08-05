@@ -1,8 +1,8 @@
 import { createContext, useState, useEffect, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
 import { apiFetch } from "../utils/apiFetch";
-import type { User } from "../types/auth/User";
-import type { AuthContextType } from "../types/auth/AuthContextType";
+import type { User } from "../types/user/User";
+import type { AuthContextType } from "../types/AuthContextType";
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

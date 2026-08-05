@@ -19,6 +19,7 @@ public class UserResponse {
     private UUID id;
     private String username;
     private String email;
+    private String phoneNumber;
     private Boolean active;
     private Set<Role> roles;
 }
