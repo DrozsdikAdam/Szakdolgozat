@@ -1,4 +1,4 @@
-import type { BOMItemRequest, BOMResponse, BOMTreeNode } from "../types/bom";
+import type { BOMItemRequest, BOMResponse, BOMTreeNode } from "../types/bom/bom";
 import { apiFetch } from "../utils/apiFetch";
 
 export const getBOMTree = async (parentProductId: string, quantity?: number): Promise<BOMTreeNode> => {

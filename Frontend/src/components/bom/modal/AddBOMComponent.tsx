@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react"
-import type { AddBOMComponentModalProps } from "../../../types/bomProps"
+import type { AddBOMComponentModalProps } from "../../../types/bom/bomProps"
 import { addComponentToBOMTree } from "../../../services/bomService"
-import type { BOMItemRequest } from "../../../types/bom"
+import type { BOMItemRequest } from "../../../types/bom/bom"
 import { LoaderCircle, Plus, X } from "lucide-react"
 
 export const AddBOMComponent = ({ isOpen, products, onSuccess, closeModal, parentProductId }: AddBOMComponentModalProps) => {

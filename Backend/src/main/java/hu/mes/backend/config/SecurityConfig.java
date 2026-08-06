@@ -61,10 +61,10 @@ public class SecurityConfig {
         config.addAllowedMethod("GET");
         config.addAllowedMethod("POST");
         config.addAllowedMethod("PUT");
+        config.addAllowedMethod("PATCH");
         config.addAllowedMethod("DELETE");
-        config.addAllowedHeader("Content-Type");
-        config.addAllowedHeader("Authorization");
-        config.addAllowedHeader("Cache-Control");
+        config.addAllowedMethod("OPTIONS");
+        config.addAllowedHeader("*");
         UrlBasedCorsConfigurationSource urlBasedCorsConfigurationSource = new UrlBasedCorsConfigurationSource();
         urlBasedCorsConfigurationSource.registerCorsConfiguration("/**", config);
 

@@ -1,5 +1,5 @@
 import { LoaderCircle, Pencil, X } from "lucide-react"
-import type { ProductResponse, ProductUpdateRequest } from "../../../types/Product"
+import type { ProductResponse, ProductUpdateRequest } from "../../../types/product/Product"
 import { useState, useEffect } from "react"
 import { updateProduct } from "../../../services/productService"
 

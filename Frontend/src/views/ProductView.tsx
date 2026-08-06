@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import type { ProductResponse } from "../types/Product"
+import type { ProductResponse } from "../types/product/Product"
 import {
     getActiveProducts,
     getDeletedProducts,
@@ -13,7 +13,7 @@ import { LoadingSpinner } from "../components/LoadingSpinner"
 import { Title } from "../components/Title"
 import { Stats } from "../components/product/Stats"
 import { FilterBar } from "../components/product/FilterBar"
-import type { FilterBarProps, StatsProps, TableProps } from "../types/ProductProps"
+import type { FilterBarProps, StatsProps, TableProps } from "../types/product/ProductProps"
 import { Table } from "../components/product/Table"
 
 export const ProductView = () => {
@@ -116,7 +116,7 @@ export const ProductView = () => {
     }
 
     return (
-        <div className="relative min-h-screen w-full flex flex-col items-center justify-start bg-[#0f172a] text-slate-100 p-4 sm:p-6 font-sans">
+        <div className="relative flex-1 w-full flex flex-col items-center justify-start p-4 sm:p-6 font-sans">
 
             <Background />
 

@@ -1,5 +1,5 @@
 import { Layers, Package } from "lucide-react"
-import type { TreeNodeCardProps } from "../../types/bomProps"
+import type { TreeNodeCardProps } from "../../types/bom/bomProps"
 
 export const TreeNodeCard = ({ node, level }: TreeNodeCardProps) => {
     const isRoot = level === 0

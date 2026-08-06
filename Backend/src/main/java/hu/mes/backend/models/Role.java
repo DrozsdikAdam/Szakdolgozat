@@ -3,6 +3,7 @@ package hu.mes.backend.models;
 import java.util.Set;
 import java.util.UUID;
 
+import hu.mes.backend.models.enums.RolesEnum;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;

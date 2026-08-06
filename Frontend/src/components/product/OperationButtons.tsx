@@ -1,5 +1,5 @@
 import { ActivateButton, DeactivateButton, DeleteButton, EditButton, RestoreButton } from "./Buttons"
-import type { ActivateProps, DeactivateProps, DeleteProps, EditProps, OperationProps, RestoreProps } from "../../types/ProductProps"
+import type { ActivateProps, DeactivateProps, DeleteProps, EditProps, OperationProps, RestoreProps } from "../../types/product/ProductProps"
 import {
     deactivateProduct,
     activateProduct,

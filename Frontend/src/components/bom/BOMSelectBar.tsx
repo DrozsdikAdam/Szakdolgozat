@@ -1,5 +1,5 @@
 import { Plus } from "lucide-react"
-import type { BOMSelectProps } from "../../types/bomProps"
+import type { BOMSelectProps } from "../../types/bom/bomProps"
 
 export const BOMSelectBar = ({ products, selectedProductId, setSelectedProductId, quantity, openAddModal, setQuantity }: BOMSelectProps) => {
     return (

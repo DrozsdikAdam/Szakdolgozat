@@ -1,4 +1,4 @@
-import type { ProductResponse, ProductCreateRequest, ProductUpdateRequest } from '../types/Product';
+import type { ProductResponse, ProductCreateRequest, ProductUpdateRequest } from '../types/product/Product';
 import { apiFetch } from '../utils/apiFetch';
 
 export const getProducts = async (): Promise<ProductResponse[]> => {

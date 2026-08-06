@@ -1,4 +1,4 @@
-import type { InventoryFilterBarProps } from "../../types/inventoryProps"
+import type { InventoryFilterBarProps } from "../../types/inventory/inventoryProps"
 import { MapPin, Plus, Search } from "lucide-react"
 
 export const InventoryFilterBar = ({ searchTerm, setSearchTerm, locationFilter, setLocationFilter, openModal }: InventoryFilterBarProps) => {

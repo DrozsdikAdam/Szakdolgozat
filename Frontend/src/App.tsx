@@ -7,6 +7,7 @@ import { ProductView } from "./views/ProductView"
 import { BOMView } from "./views/BOMView"
 import { InventoryView } from "./views/InventoryView"
 import { Layout } from "./components/Layout"
+import { WorkOrderView } from "./views/WorkOrderView"
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
             <Route path="/product" element={<ProductView />} />
             <Route path="/bom" element={<BOMView />} />
             <Route path="/inventory" element={<InventoryView />} />
+            <Route path="/workorder" element={<WorkOrderView />} />
           </Route>
 
           <Route path="/login" element={<LoginView />} />

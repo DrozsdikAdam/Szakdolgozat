@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Background } from "../components/Background"
-import type { ProductResponse } from "../types/Product"
-import type { BOMTreeNode } from "../types/bom"
+import type { ProductResponse } from "../types/product/Product"
+import type { BOMTreeNode } from "../types/bom/bom"
 import { getActiveProducts } from "../services/productService"
 import { getBOMTree } from "../services/bomService"
 import { LoadingSpinner } from "../components/LoadingSpinner"
@@ -57,7 +57,7 @@ export const BOMView = () => {
     }, [selectedProductId, quantity])
 
     return (
-        <div className="relative min-h-screen w-full flex flex-col items-center justify-start bg-[#0f172a] text-slate-100 p-4 sm:p-6 font-sans">
+        <div className="relative flex-1 w-full flex flex-col items-center justify-start p-4 sm:p-6 font-sans">
 
             <Background />
 

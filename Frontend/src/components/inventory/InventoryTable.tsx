@@ -1,5 +1,5 @@
 import { Pencil } from "lucide-react"
-import type { InventoryTableProps } from "../../types/inventoryProps"
+import type { InventoryTableProps } from "../../types/inventory/inventoryProps"
 
 export const InventoryTable = ({ data, openModal }: InventoryTableProps) => {
 

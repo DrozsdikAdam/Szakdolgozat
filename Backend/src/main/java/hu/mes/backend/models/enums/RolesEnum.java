@@ -1,4 +1,4 @@
-package hu.mes.backend.models;
+package hu.mes.backend.models.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -2,7 +2,6 @@ package hu.mes.backend.repositories;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -10,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import hu.mes.backend.models.User;
-import hu.mes.backend.models.RolesEnum;
+import hu.mes.backend.models.enums.RolesEnum;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
@@ -29,11 +28,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmailAndActiveTrue(String email);
 
     @EntityGraph(attributePaths = "roles")
-    Set<User> findByActiveFalse();
+    List<User> findByActiveFalse();
 
     @EntityGraph(attributePaths = "roles")
-    Set<User> findByActiveTrueAndRoles_Name(RolesEnum roleName);
+    List<User> findByActiveTrueAndRoles_Name(RolesEnum roleName);
 
     @EntityGraph(attributePaths = "roles")
-    Set<User> findByActiveFalseAndRoles_Name(RolesEnum roleName);
+    List<User> findByActiveFalseAndRoles_Name(RolesEnum roleName);
 }

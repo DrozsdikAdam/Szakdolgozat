@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import type { InventoryChartProps } from "../../types/inventoryProps"
+import type { InventoryChartProps } from "../../types/inventory/inventoryProps"
 
 export const InventoryChartCards = ({ productName, productSku, quantity, reservedQuantity, location }: InventoryChartProps) => {
 
