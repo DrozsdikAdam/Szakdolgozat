@@ -3,7 +3,7 @@ package hu.mes.backend.dtos.user;
 import java.util.Set;
 import java.util.UUID;
 
-import hu.mes.backend.models.Role;
+import hu.mes.backend.models.enums.RolesEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,5 +21,5 @@ public class UserResponse {
     private String email;
     private String phoneNumber;
     private Boolean active;
-    private Set<Role> roles;
+    private Set<RolesEnum> roles;
 }
