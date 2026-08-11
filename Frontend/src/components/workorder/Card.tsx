@@ -1,5 +1,5 @@
 import type { WorkOrderCardProps } from "../../types/workorder/workOrderProps"
-import { WorkOrderPriorityBadge, WorkOrderStatusBadge } from "./Badges"
+import { WorkOrderPriorityBadge, WorkOrderStatusBadge } from "../Badges"
 import { WorkOrderActionButton } from "./Buttons"
 import { Pencil } from "lucide-react"
 
