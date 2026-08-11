@@ -1,4 +1,4 @@
-import type { UserResponse } from "./User";
+import type { UserResponse, UserRole, UserStatus } from "./User";
 
 export interface UserStatCardProps {
     users: UserResponse[]
@@ -7,10 +7,10 @@ export interface UserStatCardProps {
 export interface UserFilterBarProps {
     searchTerm: string,
     setSearchTerm: (term: string) => void,
-    roleFilter: string,
-    setRoleFilter: (filter: string) => void,
-    statusFilter: string,
-    setStatusFilter: (filter: string) => void,
+    roleFilter: UserRole | "ALL",
+    setRoleFilter: (filter: UserRole | "ALL") => void,
+    statusFilter: UserStatus | "ALL",
+    setStatusFilter: (filter: UserStatus | "ALL") => void,
     openCreateModal: () => void
 }
 
@@ -39,4 +39,12 @@ export interface UserCreateModalProps {
     isOpen: boolean,
     closeModal: () => void,
     onSuccess: () => void
+}
+
+export interface UserRoleBadgeProps {
+    role: UserRole
+}
+
+export interface UserStatusBadgeProps {
+    status: UserStatus
 }

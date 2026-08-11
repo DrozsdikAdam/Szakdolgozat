@@ -1,7 +1,7 @@
 export interface User {
     id: string,
     username: string,
-    roles: string[]
+    roles: UserRole[]
 }
 
 export interface UserResponse {
@@ -10,7 +10,7 @@ export interface UserResponse {
     email: string,
     phoneNumber: string | null,
     active: boolean,
-    roles: string[]
+    roles: UserRole[]
 }
 
 export interface UserCreateRequest {
@@ -18,17 +18,21 @@ export interface UserCreateRequest {
     email: string,
     password: string,
     phoneNumber: string,
-    roles: string[]
+    roles: UserRole[]
 }
 
 export interface UserUpdateRequest {
     username: string,
     email: string,
     phoneNumber: string,
-    roles: string[],
+    roles: UserRole[],
     active: boolean
 }
 
 export interface UserPromoteRequest {
-    roles: string[]
+    roles: UserRole[]
 }
+
+export type UserRole = "SYSTEMADMIN" | "CEO" | "MANAGER" | "OPERATOR"
+
+export type UserStatus = "ACTIVE" | "INACTIVE"

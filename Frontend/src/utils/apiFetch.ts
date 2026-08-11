@@ -15,19 +15,18 @@ export const apiFetch = async <T>(path: string, options?: RequestInit): Promise<
 
     const isAuthEndpoint = cleanPath.includes("api/auth/login") || cleanPath.includes("api/auth/me") || cleanPath.includes("api/auth/refresh");
 
-    if (response.status === 401 && !isAuthEndpoint) {
+    if ((response.status === 401 || response.status === 403) && !isAuthEndpoint) {
         const refreshResponse = await fetch(`http://localhost:8080/api/auth/refresh`, {
             method: "POST",
             ...mergedOptions
         });
 
-        if (!refreshResponse.ok) await throwError(refreshResponse);
-
-        const retry = await fetch(url, mergedOptions);
-
-        if (!retry.ok) await throwError(retry);
-
-        return handleResponse(retry);
+        if (refreshResponse.ok) {
+            const retry = await fetch(url, mergedOptions);
+            if (retry.ok) {
+                return handleResponse(retry);
+            }
+        }
     }
 
     if (!response.ok) await throwError(response);
