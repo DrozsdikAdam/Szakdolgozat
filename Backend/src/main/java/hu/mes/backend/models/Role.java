@@ -3,6 +3,8 @@ package hu.mes.backend.models;
 import java.util.Set;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import hu.mes.backend.models.enums.RolesEnum;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -31,6 +33,7 @@ public class Role {
     @Enumerated(EnumType.STRING)
     private RolesEnum name;
     private Boolean active;
+    @JsonIgnore
     @ManyToMany(mappedBy = "roles")
     private Set<User> users;
 

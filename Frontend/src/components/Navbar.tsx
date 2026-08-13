@@ -16,6 +16,7 @@ export const Navbar = () => {
         { path: "/inventory", label: "Raktárkészlet", icon: Boxes },
         { path: "/bom", label: "Gyártási tervek", icon: Layers },
         { path: "/workorder", label: "Gyártási rendelések", icon: Square },
+        { path: "/user", label: "Felhasználók", icon: User },
     ]
 
     return (

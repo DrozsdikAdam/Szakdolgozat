@@ -21,17 +21,10 @@ export const Title = ({ page }: TitleProps) => {
             title = "Rendelések"
             subTitle = "Itt lehet a rendeléseket megnézni és módosítani"
             break;
-    }
-
-    if (page === "inventory") {
-        title = "Raktárkészlet"
-        subTitle = "Itt lehet a raktárkészletet megnézni és módosítani"
-    } else if (page === "product") {
-        title = "Terméknyilvántartás és Cikktörzs"
-        subTitle = "Katalógus cikkek, alkatrészek és törzsadatok kezelése"
-    } else if (page === "bom") {
-        title = "Gyártási tervek"
-        subTitle = "Itt lehet a gyártási terveket megnézni és módosítani"
+        case "user":
+            title = "Felhasználók"
+            subTitle = "Itt lehet a felhasználókat megnézni és módosítani"
+            break;
     }
 
     return (

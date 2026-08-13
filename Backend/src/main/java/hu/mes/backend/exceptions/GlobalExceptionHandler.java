@@ -11,6 +11,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.validation.FieldError;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -71,9 +72,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
-    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(
-            org.springframework.dao.DataIntegrityViolationException exception) {
+            DataIntegrityViolationException exception) {
 
         Map<String, String> response = new HashMap<>();
         response.put("message", "Adatbázis korlátozási hiba: A megadott cikkszám (SKU) vagy adat már létezik!");

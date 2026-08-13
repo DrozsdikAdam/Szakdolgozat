@@ -36,11 +36,12 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
 
-        // Initialize the SYSTEMADMIN user if the database is empty
-        if (userRepository.count() == 0) {
-            Role adminRole = roleRepository.findByName(RolesEnum.SYSTEMADMIN)
-                    .orElseThrow(() -> new RuntimeException("Hiba: A SYSTEMADMIN szerepkör nem található!"));
+        // Initialize or re-activate the default SYSTEMADMIN user
+        Role adminRole = roleRepository.findByName(RolesEnum.SYSTEMADMIN)
+                .orElseThrow(() -> new RuntimeException("Hiba: A SYSTEMADMIN szerepkör nem található!"));
 
+        Optional<User> adminOpt = userRepository.findByName("admin");
+        if (adminOpt.isEmpty()) {
             User admin = new User();
             admin.setName("admin");
             admin.setPassword(passwordEncoder.encode("Admin1234!"));
@@ -54,6 +55,12 @@ public class DataInitializer implements CommandLineRunner {
 
             userRepository.save(admin);
             System.out.println("Az admin felhasználó sikeresen létrehozva.");
+        } else {
+            User admin = adminOpt.get();
+            admin.setActive(true);
+            admin.setPassword(passwordEncoder.encode("Admin1234!"));
+            userRepository.save(admin);
+            System.out.println("Az admin felhasználó státusza és jelszava frissítve.");
         }
     }
 }
