@@ -56,3 +56,16 @@ export interface StatsProps {
     inactive: number;
     deleted: number;
 }
+
+export interface CreateModalProps {
+    isOpen: boolean
+    onClose: () => void
+    onSuccess: () => void
+}
+
+export interface EditModalProps {
+    product: ProductResponse | null
+    isOpen: boolean
+    onClose: () => void
+    onSuccess: () => void
+}
