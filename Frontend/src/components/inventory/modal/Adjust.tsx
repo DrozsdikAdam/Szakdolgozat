@@ -14,9 +14,12 @@ export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: Adj
     const [error, setError] = useState<string | null>(null)
 
     const isValid = (): boolean => {
+        if (!inventory) return false
+
         const err = validateRequired(quantity.toString(), "készlet")
             || validateRequired(location, "raktárhely");
         if (err) { setError(err); return false; }
+
 
         if (quantity < 0) {
             setError("A készlet nem lehet negatív.")
