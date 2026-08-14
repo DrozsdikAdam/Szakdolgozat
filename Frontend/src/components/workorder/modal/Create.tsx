@@ -5,7 +5,7 @@ import type { WorkOrderPriority, WorkOrderStatus, WorkOrderCreateRequest } from 
 import { createWorkOrder } from "../../../services/workOrderService";
 import { workOrderPriorityOptions, workOrderStatusOptions } from "../../../constants/workOrder";
 import { Modal } from "../../common/Modal"
-import { validateRequired } from "../../../utils/validators"
+import { validateMinLength, validatePositiveInteger, validateRequired } from "../../../utils/validators"
 
 export const CreateWorkOrder = ({ isOpen, closeModal, products, onSuccess, users }: CreateWorkOrderModalProps) => {
 
@@ -20,19 +20,12 @@ export const CreateWorkOrder = ({ isOpen, closeModal, products, onSuccess, users
 
     const isValid = (): boolean => {
 
-        const err = validateRequired(targetQuantity.toString(), "célmennyiség")
-            || validateRequired(customerName, "megrendelő")
-            || validateRequired(priority, "prioritás")
-            || validateRequired(status, "állapot")
-            || validateRequired(assignedUserId, "felelős");
-        if (err) { setError(err); return false; }
+        const error = validateRequired(customerName, "megrendelő")
+            || validateMinLength(customerName, 3, "megrendelő neve")
+            || validatePositiveInteger(targetQuantity, "célmennyiség")
 
-        if (targetQuantity < 1) {
-            setError("A célmennyiségnek legalább 1-nek kell lennie")
-            return false
-        }
-        if (customerName.trim().length < 3) {
-            setError("A megrendelő nevének legalább 3 karakteresnek kell lennie")
+        if (error) {
+            setError(error)
             return false
         }
 

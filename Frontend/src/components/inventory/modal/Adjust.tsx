@@ -4,7 +4,7 @@ import { Pencil } from "lucide-react"
 import { adjustStock } from "../../../services/inventoryService"
 import type { InventoryUpdateRequest } from "../../../types/inventory/inventory"
 import { Modal } from "../../common/Modal"
-import { validateRequired } from "../../../utils/validators"
+import { validateNonNegativeNumber, validateRequired } from "../../../utils/validators"
 
 export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: AdjustModalProps) => {
 
@@ -16,15 +16,15 @@ export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: Adj
     const isValid = (): boolean => {
         if (!inventory) return false
 
-        const err = validateRequired(quantity.toString(), "készlet")
-            || validateRequired(location, "raktárhely");
-        if (err) { setError(err); return false; }
+        const error = validateRequired(quantity.toString(), "készlet")
+            || validateRequired(location, "raktárhely")
+            || validateNonNegativeNumber(quantity, "készlet");
 
-
-        if (quantity < 0) {
-            setError("A készlet nem lehet negatív.")
+        if (error) {
+            setError(error)
             return false
         }
+
         if (quantity === inventory.quantity && location === inventory.location) {
             setError("A készlet és a raktárhely nem változott.")
             return false

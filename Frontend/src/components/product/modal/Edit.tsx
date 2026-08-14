@@ -2,7 +2,7 @@ import { Pencil } from "lucide-react"
 import type { ProductUpdateRequest } from "../../../types/product/Product"
 import { useState, useEffect } from "react"
 import { updateProduct } from "../../../services/productService"
-import { validateRequired } from "../../../utils/validators"
+import { validateMaxLength, validateMinLength, validateRequired } from "../../../utils/validators"
 import type { EditModalProps } from "../../../types/product/ProductProps"
 import { Modal } from "../../common/Modal"
 
@@ -37,33 +37,17 @@ export const EditModal = ({ product, isOpen, onClose, onSuccess }: EditModalProp
         const MIN_UNIT_LENGTH = 2;
         const MAX_DESC_LENGTH = 50;
 
-        const err = validateRequired(formEditData.sku, "cikkszám")
-            || validateRequired(formEditData.name, "cikk megnevezése")
-            || validateRequired(formEditData.unit, "mértékegység")
-            || validateRequired(formEditData.description, "leírás");
-        if (err) { setError(err); return false; }
+        const error = validateRequired(formEditData.sku, "cikkszám")
+            || validateMinLength(formEditData.name, MIN_NAME_LENGTH, "cikk megnevezése")
+            || validateMinLength(formEditData.unit, MIN_UNIT_LENGTH, "mértékegység")
+            || validateMaxLength(formEditData.description, MAX_DESC_LENGTH, "leírás")
 
-        if (formEditData.sku.trim().length === 0) {
-            setError("A cikkszám megadása kötelező.");
-            return false;
+        if (error) {
+            setError(error)
+            return false
         }
 
-        if (formEditData.name.trim().length < MIN_NAME_LENGTH) {
-            setError("A cikk megnevezésének legalább 5 karakternek kell lennie.");
-            return false;
-        }
-
-        if (formEditData.unit.trim().length < MIN_UNIT_LENGTH) {
-            setError("A mértékegység megadása kötelező.");
-            return false;
-        }
-
-        if (formEditData.description.trim().length > MAX_DESC_LENGTH) {
-            setError(`A leírás maximum ${MAX_DESC_LENGTH} karakter hosszú lehet.`);
-            return false;
-        }
-
-        return true;
+        return true
     }
 
     const handleSubmit = async () => {

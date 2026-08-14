@@ -56,3 +56,41 @@ export const validateRequired = (value: string | number | unknown[], fieldName: 
 
     return null
 }
+
+export const validateMinLength = (value: string | undefined, min: number, fieldName: string): string | null => {
+    const trimmedValue = value?.trim()
+    if (trimmedValue && trimmedValue.length < min)
+        return `A ${fieldName} mezőnek legalább ${min} karakteresnek kell lennie!`
+
+    return null
+}
+
+export const validateMaxLength = (value: string | undefined, max: number, fieldName: string): string | null => {
+    const trimmedValue = value?.trim()
+    if (trimmedValue && trimmedValue.length > max)
+        return `A ${fieldName} mezőnek maximum ${max} karakteresnek kell lennie!`
+
+    return null
+}
+
+export const validatePositiveNumber = (value: number, fieldName: string): string | null => {
+    if (value <= 0)
+        return `A ${fieldName} mezőnek pozitív számnak kell lennie!`
+
+    return null
+}
+
+export const validatePositiveInteger = (value: number | undefined, fieldName: string): string | null => {
+    if (value === undefined || value === null) return null;
+    if (value <= 0 || !Number.isInteger(value))
+        return `A ${fieldName} mezőnek pozitív egész számnak kell lennie!`
+
+    return null
+}
+
+export const validateNonNegativeNumber = (value: number | undefined, fieldName: string): string | null => {
+    if (value === undefined || value === null) return null;
+    if (value < 0) return `A(z) ${fieldName} nem lehet negatív!`;
+
+    return null
+}

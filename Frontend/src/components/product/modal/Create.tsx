@@ -3,7 +3,7 @@ import type { ProductCreateRequest } from "../../../types/product/Product"
 import { useState } from "react"
 import { createProduct } from "../../../services/productService"
 import { Modal } from "../../common/Modal"
-import { validateRequired } from "../../../utils/validators"
+import { validateRequired, validateMinLength, validateMaxLength } from "../../../utils/validators"
 import type { CreateModalProps } from "../../../types/product/ProductProps"
 
 
@@ -18,40 +18,22 @@ export const CreateModal = ({ isOpen, onClose, onSuccess }: CreateModalProps) =>
         unit: ""
     })
 
-
-
     function isValid(): boolean {
         const MIN_NAME_LENGTH = 5;
         const MIN_UNIT_LENGTH = 2;
         const MAX_DESC_LENGTH = 50;
 
-        const err = validateRequired(formCreateData.sku, "cikkszám")
-            || validateRequired(formCreateData.name, "cikk megnevezése")
-            || validateRequired(formCreateData.unit, "mértékegység")
-            || validateRequired(formCreateData.description, "leírás");
-        if (err) { setIsModalError(err); return false; }
+        const error = validateRequired(formCreateData.sku, "cikkszám")
+            || validateMinLength(formCreateData.name, MIN_NAME_LENGTH, "cikk megnevezése")
+            || validateMinLength(formCreateData.unit, MIN_UNIT_LENGTH, "mértékegység")
+            || validateMaxLength(formCreateData.description, MAX_DESC_LENGTH, "leírás")
 
-        if (formCreateData.sku.trim().length === 0) {
-            setIsModalError("A cikkszám megadása kötelező.");
-            return false;
+        if (error) {
+            setIsModalError(error)
+            return false
         }
 
-        if (formCreateData.name.trim().length < MIN_NAME_LENGTH) {
-            setIsModalError("A cikk megnevezésének legalább 5 karakternek kell lennie.");
-            return false;
-        }
-
-        if (formCreateData.unit.trim().length < MIN_UNIT_LENGTH) {
-            setIsModalError("A mértékegység megadása kötelező.");
-            return false;
-        }
-
-        if (formCreateData.description && formCreateData.description.trim().length > MAX_DESC_LENGTH) {
-            setIsModalError(`A leírás maximum ${MAX_DESC_LENGTH} karakter hosszú lehet.`);
-            return false;
-        }
-
-        return true;
+        return true
     }
 
     const handleSubmit = async () => {

@@ -5,7 +5,7 @@ import { Pencil } from "lucide-react";
 import { updateWorkOrder } from "../../../services/workOrderService";
 import { workOrderPriorityOptions } from "../../../constants/workOrder";
 import { Modal } from "../../common/Modal"
-import { validateRequired } from "../../../utils/validators"
+import { validateMinLength, validatePositiveInteger, validateRequired } from "../../../utils/validators"
 
 export const EditWorkOrder = ({ isOpen, closeModal, order, onSuccess, users }: EditWorkOrderModalProps) => {
 
@@ -17,12 +17,16 @@ export const EditWorkOrder = ({ isOpen, closeModal, order, onSuccess, users }: E
     const [error, setError] = useState<string | null>(null)
 
     const isValid = (): boolean => {
-        const err = validateRequired(targetQuantity.toString(), "célmennyiség")
-            || validateRequired(customerName, "megrendelő")
-            || validateRequired(priority, "prioritás")
-            || validateRequired(assignedUserId, "felelős");
-        if (err) { setError(err); return false; }
-        return true;
+        const error = validateRequired(customerName, "megrendelő")
+            || validateMinLength(customerName, 3, "megrendelő neve")
+            || validatePositiveInteger(targetQuantity, "célmennyiség")
+
+        if (error) {
+            setError(error)
+            return false
+        }
+
+        return true
     }
 
     const handleSubmit = async () => {
