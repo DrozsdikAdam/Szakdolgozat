@@ -3,19 +3,13 @@ import type { UserPromoteModalProps } from "../../../types/user/UserProps"
 import type { UserRole } from "../../../types/user/User"
 import { promoteUser } from "../../../services/userService";
 import { ArrowUp, Check, LoaderCircle, X } from "lucide-react";
+import { ROLE_OPTIONS } from "../../../constants/roles"
 
 export const PromoteUser = ({ isOpen, closeModal, user, onSuccess }: UserPromoteModalProps) => {
 
     const [roles, setRoles] = useState<UserRole[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
-
-    const roleOptions: { label: string, value: UserRole }[] = [
-        { label: "Rendszergazda", value: "SYSTEMADMIN" },
-        { label: "Vezérigazgató", value: "CEO" },
-        { label: "Menedzser", value: "MANAGER" },
-        { label: "Operátor", value: "OPERATOR" }
-    ]
 
     const handleRoleChange = (role: UserRole) => {
         setRoles(prev => {
@@ -72,23 +66,21 @@ export const PromoteUser = ({ isOpen, closeModal, user, onSuccess }: UserPromote
                         <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Válassza ki a felhasználó szerepét</label>
 
                         <div className="grid grid-cols-2 gap-2.5">
-                            {roleOptions.map(role => {
-                                const isSelected = roles.includes(role.value)
+                            {ROLE_OPTIONS.map(role => {
+                                const isSelected = roles.includes(role.key)
                                 return (
                                     <button
                                         type="button"
-                                        key={role.value}
-                                        onClick={() => handleRoleChange(role.value)}
-                                        className={`flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
-                                            isSelected
-                                                ? "bg-indigo-600/20 border-indigo-500/50 text-white shadow-sm ring-1 ring-indigo-500/30"
-                                                : "bg-slate-800/50 border-slate-700/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-                                        }`}
+                                        key={role.key}
+                                        onClick={() => handleRoleChange(role.key as UserRole)}
+                                        className={`flex items-center justify-between p-3 rounded-xl border transition-all text-left ${isSelected
+                                            ? "bg-indigo-600/20 border-indigo-500/50 text-white shadow-sm ring-1 ring-indigo-500/30"
+                                            : "bg-slate-800/50 border-slate-700/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                                            }`}
                                     >
                                         <span className="text-sm font-medium">{role.label}</span>
-                                        <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
-                                            isSelected ? "bg-indigo-600 border-indigo-500 text-white" : "border-slate-600 bg-slate-800"
-                                        }`}>
+                                        <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${isSelected ? "bg-indigo-600 border-indigo-500 text-white" : "border-slate-600 bg-slate-800"
+                                            }`}>
                                             {isSelected && <Check size={13} strokeWidth={3} />}
                                         </div>
                                     </button>

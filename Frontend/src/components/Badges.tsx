@@ -1,3 +1,4 @@
+import { getRoleBadgeStyle, getRoleLabel } from "../constants/roles";
 import type { BadgeProps } from "../types/Props";
 import type { UserRoleBadgeProps, UserStatusBadgeProps } from "../types/user/UserProps";
 import type { WorkOrderPriorityBadgeProps, WorkOrderStatusBadgeProps } from "../types/workorder/workOrderProps"
@@ -16,13 +17,6 @@ const priorityBadgeStyles = {
     MEDIUM: "bg-blue-500/10 border-blue-500/20 text-blue-400",
     HIGH: "bg-amber-500/10 border-amber-500/20 text-amber-400",
     URGENT: "bg-red-500/10 border-red-500/20 text-red-400"
-}
-
-const roleBadgeStyles: Record<string, string> = {
-    SYSTEMADMIN: "bg-red-500/10 border-red-500/20 text-red-400",
-    CEO: "bg-purple-500/10 border-purple-500/20 text-purple-400",
-    MANAGER: "bg-orange-500/10 border-orange-500/20 text-orange-400",
-    OPERATOR: "bg-blue-500/10 border-blue-500/20 text-blue-400"
 }
 
 const userStatusBadgeStyles = {
@@ -117,40 +111,7 @@ export const WorkOrderPriorityBadge = ({ priority }: WorkOrderPriorityBadgeProps
 }
 
 export const UserRoleBadge = ({ role }: UserRoleBadgeProps) => {
-    let props: BadgeProps;
-    switch (role) {
-        case "SYSTEMADMIN":
-            props = {
-                content: "Rendszergazda",
-                style: roleBadgeStyles[role]
-            };
-            break;
-        case "CEO":
-            props = {
-                content: "Vezérigazgató",
-                style: roleBadgeStyles[role]
-            };
-            break;
-        case "MANAGER":
-            props = {
-                content: "Menedzser",
-                style: roleBadgeStyles[role]
-            };
-            break;
-        case "OPERATOR":
-            props = {
-                content: "Operátor",
-                style: roleBadgeStyles[role]
-            };
-            break;
-        default:
-            props = {
-                content: "Ismeretlen",
-                style: roleBadgeStyles["OPERATOR"]
-            };
-            break;
-    }
-    return badge(props)
+    return badge({ content: getRoleLabel(role), style: getRoleBadgeStyle(role) })
 }
 
 export const UserStatusBadge = ({ status }: UserStatusBadgeProps) => {

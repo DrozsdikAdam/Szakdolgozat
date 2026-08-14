@@ -1,6 +1,7 @@
 import { Search, UserPlus } from "lucide-react"
 import type { UserFilterBarProps } from "../../types/user/UserProps"
 import type { UserRole } from "../../types/user/User"
+import { ROLE_OPTIONS } from "../../constants/roles"
 
 export const FilterBar = ({
     searchTerm,
@@ -34,10 +35,7 @@ export const FilterBar = ({
                         className="w-full sm:w-auto px-3.5 py-2.5 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                     >
                         <option value="ALL">Mindegyik</option>
-                        <option value="SYSTEMADMIN">Rendszergazdák</option>
-                        <option value="CEO">Vezérigazgatók</option>
-                        <option value="MANAGER">Menedzserek</option>
-                        <option value="OPERATOR">Operátorok</option>
+                        {ROLE_OPTIONS.map(role => (<option key={role.key} value={role.key}>{role.label}</option>))}
                     </select>
                 </div>
 
