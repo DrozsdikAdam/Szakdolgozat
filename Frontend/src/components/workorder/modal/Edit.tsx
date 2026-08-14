@@ -3,6 +3,7 @@ import type { EditWorkOrderModalProps } from "../../../types/workorder/workOrder
 import type { WorkOrderPriority, WorkOrderUpdateRequest } from "../../../types/workorder/workOrder";
 import { LoaderCircle, Pencil, X } from "lucide-react";
 import { updateWorkOrder } from "../../../services/workOrderService";
+import { workOrderPriorityOptions } from "../../../constants/workOrder";
 
 export const EditWorkOrder = ({ isOpen, closeModal, order, onSuccess, users }: EditWorkOrderModalProps) => {
 
@@ -129,10 +130,11 @@ export const EditWorkOrder = ({ isOpen, closeModal, order, onSuccess, users }: E
                             value={priority}
                             onChange={(e) => setPriority(e.target.value as WorkOrderPriority)}
                         >
-                            <option value="LOW">Alacsony</option>
-                            <option value="MEDIUM">Közepes</option>
-                            <option value="HIGH">Magas</option>
-                            <option value="URGENT">Sürgős</option>
+                            {workOrderPriorityOptions.map((priority) => (
+                                <option key={priority.key} value={priority.key}>
+                                    {priority.label}
+                                </option>
+                            ))}
                         </select>
                     </div>
 

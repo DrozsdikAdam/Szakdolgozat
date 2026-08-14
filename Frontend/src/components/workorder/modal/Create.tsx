@@ -3,6 +3,7 @@ import type { CreateWorkOrderModalProps } from "../../../types/workorder/workOrd
 import { useState } from "react";
 import type { WorkOrderPriority, WorkOrderStatus, WorkOrderCreateRequest } from "../../../types/workorder/workOrder";
 import { createWorkOrder } from "../../../services/workOrderService";
+import { workOrderPriorityOptions, workOrderStatusOptions } from "../../../constants/workOrder";
 
 export const CreateWorkOrder = ({ isOpen, closeModal, products, onSuccess, users }: CreateWorkOrderModalProps) => {
 
@@ -123,10 +124,11 @@ export const CreateWorkOrder = ({ isOpen, closeModal, products, onSuccess, users
                             value={status}
                             onChange={(e) => setStatus(e.target.value as WorkOrderStatus)}
                         >
-                            <option value="PLANNED">Tervezett</option>
-                            <option value="PREPARED">Előkészítve</option>
-                            <option value="IN_PROGRESS">Folyamatban</option>
-
+                            {workOrderStatusOptions.filter((status) => status.key !== "COMPLETED" && status.key !== "CANCELLED" && status.key !== "QUALITY_CHECK").map((status) => (
+                                <option key={status.key} value={status.key}>
+                                    {status.label}
+                                </option>
+                            ))}
                         </select>
                     </div>
 
@@ -153,10 +155,11 @@ export const CreateWorkOrder = ({ isOpen, closeModal, products, onSuccess, users
                             value={priority}
                             onChange={(e) => setPriority(e.target.value as WorkOrderPriority)}
                         >
-                            <option value="LOW">Alacsony</option>
-                            <option value="MEDIUM">Közepes</option>
-                            <option value="HIGH">Magas</option>
-                            <option value="URGENT">Sürgős</option>
+                            {workOrderPriorityOptions.map((priority) => (
+                                <option key={priority.key} value={priority.key}>
+                                    {priority.label}
+                                </option>
+                            ))}
                         </select>
                     </div>
 

@@ -1,6 +1,7 @@
 import { Plus, Search } from "lucide-react";
 import type { WorkOrderFilterBarProps } from "../../types/workorder/workOrderProps";
 import type { WorkOrderPriority, WorkOrderStatus } from "../../types/workorder/workOrder";
+import { workOrderPriorityOptions, workOrderStatusOptions } from "../../constants/workOrder";
 
 export const WorkOrderFilterBar = ({ searchTerm, setSearchTerm, statusFilter, setStatusFilter, priorityFilter, setPriorityFilter, openCreateModal }: WorkOrderFilterBarProps) => {
 
@@ -26,12 +27,11 @@ export const WorkOrderFilterBar = ({ searchTerm, setSearchTerm, statusFilter, se
                         className="w-full sm:w-auto px-3.5 py-2.5 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                     >
                         <option value="ALL">Mindegyik</option>
-                        <option value="PLANNED">Tervezett</option>
-                        <option value="PREPARED">Előkészítve</option>
-                        <option value="IN_PROGRESS">Gyártásban</option>
-                        <option value="QUALITY_CHECK">Minőségellenőrzés</option>
-                        <option value="COMPLETED">Teljesítve</option>
-                        <option value="CANCELLED">Visszavont</option>
+                        {workOrderStatusOptions.map((status) => (
+                            <option key={status.key} value={status.key}>
+                                {status.label}
+                            </option>
+                        ))}
                     </select>
                 </div>
 
@@ -43,10 +43,11 @@ export const WorkOrderFilterBar = ({ searchTerm, setSearchTerm, statusFilter, se
                         className="w-full sm:w-auto px-3.5 py-2.5 rounded-xl bg-slate-800/60 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                     >
                         <option value="ALL">Mindegyik</option>
-                        <option value="LOW">Alacsony</option>
-                        <option value="MEDIUM">Közepes</option>
-                        <option value="HIGH">Magas</option>
-                        <option value="URGENT">Sürgős</option>
+                        {workOrderPriorityOptions.map((priority) => (
+                            <option key={priority.key} value={priority.key}>
+                                {priority.label}
+                            </option>
+                        ))}
                     </select>
                 </div>
             </div>
