@@ -6,9 +6,9 @@ import { getActiveProducts } from "../services/productService"
 import { getBOMTree } from "../services/bomService"
 import { LoadingSpinner } from "../components/common/LoadingSpinner"
 import { Title } from "../components/common/Title"
-import { BOMSelectBar } from "../components/bom/BOMSelectBar"
-import { AddBOMComponent } from "../components/bom/modal/AddBOMComponent"
-import { BOMTreeView } from "../components/bom/BOMTreeView"
+import { BOMSelectBar } from "../components/bom/SelectBar"
+import { AddBOMComponent } from "../components/bom/modal/AddComponent"
+import { BOMTreeView } from "../components/bom/TreeView"
 
 export const BOMView = () => {
 
