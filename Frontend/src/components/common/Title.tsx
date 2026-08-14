@@ -1,4 +1,4 @@
-import type { TitleProps } from "../types/Props"
+import type { TitleProps } from "../../types/Props"
 
 export const Title = ({ page }: TitleProps) => {
     let title = ""

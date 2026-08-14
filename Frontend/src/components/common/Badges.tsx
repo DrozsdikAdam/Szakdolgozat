@@ -1,9 +1,9 @@
-import { getRoleBadgeStyle, getRoleLabel } from "../constants/roles";
-import { getWorkOrderPriorityBadgeStyle, getWorkOrderPriorityLabel, getWorkOrderStatusBadgeStyle, getWorkOrderStatusLabel } from "../constants/workOrder";
-import type { BadgeProps } from "../types/Props";
-import type { UserRoleBadgeProps, UserStatusBadgeProps } from "../types/user/UserProps";
-import type { WorkOrderPriorityBadgeProps, WorkOrderStatusBadgeProps } from "../types/workorder/workOrderProps"
-import { getUserStatusBadgeStyle, getUserStatusLabel } from "../constants/userStatus";
+import { getRoleBadgeStyle, getRoleLabel } from "../../constants/roles";
+import { getWorkOrderPriorityBadgeStyle, getWorkOrderPriorityLabel, getWorkOrderStatusBadgeStyle, getWorkOrderStatusLabel } from "../../constants/workOrder";
+import type { BadgeProps } from "../../types/Props";
+import type { UserRoleBadgeProps, UserStatusBadgeProps } from "../../types/user/UserProps";
+import type { WorkOrderPriorityBadgeProps, WorkOrderStatusBadgeProps } from "../../types/workorder/workOrderProps"
+import { getUserStatusBadgeStyle, getUserStatusLabel } from "../../constants/userStatus";
 
 export const WorkOrderStatusBadge = ({ status }: WorkOrderStatusBadgeProps) => {
     const props: BadgeProps = {

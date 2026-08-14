@@ -3,8 +3,8 @@ import type { FormEvent } from "react";
 import { useAuth } from "../hooks/UseAuth";
 import { Navigate, useLocation } from "react-router-dom";
 import { LoaderCircle, Eye, EyeOff } from "lucide-react";
-import { LoadingSpinner } from "../components/LoadingSpinner";
-import { Background } from "../components/Background";
+import { LoadingSpinner } from "../components/common/LoadingSpinner";
+import { Background } from "../components/common/Background";
 
 export const LoginView = () => {
     const [username, setUsername] = useState("");

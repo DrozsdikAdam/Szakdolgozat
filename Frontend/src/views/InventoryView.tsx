@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react"
-import { Background } from "../components/Background"
+import { Background } from "../components/common/Background"
 import type { InventoryResponse } from "../types/inventory/inventory"
 import { getAllInventories } from "../services/inventoryService"
-import { Title } from "../components/Title"
+import { Title } from "../components/common/Title"
 import { InventoryFilterBar } from "../components/inventory/InventoryFilterBar"
 import { InventoryTable } from "../components/inventory/InventoryTable"
 import { AdjustInventory } from "../components/inventory/modal/AdjustInventory"
 import { InventoryChartCards } from "../components/inventory/InventoryChartCards"
-import { LoadingSpinner } from "../components/LoadingSpinner"
+import { LoadingSpinner } from "../components/common/LoadingSpinner"
 import type { InventoryFilterBarProps, InventoryTableProps } from "../types/inventory/inventoryProps"
 
 export const InventoryView = () => {
