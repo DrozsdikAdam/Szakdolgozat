@@ -1,7 +1,6 @@
 package hu.mes.backend.models;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import jakarta.persistence.Column;

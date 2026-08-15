@@ -15,17 +15,17 @@ import hu.mes.backend.mappers.BOMMapper;
 import hu.mes.backend.models.BOMItem;
 import hu.mes.backend.models.Product;
 import hu.mes.backend.repositories.BOMItemRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class BOMService {
     private final BOMItemRepository bomRepository;
     private final ProductService productService;
     private final BOMMapper bomMapper;
 
-    @Transactional
     public BOMResponse addComponentToBOM(BOMItemRequest request) {
         Product parent = productService.getProductEntityById(request.getParentProductId());
         Product component = productService.getProductEntityById(request.getComponentProductId());

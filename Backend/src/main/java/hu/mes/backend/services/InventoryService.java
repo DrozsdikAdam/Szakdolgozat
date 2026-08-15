@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 import hu.mes.backend.repositories.InventoryRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import hu.mes.backend.dtos.inventory.InventoryResponse;
 import hu.mes.backend.dtos.inventory.InventoryUpdateRequest;
@@ -20,12 +20,12 @@ import hu.mes.backend.models.Product;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
     private final InventoryMapper inventoryMapper;
 
-    @Transactional
     public void initializeInventory(Product product) {
         if (product == null)
             throw new IllegalArgumentException("A termék nem létezik!");
@@ -49,7 +49,6 @@ public class InventoryService {
         return inventoryMapper.convertToResponse(inventory);
     }
 
-    @Transactional
     public InventoryResponse adjustStock(InventoryUpdateRequest request) {
         Inventory inventory = inventoryRepository.findByProductId(request.getProductId())
                 .orElseThrow(() -> new EntityNotFoundException("A termékhez nem tartozik nyilvántartás!"));
@@ -66,7 +65,6 @@ public class InventoryService {
         return inventoryMapper.convertToResponse(inventoryRepository.save(inventory));
     }
 
-    @Transactional
     public InventoryResponse reserveStock(InventoryUpdateRequest request) {
         Inventory inventory = inventoryRepository.findByProductId(request.getProductId())
                 .orElseThrow(() -> new EntityNotFoundException("A termékhez nem tartozik nyilvántartás!"));
@@ -81,7 +79,6 @@ public class InventoryService {
         return inventoryMapper.convertToResponse(inventoryRepository.save(inventory));
     }
 
-    @Transactional
     public InventoryResponse consumeReservedStock(InventoryUpdateRequest request) {
         Inventory inventory = inventoryRepository.findByProductId(request.getProductId())
                 .orElseThrow(() -> new EntityNotFoundException("A termékhez nem tartozik nyilvántartás!"));
@@ -96,7 +93,6 @@ public class InventoryService {
         return inventoryMapper.convertToResponse(inventoryRepository.save(inventory));
     }
 
-    @Transactional
     public InventoryResponse releaseReservedStock(InventoryUpdateRequest request) {
         Inventory inventory = inventoryRepository.findByProductId(request.getProductId())
                 .orElseThrow(() -> new EntityNotFoundException("A termékhez nem tartozik nyilvántartás!"));

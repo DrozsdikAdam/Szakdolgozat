@@ -21,7 +21,7 @@ import hu.mes.backend.models.enums.RolesEnum;
 import hu.mes.backend.repositories.RoleRepository;
 import hu.mes.backend.repositories.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -52,7 +52,6 @@ public class UserService {
         return userMapper.convertToResponses(new ArrayList<>(usersSet));
     }
 
-    @Transactional
     public UserResponse createUser(UserCreateRequest request) {
         if (request == null)
             throw new IllegalArgumentException("A felhasználó létrehozásához szükséges adatok nem érvényesek.");
