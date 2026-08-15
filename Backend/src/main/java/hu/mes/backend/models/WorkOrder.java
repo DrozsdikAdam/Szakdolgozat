@@ -15,8 +15,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
@@ -32,7 +30,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Builder
-public class WorkOrder {
+public class WorkOrder extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -67,8 +65,6 @@ public class WorkOrder {
     @Enumerated(EnumType.STRING)
     private WorkOrderPriority priority = WorkOrderPriority.MEDIUM;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
 
@@ -76,13 +72,4 @@ public class WorkOrder {
     @Builder.Default
     private Integer version = 0;
 
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 }

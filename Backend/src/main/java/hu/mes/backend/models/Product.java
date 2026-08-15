@@ -26,7 +26,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Product {
+public class Product extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -41,11 +41,4 @@ public class Product {
     private Boolean active = true;
     @Builder.Default
     private Boolean deleted = false;
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
-
 }

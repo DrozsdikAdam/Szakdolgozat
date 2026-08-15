@@ -26,7 +26,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Builder
-public class User {
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -37,25 +37,11 @@ public class User {
     private String phoneNumber;
     private boolean active;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;
 
     @Version
     private Integer version;
     @ManyToMany
     private Set<Role> roles;
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-        this.active = true;
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 
 }
