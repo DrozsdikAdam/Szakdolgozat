@@ -5,7 +5,7 @@ import type { ProductResponse } from "../types/product/Product"
 import type { UserResponse } from "../types/user/User"
 import { LoadingSpinner } from "../components/common/LoadingSpinner"
 import { getProducts } from "../services/productService"
-import { getAllWorkOrders, updateWorkOrderStatus } from "../services/workOrderService"
+import { getWorkOrders, updateWorkOrderStatus } from "../services/workOrderService"
 import { EditWorkOrder } from "../components/workorder/modal/Edit"
 import { CreateWorkOrder } from "../components/workorder/modal/Create"
 import { getAssignableUsers } from "../services/userService"
@@ -62,7 +62,7 @@ export const WorkOrderView = () => {
         try {
             let [productsData, ordersData, usersData] = await Promise.all([
                 getProducts(),
-                getAllWorkOrders(),
+                getWorkOrders(),
                 getAssignableUsers()
             ])
             setProducts(productsData)

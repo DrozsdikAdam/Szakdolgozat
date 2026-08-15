@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Background } from "../components/common/Background"
 import type { InventoryResponse } from "../types/inventory/inventory"
-import { getAllInventories } from "../services/inventoryService"
+import { getInventories } from "../services/inventoryService"
 import { Title } from "../components/common/Title"
 import { InventoryFilterBar } from "../components/inventory/FilterBar"
 import { InventoryTable } from "../components/inventory/Table"
@@ -24,7 +24,7 @@ export const InventoryView = () => {
         setIsLoading(true)
         setError(null)
         try {
-            const response = await getAllInventories()
+            const response = await getInventories()
             setInventories(response)
         } catch (error) {
             setError(error instanceof Error ? error.message : String(error))

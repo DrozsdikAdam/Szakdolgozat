@@ -7,12 +7,12 @@ import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Background } from "../components/common/Background";
 
 export const LoginView = () => {
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
-    const [usernameError, setUsernameError] = useState("");
-    const [passwordError, setPasswordError] = useState("");
-    const [error, setError] = useState("");
+    const [username, setUsername] = useState<string>("");
+    const [password, setPassword] = useState<string>("");
+    const [showPassword, setShowPassword] = useState<boolean>(false);
+    const [usernameError, setUsernameError] = useState<string | null>(null);
+    const [passwordError, setPasswordError] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
     const { user, login, loading } = useAuth();
     const location = useLocation();
     const targetPath = location.state?.from?.pathname || (typeof location.state?.from === "string" ? location.state.from : "/product");
@@ -73,7 +73,6 @@ export const LoginView = () => {
                 </div>
 
                 <form onSubmit={handleLogin} className="flex flex-col gap-5">
-                    {/* Username Input Field */}
                     <div className="flex flex-col gap-1.5">
                         <label htmlFor="username" className="text-sm font-semibold text-gray-300">Felhasználónév</label>
                         <div className="relative">
@@ -90,7 +89,6 @@ export const LoginView = () => {
                         {usernameError && <p className="text-red-400 text-xs font-medium mt-1">{usernameError}</p>}
                     </div>
 
-                    {/* Password Input Field with Toggle Visibility */}
                     <div className="flex flex-col gap-1.5">
                         <label htmlFor="password" className="text-sm font-semibold text-gray-300">Jelszó</label>
                         <div className="relative">
@@ -114,14 +112,12 @@ export const LoginView = () => {
                         {passwordError && <p className="text-red-400 text-xs font-medium mt-1">{passwordError}</p>}
                     </div>
 
-                    {/* General Error Message */}
                     {error && (
                         <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium">
                             <span>{error}</span>
                         </div>
                     )}
 
-                    {/* Submit Button */}
                     <button
                         type="submit"
                         disabled={loading}
