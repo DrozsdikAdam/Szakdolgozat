@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react"
+﻿import { useEffect, useState } from "react"
 import type { AdjustModalProps } from "../../../types/inventory/inventoryProps"
 import { Pencil } from "lucide-react"
 import { adjustStock } from "../../../services/inventoryService"
 import type { InventoryUpdateRequest } from "../../../types/inventory/inventory"
 import { Modal } from "../../common/Modal"
 import { validateNonNegativeNumber, validateRequired } from "../../../utils/validators"
+import { InputField } from "../../common/form/InputField"
 
 export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: AdjustModalProps) => {
-
     const [quantity, setQuantity] = useState<number>(0)
     const [location, setLocation] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -16,12 +16,12 @@ export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: Adj
     const isValid = (): boolean => {
         if (!inventory) return false
 
-        const error = validateRequired(quantity.toString(), "készlet")
+        const err = validateRequired(quantity.toString(), "készlet")
             || validateRequired(location, "raktárhely")
             || validateNonNegativeNumber(quantity, "készlet");
 
-        if (error) {
-            setError(error)
+        if (err) {
+            setError(err)
             return false
         }
 
@@ -34,7 +34,7 @@ export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: Adj
     }
 
     const handleSubmit = async () => {
-        if (!inventory || !inventory.productId || !isValid()) return;
+        if (!inventory || !inventory.productId || !isValid()) return
         setIsLoading(true)
         setError(null)
 
@@ -55,7 +55,6 @@ export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: Adj
         } finally {
             setIsLoading(false)
         }
-
     }
 
     useEffect(() => {
@@ -66,39 +65,33 @@ export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: Adj
         }
     }, [inventory, isOpen])
 
-    if (!isOpen || !inventory) {
-        return null
-    }
+    if (!isOpen || !inventory) return null
 
     return (
         <Modal
             isOpen={isOpen}
             onClose={closeModal}
-            title="Termék módosítása"
+            title={`Készlet módosítása - ${inventory.productName || ""}`}
             submitIcon={<Pencil size={16} />}
             onSubmit={handleSubmit}
             isLoading={isLoading}
             error={error}
             submitText="Mentés"
-            cancelText="Mégsem"
+            cancelText="Mégse"
         >
-            <div className="w-full flex flex-col items-center p-2">
-                <label htmlFor="quantity" className="text-white font-bold">Készlet</label>
-                <input
-                    type="number"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all"
-                    value={quantity}
-                    onChange={(e) => { setQuantity(Number(e.target.value)) }} />
-            </div>
-
-            <div className="w-full flex flex-col items-center p-2">
-                <label htmlFor="location" className="text-white font-bold">Raktárhely</label>
-                <input
-                    type="text"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all"
-                    value={location ?? ""}
-                    onChange={(e) => { setLocation(e.target.value || null) }} />
-            </div>
+            <InputField
+                label="Készlet"
+                type="number"
+                min={0}
+                value={quantity}
+                onChange={(e) => setQuantity(Number(e.target.value))}
+            />
+            <InputField
+                label="Raktárhely"
+                placeholder="Pl. A-12-03"
+                value={location ?? ""}
+                onChange={(e) => setLocation(e.target.value || null)}
+            />
         </Modal>
     )
 }

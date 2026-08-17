@@ -1,5 +1,6 @@
-import { LoaderCircle, X } from "lucide-react";
+import { X } from "lucide-react";
 import type { ModalProps } from "../../types/Props"
+import { SubmitButton } from "./form/SubmitButton"
 
 export const Modal = ({
     isOpen,
@@ -28,7 +29,6 @@ export const Modal = ({
                 </div>
 
                 <form onSubmit={(e) => { e.preventDefault(); onSubmit?.(e); }} className="space-y-3.5">
-
                     {children}
 
                     {error && (
@@ -38,27 +38,20 @@ export const Modal = ({
                     )}
 
                     <div className="flex items-center justify-end gap-3 pt-2">
-                        <button
+                        <SubmitButton
                             type="button"
+                            variant="secondary"
                             onClick={onClose}
-                            className="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-sm font-medium transition-all"
-                        >
-                            {cancelText}
-                        </button>
-                        <button
-                            disabled={isLoading}
-                            className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                            text={cancelText}
+                            className="px-4 py-2 rounded-xl"
+                        />
+                        <SubmitButton
                             type="submit"
-                        >
-                            {isLoading ? (
-                                <LoaderCircle className="animate-spin h-4 w-4 text-white" />
-                            ) : (
-                                <>
-                                    {submitIcon}
-                                    {submitText}
-                                </>
-                            )}
-                        </button>
+                            loading={isLoading}
+                            icon={submitIcon}
+                            text={submitText}
+                            className="px-5 py-2 rounded-xl"
+                        />
                     </div>
                 </form>
             </div>

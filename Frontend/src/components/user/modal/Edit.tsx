@@ -6,10 +6,9 @@ import { Check, Save } from "lucide-react";
 import { ROLE_OPTIONS } from "../../../constants/roles"
 import { Modal } from "../../common/Modal"
 import { validateUsername, validateEmail, validatePhoneNumber, validateRequired } from "../../../utils/validators"
-
+import { InputField } from "../../common/form/InputField"
 
 export const EditUser = ({ isOpen, closeModal, user, onSuccess }: UserEditModalProps) => {
-
     const [formData, setFormData] = useState<UserUpdateRequest>({
         username: "",
         email: "",
@@ -21,13 +20,10 @@ export const EditUser = ({ isOpen, closeModal, user, onSuccess }: UserEditModalP
     const [error, setError] = useState<string | null>(null)
 
     const handleRoles = (role: UserRole) => {
-        setFormData(prev => {
-            if (prev.roles.includes(role)) {
-                return { ...prev, roles: prev.roles.filter(r => r !== role) }
-            } else {
-                return { ...prev, roles: [...prev.roles, role] }
-            }
-        })
+        setFormData(prev => ({
+            ...prev,
+            roles: prev.roles.includes(role) ? prev.roles.filter(r => r !== role) : [...prev.roles, role]
+        }))
     }
 
     const isValid = (): boolean => {
@@ -41,8 +37,7 @@ export const EditUser = ({ isOpen, closeModal, user, onSuccess }: UserEditModalP
     }
 
     const handleSubmit = async () => {
-        if (!user) return
-        if (!isValid()) return
+        if (!user || !isValid()) return
         setError(null)
         setIsLoading(true)
 
@@ -71,6 +66,7 @@ export const EditUser = ({ isOpen, closeModal, user, onSuccess }: UserEditModalP
     }, [user, isOpen])
 
     if (!isOpen || !user) return null
+
     return (
         <Modal
             isOpen={isOpen}
@@ -84,45 +80,31 @@ export const EditUser = ({ isOpen, closeModal, user, onSuccess }: UserEditModalP
             cancelText="Mégse"
             maxWidth="max-w-md"
         >
-            <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Név</label>
-                <input
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all"
-                    type="text"
-                    placeholder="Név..."
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                />
-            </div>
+            <InputField
+                label="Név"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+            />
 
-            <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">E-mail</label>
-                <input
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all"
-                    type="text"
-                    placeholder="E-mail..."
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-            </div>
+            <InputField
+                label="E-mail"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
 
-            <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Telefonszám</label>
-                <input
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all"
-                    type="text"
-                    placeholder="Telefonszám..."
-                    value={formData.phoneNumber}
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                />
-            </div>
+            <InputField
+                label="Telefonszám"
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+            />
 
             <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Válassza ki a felhasználó szerepét</label>
-
                 <div className="grid grid-cols-2 gap-2.5">
                     {ROLE_OPTIONS.map(role => {
-                        const isSelected = formData.roles.includes(role.key)
+                        const isSelected = formData.roles.includes(role.key as UserRole)
                         return (
                             <button
                                 type="button"

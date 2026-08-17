@@ -1,22 +1,21 @@
 import { useState } from "react"
 import type { UserCreateModalProps } from "../../../types/user/UserProps"
 import type { UserCreateRequest, UserRole } from "../../../types/user/User"
-import { Eye, EyeOff, Check, Plus } from "lucide-react"
+import { Check, Plus } from "lucide-react"
 import { createUser } from "../../../services/userService"
 import { ROLE_OPTIONS } from "../../../constants/roles"
 import { Modal } from "../../common/Modal"
 import { validateUsername, validateEmail, validatePassword, validatePasswordConfirmation, validatePhoneNumber, validateRequired } from "../../../utils/validators"
+import { InputField } from "../../common/form/InputField"
+import { PasswordField } from "../../common/form/PasswordField"
 
 export const CreateUser = ({ isOpen, closeModal, onSuccess }: UserCreateModalProps) => {
-
     const [username, setUsername] = useState<string>("")
     const [email, setEmail] = useState<string>("")
     const [password, setPassword] = useState<string>("")
     const [passwordConfirmation, setPasswordConfirmation] = useState<string>("")
     const [phoneNumber, setPhoneNumber] = useState<string>("")
     const [roles, setRoles] = useState<UserRole[]>(["OPERATOR"])
-    const [showPassword, setShowPassword] = useState<boolean>(false)
-    const [showPasswordConfirmation, setShowPasswordConfirmation] = useState<boolean>(false)
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -32,13 +31,7 @@ export const CreateUser = ({ isOpen, closeModal, onSuccess }: UserCreateModalPro
     }
 
     const handleRoleChange = (role: UserRole) => {
-        setRoles(prev => {
-            if (prev.includes(role)) {
-                return prev.filter(r => r !== role)
-            } else {
-                return [...prev, role]
-            }
-        })
+        setRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role])
     }
 
     const handleSubmit = async () => {
@@ -79,89 +72,48 @@ export const CreateUser = ({ isOpen, closeModal, onSuccess }: UserCreateModalPro
             submitIcon={<Plus size={18} />}
             cancelText="Mégse"
         >
-            <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Név</label>
-                <input
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all"
-                    type="text"
-                    placeholder="Név..."
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                />
-            </div>
+            <InputField
+                label="Név"
+                placeholder="Név..."
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+            />
 
-            <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">E-mail</label>
-                <input
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all"
-                    type="text"
-                    placeholder="E-mail..."
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                />
-            </div>
+            <InputField
+                label="E-mail"
+                type="email"
+                placeholder="E-mail..."
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+            />
 
-            <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Telefonszám</label>
-                <input
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all"
-                    type="text"
-                    placeholder="Telefonszám..."
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                />
-            </div>
+            <InputField
+                label="Telefonszám"
+                type="tel"
+                placeholder="Telefonszám..."
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+            />
 
-            <div className="flex flex-col gap-1.5">
-                <label htmlFor="password" className="text-sm font-semibold text-gray-300">Jelszó</label>
-                <div className="relative">
-                    <input
-                        type={showPassword ? "text" : "password"}
-                        id="password"
-                        name="password"
-                        placeholder="Adja meg jelszavát"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-4 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all duration-200"
-                    />
-                    <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors duration-200 outline-none"
-                    >
-                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                </div>
-            </div>
+            <PasswordField
+                label="Jelszó"
+                placeholder="Adja meg jelszavát"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+            />
 
-            <div className="flex flex-col gap-1.5">
-                <label htmlFor="passwordConfirmation" className="text-sm font-semibold text-gray-300">Jelszó megerősítése</label>
-                <div className="relative">
-                    <input
-                        type={showPasswordConfirmation ? "text" : "password"}
-                        id="passwordConfirmation"
-                        name="passwordConfirmation"
-                        placeholder="Adja meg jelszavát"
-                        value={passwordConfirmation}
-                        onChange={(e) => setPasswordConfirmation(e.target.value)}
-                        className="w-full pl-4 pr-12 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all duration-200"
-                    />
-                    <button
-                        type="button"
-                        onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors duration-200 outline-none"
-                    >
-                        {showPasswordConfirmation ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                </div>
-            </div>
+            <PasswordField
+                label="Jelszó megerősítése"
+                placeholder="Adja meg jelszavát újra"
+                value={passwordConfirmation}
+                onChange={(e) => setPasswordConfirmation(e.target.value)}
+            />
 
             <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Válassza ki a felhasználó szerepét</label>
-
                 <div className="grid grid-cols-2 gap-2.5">
                     {ROLE_OPTIONS.map(role => {
-                        const isSelected = roles.includes(role.key)
+                        const isSelected = roles.includes(role.key as UserRole)
                         return (
                             <button
                                 type="button"
@@ -185,3 +137,4 @@ export const CreateUser = ({ isOpen, closeModal, onSuccess }: UserCreateModalPro
         </Modal>
     )
 }
+

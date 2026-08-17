@@ -1,14 +1,14 @@
-import { Plus } from "lucide-react"
+﻿import { Plus } from "lucide-react"
 import type { ProductCreateRequest } from "../../../types/product/Product"
 import { useState } from "react"
 import { createProduct } from "../../../services/productService"
 import { Modal } from "../../common/Modal"
 import { validateRequired, validateMinLength, validateMaxLength } from "../../../utils/validators"
 import type { CreateModalProps } from "../../../types/product/ProductProps"
-
+import { InputField } from "../../common/form/InputField"
+import { TextAreaField } from "../../common/form/TextAreaField"
 
 export const CreateModal = ({ isOpen, onClose, onSuccess }: CreateModalProps) => {
-
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [isModalError, setIsModalError] = useState<string | null>(null)
     const [formCreateData, setFormCreateData] = useState<ProductCreateRequest>({
@@ -19,26 +19,20 @@ export const CreateModal = ({ isOpen, onClose, onSuccess }: CreateModalProps) =>
     })
 
     function isValid(): boolean {
-        const MIN_NAME_LENGTH = 5;
-        const MIN_UNIT_LENGTH = 2;
-        const MAX_DESC_LENGTH = 50;
-
         const error = validateRequired(formCreateData.sku, "cikkszám")
-            || validateMinLength(formCreateData.name, MIN_NAME_LENGTH, "cikk megnevezése")
-            || validateMinLength(formCreateData.unit, MIN_UNIT_LENGTH, "mértékegység")
-            || validateMaxLength(formCreateData.description, MAX_DESC_LENGTH, "leírás")
+            || validateMinLength(formCreateData.name, 5, "cikk megnevezése")
+            || validateMinLength(formCreateData.unit, 2, "mértékegység")
+            || validateMaxLength(formCreateData.description, 50, "leírás")
 
         if (error) {
             setIsModalError(error)
             return false
         }
-
         return true
     }
 
     const handleSubmit = async () => {
         setIsModalError(null)
-
         if (!isValid()) return
         setIsLoading(true)
         try {
@@ -67,49 +61,31 @@ export const CreateModal = ({ isOpen, onClose, onSuccess }: CreateModalProps) =>
             submitIcon={<Plus size={18} />}
             cancelText="Mégse"
         >
-            <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cikkszám</label>
-                <input
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all"
-                    type="text"
-                    placeholder="Pl. PROD-001"
-                    value={formCreateData.sku}
-                    onChange={(e) => setFormCreateData({ ...formCreateData, sku: e.target.value })}
-                />
-            </div>
-
-            <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cikk megnevezése</label>
-                <input
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all"
-                    type="text"
-                    placeholder="Pl. Fém alkatrész X"
-                    value={formCreateData.name}
-                    onChange={(e) => setFormCreateData({ ...formCreateData, name: e.target.value })}
-                />
-            </div>
-
-            <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Leírás</label>
-                <textarea
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all resize-none"
-                    rows={2}
-                    placeholder="Rövid termékleírás..."
-                    value={formCreateData.description || ""}
-                    onChange={(e) => setFormCreateData({ ...formCreateData, description: e.target.value })}
-                />
-            </div>
-
-            <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Mértékegység</label>
-                <input
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all"
-                    type="text"
-                    placeholder="Pl. db, kg, m"
-                    value={formCreateData.unit}
-                    onChange={(e) => setFormCreateData({ ...formCreateData, unit: e.target.value })}
-                />
-            </div>
+            <InputField
+                label="Cikkszám"
+                placeholder="Pl. PROD-001"
+                value={formCreateData.sku}
+                onChange={(e) => setFormCreateData({ ...formCreateData, sku: e.target.value })}
+            />
+            <InputField
+                label="Cikk megnevezése"
+                placeholder="Pl. Fém alkatrész X"
+                value={formCreateData.name}
+                onChange={(e) => setFormCreateData({ ...formCreateData, name: e.target.value })}
+            />
+            <TextAreaField
+                label="Leírás"
+                rows={2}
+                placeholder="Rövid termékleírás..."
+                value={formCreateData.description || ""}
+                onChange={(e) => setFormCreateData({ ...formCreateData, description: e.target.value })}
+            />
+            <InputField
+                label="Mértékegység"
+                placeholder="Pl. db, kg, m"
+                value={formCreateData.unit}
+                onChange={(e) => setFormCreateData({ ...formCreateData, unit: e.target.value })}
+            />
         </Modal>
     )
 }
