@@ -1,4 +1,4 @@
-import type { User } from "../user/User";
+import type { User, UserResponse } from "../user/User";
 import type { ProductResponse } from "../product/Product";
 import type { WorkOrderPriority, WorkOrderResponse, WorkOrderStatus } from "./workOrder";
 
@@ -18,8 +18,10 @@ export interface WorkOrderFilterBarProps {
 
 export interface WorkOrderCardProps {
     order: WorkOrderResponse,
+    users: UserResponse[],
     onUpdateStatus: (order: WorkOrderResponse, newStatus: WorkOrderStatus) => void,
-    onEditOrder: (order: WorkOrderResponse) => void
+    onEditOrder: (order: WorkOrderResponse) => void,
+    onAssignUser: (orderId: string, userId: string) => Promise<void>
 }
 
 export interface CreateWorkOrderModalProps {

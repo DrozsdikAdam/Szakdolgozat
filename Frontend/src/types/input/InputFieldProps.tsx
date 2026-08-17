@@ -11,7 +11,7 @@ export interface PasswordFieldProps extends InputHTMLAttributes<HTMLInputElement
 }
 
 export interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
-    label: string
+    label?: string
     options?: { key: string; label: string }[],
     placeholderOption?: string,
     error?: string | null
