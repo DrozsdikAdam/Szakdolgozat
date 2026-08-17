@@ -13,7 +13,10 @@ export interface WorkOrderFilterBarProps {
     setStatusFilter: (status: WorkOrderStatus | "ALL") => void,
     priorityFilter: WorkOrderPriority | "ALL",
     setPriorityFilter: (priority: WorkOrderPriority | "ALL") => void,
-    openCreateModal: () => void
+    openCreateModal: () => void,
+    workOrderUserFilter: string,
+    setWorkOrderUserFilter: (user: string) => void,
+    activeWorkers: { id: string; username: string }[]
 }
 
 export interface WorkOrderCardProps {

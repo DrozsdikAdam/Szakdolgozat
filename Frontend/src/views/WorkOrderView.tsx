@@ -25,6 +25,7 @@ export const WorkOrderView = () => {
     const [searchTerm, setSearchTerm] = useState<string>("")
     const [statusFilter, setStatusFilter] = useState<WorkOrderStatus | "ALL">("ALL")
     const [priorityFilter, setPriorityFilter] = useState<WorkOrderPriority | "ALL">("ALL")
+    const [workOrderUserFilter, setWorkOrderUserFilter] = useState<string | "ALL" | "UNASSIGNED">("ALL")
 
     const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false)
     const [selectedEditOrder, setSelectedEditOrder] = useState<WorkOrderResponse | null>(null)
@@ -84,6 +85,11 @@ export const WorkOrderView = () => {
         if (priorityFilter !== "ALL") {
             filtered = filtered.filter(order => order.priority === priorityFilter)
         }
+        if (workOrderUserFilter === "UNASSIGNED") {
+            filtered = filtered.filter(order => !order.assignedUserId)
+        } else if (workOrderUserFilter !== "ALL") {
+            filtered = filtered.filter(order => order.assignedUserId === workOrderUserFilter)
+        }
         if (searchTerm.trim()) {
             const term = searchTerm.toLowerCase().trim()
             filtered = filtered.filter(order =>
@@ -95,7 +101,17 @@ export const WorkOrderView = () => {
             )
         }
         return filtered
-    }, [orders, statusFilter, priorityFilter, searchTerm])
+    }, [orders, statusFilter, priorityFilter, workOrderUserFilter, searchTerm])
+
+    const activeWorkers = useMemo(() => {
+        const workerMap = new Map<string, string>()
+        orders.forEach(order => {
+            if (order.assignedUserId && order.assignedUserName) {
+                workerMap.set(order.assignedUserId, order.assignedUserName)
+            }
+        })
+        return Array.from(workerMap.entries()).map(([id, username]) => ({ id, username }))
+    }, [orders])
 
     const handleAssignUser = async (orderId: string, userId: string): Promise<void> => {
         setError(null)
@@ -130,7 +146,18 @@ export const WorkOrderView = () => {
 
                 <WorkOrderStatsCard orders={orders} />
 
-                <WorkOrderFilterBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} statusFilter={statusFilter} setStatusFilter={setStatusFilter} priorityFilter={priorityFilter} setPriorityFilter={setPriorityFilter} openCreateModal={() => setIsCreateOpen(true)} />
+                <WorkOrderFilterBar
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    priorityFilter={priorityFilter}
+                    setPriorityFilter={setPriorityFilter}
+                    openCreateModal={() => setIsCreateOpen(true)}
+                    workOrderUserFilter={workOrderUserFilter}
+                    setWorkOrderUserFilter={setWorkOrderUserFilter}
+                    activeWorkers={activeWorkers}
+                />
 
                 {error &&
                     <div className="text-left text-red-400 text-sm font-medium">{error}</div>

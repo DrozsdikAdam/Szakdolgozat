@@ -3,7 +3,7 @@ import type { SelectFieldProps } from "../../../types/input/InputFieldProps"
 export const SelectField = ({ label, error, options, placeholderOption, ...props }: SelectFieldProps) => {
     return (
         <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{label}</label>
+            {label && <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{label}</label>}
             <select
                 {...props}
                 value={props.value}
