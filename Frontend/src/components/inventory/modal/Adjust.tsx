@@ -34,7 +34,7 @@ export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: Adj
     }
 
     const handleSubmit = async () => {
-        if (!isValid()) return
+        if (!inventory || !inventory.productId || !isValid()) return;
         setIsLoading(true)
         setError(null)
 

@@ -50,7 +50,7 @@ export const validatePhoneNumber = (phoneNumber?: string, required: boolean = fa
     return null;
 }
 
-export const validateRequired = (value: string | number | unknown[], fieldName: string): string | null => {
+export const validateRequired = (value: unknown, fieldName: string): string | null => {
     if (value === undefined || value === null || (typeof value === "string" && !value.trim()) || (Array.isArray(value) && value.length === 0))
         return `A ${fieldName} mező kitöltése kötelező!`
 
