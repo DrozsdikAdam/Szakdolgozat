@@ -1,9 +1,13 @@
 import type { WorkOrderCardProps } from "../../types/workorder/workOrderProps"
-import { WorkOrderPriorityBadge, WorkOrderStatusBadge } from "../Badges"
+import { WorkOrderPriorityBadge, WorkOrderStatusBadge } from "../common/Badges"
+import { SelectField } from "../common/form/SelectField"
 import { WorkOrderActionButton } from "./Buttons"
 import { Pencil } from "lucide-react"
 
-export const WorkOrderCard = ({ order, onUpdateStatus, onEditOrder }: WorkOrderCardProps) => {
+export const WorkOrderCard = ({ order, onUpdateStatus, onEditOrder, users, onAssignUser }: WorkOrderCardProps) => {
+
+    const isCompleted = order.status === "COMPLETED" || order.status === "CANCELLED"
+
     const progressPercentage = order.targetQuantity > 0
         ? Math.min(100, Math.max(0, (order.producedQuantity / order.targetQuantity) * 100))
         : 0
@@ -57,7 +61,25 @@ export const WorkOrderCard = ({ order, onUpdateStatus, onEditOrder }: WorkOrderC
                     <div className="flex items-center gap-1.5 text-slate-400 font-semibold">
                         <span>Felelős & Selejt</span>
                     </div>
-                    <div className="text-slate-200 font-medium">{order.assignedUserName || "Nincs felelős"}</div>
+
+                    {isCompleted ? (
+                        <div className="text-slate-200 font-medium">{order.assignedUserName || "Nincs felelős"}</div>
+                    ) : (
+                        <SelectField
+                            value={order.assignedUserId || ""}
+                            onChange={(e) => {
+                                const selectedUserId = e.target.value
+                                if (selectedUserId && selectedUserId !== order.assignedUserId) {
+                                    onAssignUser(order.id, selectedUserId)
+                                }
+                            }}
+                            placeholderOption="-- Nincs felelős --"
+                        >
+                            {users.map((user) => (
+                                <option key={user.id} value={user.id}>{user.username}</option>
+                            ))}
+                        </SelectField>
+                    )}
                     <div className="text-slate-400">Selejt: <span className="text-rose-400 font-bold">{order.scrapQuantity} db</span></div>
                 </div>
 

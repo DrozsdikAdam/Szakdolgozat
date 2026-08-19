@@ -1,7 +1,7 @@
 import type { Props } from "../types/Props";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/UseAuth";
-import { LoadingSpinner } from "./LoadingSpinner";
+import { LoadingSpinner } from "./common/LoadingSpinner";
 
 export const ProtectedRoute = ({ children, allowedRoles }: Props) => {
     const { user, loading } = useAuth();

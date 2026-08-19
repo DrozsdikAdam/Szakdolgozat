@@ -1,11 +1,10 @@
-package hu.mes.backend.services;
+package hu.mes.backend.security;
 
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import hu.mes.backend.repositories.UserRepository;
-import hu.mes.backend.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 
 @Service

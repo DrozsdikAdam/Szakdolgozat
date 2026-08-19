@@ -11,18 +11,18 @@ import hu.mes.backend.mappers.ProductMapper;
 import hu.mes.backend.models.Product;
 import hu.mes.backend.repositories.ProductRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ProductService {
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final InventoryService inventoryService;
 
-    @Transactional
     public ProductResponse createProduct(ProductCreateRequest request) {
         if (request == null || productRepository.existsBySku(request.getSku()))
             throw new IllegalArgumentException("A termék nem létezik vagy a SKU már létezik.");
@@ -66,7 +66,6 @@ public class ProductService {
         productRepository.save(product);
     }
 
-    @Transactional
     public ProductResponse updateProduct(UUID id, ProductCreateRequest request) {
         Product existingProduct = getProductEntityById(id);
 
@@ -90,21 +89,18 @@ public class ProductService {
         return productMapper.convertToResponses(productRepository.findByActiveFalse());
     }
 
-    @Transactional
     public void deactivateProduct(UUID id) {
         Product product = getProductEntityById(id);
         product.setActive(false);
         productRepository.save(product);
     }
 
-    @Transactional
     public void activateProduct(UUID id) {
         Product product = getProductEntityById(id);
         product.setActive(true);
         productRepository.save(product);
     }
 
-    @Transactional
     public void restoreProduct(UUID id) {
         Product product = productRepository.findDeletedById(id)
                 .orElseThrow(() -> new EntityNotFoundException("A keresett termék nem található!"));

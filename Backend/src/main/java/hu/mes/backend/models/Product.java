@@ -1,6 +1,5 @@
 package hu.mes.backend.models;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.hibernate.annotations.SQLRestriction;
@@ -10,7 +9,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,7 +24,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Product {
+public class Product extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -41,11 +39,4 @@ public class Product {
     private Boolean active = true;
     @Builder.Default
     private Boolean deleted = false;
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
-
 }

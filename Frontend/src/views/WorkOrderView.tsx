@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from "react"
-import { Background } from "../components/Background"
+import { Background } from "../components/common/Background"
 import type { WorkOrderPriority, WorkOrderResponse, WorkOrderStatus, WorkOrderStatusUpdateRequest } from "../types/workorder/workOrder"
 import type { ProductResponse } from "../types/product/Product"
 import type { UserResponse } from "../types/user/User"
-import { LoadingSpinner } from "../components/LoadingSpinner"
+import { LoadingSpinner } from "../components/common/LoadingSpinner"
 import { getProducts } from "../services/productService"
-import { getAllWorkOrders, updateWorkOrderStatus } from "../services/workOrderService"
+import { getWorkOrders, updateWorkOrderStatus, updateWorkOrderUser } from "../services/workOrderService"
 import { EditWorkOrder } from "../components/workorder/modal/Edit"
 import { CreateWorkOrder } from "../components/workorder/modal/Create"
 import { getAssignableUsers } from "../services/userService"
-import { Title } from "../components/Title"
+import { Title } from "../components/common/Title"
 import { WorkOrderStatsCard } from "../components/workorder/StatsCard"
 import { WorkOrderFilterBar } from "../components/workorder/FilterBar"
 import { WorkOrderCard } from "../components/workorder/Card"
@@ -25,6 +25,7 @@ export const WorkOrderView = () => {
     const [searchTerm, setSearchTerm] = useState<string>("")
     const [statusFilter, setStatusFilter] = useState<WorkOrderStatus | "ALL">("ALL")
     const [priorityFilter, setPriorityFilter] = useState<WorkOrderPriority | "ALL">("ALL")
+    const [workOrderUserFilter, setWorkOrderUserFilter] = useState<string | "ALL" | "UNASSIGNED">("ALL")
 
     const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false)
     const [selectedEditOrder, setSelectedEditOrder] = useState<WorkOrderResponse | null>(null)
@@ -62,7 +63,7 @@ export const WorkOrderView = () => {
         try {
             let [productsData, ordersData, usersData] = await Promise.all([
                 getProducts(),
-                getAllWorkOrders(),
+                getWorkOrders(),
                 getAssignableUsers()
             ])
             setProducts(productsData)
@@ -84,6 +85,11 @@ export const WorkOrderView = () => {
         if (priorityFilter !== "ALL") {
             filtered = filtered.filter(order => order.priority === priorityFilter)
         }
+        if (workOrderUserFilter === "UNASSIGNED") {
+            filtered = filtered.filter(order => !order.assignedUserId)
+        } else if (workOrderUserFilter !== "ALL") {
+            filtered = filtered.filter(order => order.assignedUserId === workOrderUserFilter)
+        }
         if (searchTerm.trim()) {
             const term = searchTerm.toLowerCase().trim()
             filtered = filtered.filter(order =>
@@ -95,7 +101,30 @@ export const WorkOrderView = () => {
             )
         }
         return filtered
-    }, [orders, statusFilter, priorityFilter, searchTerm])
+    }, [orders, statusFilter, priorityFilter, workOrderUserFilter, searchTerm])
+
+    const activeWorkers = useMemo(() => {
+        const workerMap = new Map<string, string>()
+        orders.forEach(order => {
+            if (order.assignedUserId && order.assignedUserName) {
+                workerMap.set(order.assignedUserId, order.assignedUserName)
+            }
+        })
+        return Array.from(workerMap.entries()).map(([id, username]) => ({ id, username }))
+    }, [orders])
+
+    const handleAssignUser = async (orderId: string, userId: string): Promise<void> => {
+        setError(null)
+        setIsLoading(true)
+        try {
+            await updateWorkOrderUser(orderId, userId)
+            loadData()
+        } catch (error) {
+            setError(error instanceof Error ? error.message : "Ismeretlen hiba történt")
+        } finally {
+            setIsLoading(false)
+        }
+    }
 
     useEffect(() => {
         loadData()
@@ -117,7 +146,18 @@ export const WorkOrderView = () => {
 
                 <WorkOrderStatsCard orders={orders} />
 
-                <WorkOrderFilterBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} statusFilter={statusFilter} setStatusFilter={setStatusFilter} priorityFilter={priorityFilter} setPriorityFilter={setPriorityFilter} openCreateModal={() => setIsCreateOpen(true)} />
+                <WorkOrderFilterBar
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    priorityFilter={priorityFilter}
+                    setPriorityFilter={setPriorityFilter}
+                    openCreateModal={() => setIsCreateOpen(true)}
+                    workOrderUserFilter={workOrderUserFilter}
+                    setWorkOrderUserFilter={setWorkOrderUserFilter}
+                    activeWorkers={activeWorkers}
+                />
 
                 {error &&
                     <div className="text-left text-red-400 text-sm font-medium">{error}</div>
@@ -130,7 +170,14 @@ export const WorkOrderView = () => {
                 {filteredOrders.length > 0 && (
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                         {filteredOrders.map((order) => (
-                            <WorkOrderCard key={order.id} order={order} onUpdateStatus={handleUpdateStatus} onEditOrder={(ord) => setSelectedEditOrder(ord)} />
+                            <WorkOrderCard
+                                key={order.id}
+                                order={order}
+                                users={users}
+                                onUpdateStatus={handleUpdateStatus}
+                                onEditOrder={(ord) => setSelectedEditOrder(ord)}
+                                onAssignUser={handleAssignUser}
+                            />
                         ))}
                     </div>
                 )}

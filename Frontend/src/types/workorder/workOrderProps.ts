@@ -1,4 +1,4 @@
-import type { User } from "../user/User";
+import type { User, UserResponse } from "../user/User";
 import type { ProductResponse } from "../product/Product";
 import type { WorkOrderPriority, WorkOrderResponse, WorkOrderStatus } from "./workOrder";
 
@@ -13,13 +13,18 @@ export interface WorkOrderFilterBarProps {
     setStatusFilter: (status: WorkOrderStatus | "ALL") => void,
     priorityFilter: WorkOrderPriority | "ALL",
     setPriorityFilter: (priority: WorkOrderPriority | "ALL") => void,
-    openCreateModal: () => void
+    openCreateModal: () => void,
+    workOrderUserFilter: string,
+    setWorkOrderUserFilter: (user: string) => void,
+    activeWorkers: { id: string; username: string }[]
 }
 
 export interface WorkOrderCardProps {
     order: WorkOrderResponse,
+    users: UserResponse[],
     onUpdateStatus: (order: WorkOrderResponse, newStatus: WorkOrderStatus) => void,
-    onEditOrder: (order: WorkOrderResponse) => void
+    onEditOrder: (order: WorkOrderResponse) => void,
+    onAssignUser: (orderId: string, userId: string) => Promise<void>
 }
 
 export interface CreateWorkOrderModalProps {

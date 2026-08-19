@@ -1,6 +1,6 @@
 import { Mail, Pencil, Phone } from "lucide-react"
 import type { UserCardProps } from "../../types/user/UserProps"
-import { UserStatusBadge, UserRoleBadge } from "../Badges"
+import { UserStatusBadge, UserRoleBadge } from "../common/Badges"
 
 export const Card = ({ user, onEdit, onPromote, onToggleStatus }: UserCardProps) => {
     return (

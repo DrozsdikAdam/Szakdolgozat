@@ -5,12 +5,12 @@ import {
     getDeletedProducts,
     getInactiveProducts,
 } from "../services/productService"
-import { Background } from "../components/Background"
-import { CreateModal } from "../components/product/modals/Create"
-import { EditModal } from "../components/product/modals/Edit"
-import { LoadingSpinner } from "../components/LoadingSpinner"
+import { Background } from "../components/common/Background"
+import { CreateModal } from "../components/product/modal/Create"
+import { EditModal } from "../components/product/modal/Edit"
+import { LoadingSpinner } from "../components/common/LoadingSpinner"
 
-import { Title } from "../components/Title"
+import { Title } from "../components/common/Title"
 import { Stats } from "../components/product/Stats"
 import { FilterBar } from "../components/product/FilterBar"
 import type { FilterBarProps, StatsProps, TableProps } from "../types/product/ProductProps"

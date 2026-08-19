@@ -18,8 +18,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 
+import hu.mes.backend.security.CustomUserDetailsService;
 import hu.mes.backend.security.JwtAuthenticationFilter;
-import hu.mes.backend.services.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 
 @Configuration

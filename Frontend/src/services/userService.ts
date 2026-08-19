@@ -9,17 +9,17 @@ export const getUserById = async (id: string): Promise<UserResponse> => {
     return apiFetch<UserResponse>(`api/users/${id}`);
 };
 
-export const createUser = async (userData: UserCreateRequest): Promise<UserResponse> => {
+export const createUser = async (request: UserCreateRequest): Promise<UserResponse> => {
     return apiFetch<UserResponse>("api/users", {
         method: "POST",
-        body: JSON.stringify(userData)
+        body: JSON.stringify(request)
     });
 };
 
-export const updateUser = async (id: string, userData: UserUpdateRequest): Promise<UserResponse> => {
+export const updateUser = async (id: string, request: UserUpdateRequest): Promise<UserResponse> => {
     return apiFetch<UserResponse>(`api/users/${id}`, {
         method: "PATCH",
-        body: JSON.stringify(userData)
+        body: JSON.stringify(request)
     });
 };
 

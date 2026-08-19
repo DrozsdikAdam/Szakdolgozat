@@ -1,7 +1,7 @@
 import type { InventoryResponse, InventoryUpdateRequest } from "../types/inventory/inventory";
 import { apiFetch } from "../utils/apiFetch";
 
-export const getAllInventories = async (): Promise<InventoryResponse[]> => {
+export const getInventories = async (): Promise<InventoryResponse[]> => {
     return apiFetch<InventoryResponse[]>("api/inventory");
 };
 
