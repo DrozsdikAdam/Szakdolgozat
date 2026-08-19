@@ -37,6 +37,7 @@ public class WorkOrderService {
 	private final ProductRepository productRepository;
 	private final WorkOrderMapper workOrderMapper;
 	private final UserRepository userRepository;
+	private final BOMInventoryService bomInventoryService;
 
 	public WorkOrderResponse createWorkOrder(WorkOrderCreateRequest request) {
 		String orderNumber = generateOrderNumber();
@@ -48,6 +49,16 @@ public class WorkOrderService {
 				? userRepository.findById(request.getAssignedUserId()).orElse(null)
 				: null;
 
+		if (request.getStatus().equals(WorkOrderStatus.IN_PROGRESS)
+				|| request.getStatus().equals(WorkOrderStatus.PREPARED)) {
+			if (user == null)
+				throw new IllegalStateException(
+						"A gyártási folyamat nem indítható el felelős operátor hozzárendelése nélkül! Kérjük, előbb rendeljen hozzá felelőst a szerkesztés gombra kattintva.");
+
+			bomInventoryService.validateComponentStock(product, request.getTargetQuantity());
+			bomInventoryService.reserveComponentStock(product, request.getTargetQuantity());
+		}
+
 		WorkOrder workOrder = WorkOrder.builder()
 				.orderNumber(orderNumber)
 				.product(product)
@@ -57,6 +68,7 @@ public class WorkOrderService {
 				.customerName(request.getCustomerName())
 				.assignedUser(user)
 				.build();
+
 		workOrderRepository.save(workOrder);
 		return workOrderMapper.convertToResponse(workOrder);
 	}
@@ -65,32 +77,42 @@ public class WorkOrderService {
 		WorkOrder workOrder = workOrderRepository.findById(id).orElseThrow(
 				() -> new EntityNotFoundException("Rendelés nem található!"));
 
-		if (request.getStatus() != WorkOrderStatus.PLANNED
-				&& request.getStatus() != WorkOrderStatus.CANCELLED) {
-			if (workOrder.getAssignedUser() == null) {
-				throw new IllegalStateException(
-						"A gyártási folyamat nem indítható el felelős operátor hozzárendelése nélkül! Kérjük, előbb rendeljen hozzá felelőst a szerkesztés gombra kattintva.");
-			}
+		WorkOrderStatus oldStatus = workOrder.getStatus();
+		WorkOrderStatus newStatus = request.getStatus();
+
+		if (newStatus != WorkOrderStatus.PLANNED
+				&& newStatus != WorkOrderStatus.CANCELLED
+				&& workOrder.getAssignedUser() == null)
+			throw new IllegalStateException(
+					"A gyártási folyamat nem indítható el felelős operátor hozzárendelése nélkül! Kérjük, előbb rendeljen hozzá felelőst a szerkesztés gombra kattintva.");
+
+		if (oldStatus.equals(WorkOrderStatus.PLANNED)
+				&& (newStatus.equals(WorkOrderStatus.IN_PROGRESS)
+						|| newStatus.equals(WorkOrderStatus.PREPARED))) {
+			bomInventoryService.validateComponentStock(workOrder.getProduct(), workOrder.getTargetQuantity());
+			bomInventoryService.reserveComponentStock(workOrder.getProduct(), workOrder.getTargetQuantity());
 		}
 
-		if (request.getStatus().equals(WorkOrderStatus.COMPLETED))
-			workOrder.setEndDate(LocalDateTime.now());
-
-		else if (request.getStatus().equals(WorkOrderStatus.IN_PROGRESS))
-			workOrder.setStartDate(LocalDateTime.now());
-
-		else if (request.getStatus().equals(WorkOrderStatus.CANCELLED))
-			workOrder.setEndDate(LocalDateTime.now());
-
-		if (request.getStatus().equals(WorkOrderStatus.COMPLETED)) {
+		if (newStatus.equals(WorkOrderStatus.COMPLETED)) {
+			bomInventoryService.consumeComponentStock(workOrder.getProduct(), workOrder.getTargetQuantity());
 			InventoryUpdateRequest stockUpdate = new InventoryUpdateRequest(
 					workOrder.getProduct().getId(),
 					request.getProducedQuantity(),
 					null);
 			inventoryService.adjustStock(stockUpdate);
+			workOrder.setEndDate(LocalDateTime.now());
 		}
 
-		workOrder.setStatus(request.getStatus());
+		if (newStatus.equals(WorkOrderStatus.CANCELLED)) {
+			if (!oldStatus.equals(WorkOrderStatus.PLANNED))
+				bomInventoryService.releaseComponentStock(workOrder.getProduct(), workOrder.getTargetQuantity());
+			workOrder.setEndDate(LocalDateTime.now());
+		}
+
+		if (newStatus.equals(WorkOrderStatus.IN_PROGRESS))
+			workOrder.setStartDate(LocalDateTime.now());
+
+		workOrder.setStatus(newStatus);
 		workOrder.setProducedQuantity(request.getProducedQuantity());
 		workOrder.setScrapQuantity(request.getScrapQuantity());
 
