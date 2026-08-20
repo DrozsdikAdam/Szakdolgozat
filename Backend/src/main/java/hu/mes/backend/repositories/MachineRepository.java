@@ -36,4 +36,6 @@ public interface MachineRepository extends JpaRepository<Machine, UUID> {
 
     List<Machine> findByTypeAndStatus(MachineType type, MachineStatus status);
 
+    List<Machine> findByActiveFalse();
+
 }

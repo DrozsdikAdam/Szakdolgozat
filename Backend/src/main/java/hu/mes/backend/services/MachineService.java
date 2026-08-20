@@ -182,6 +182,28 @@ public class MachineService {
         machineRepository.save(machine);
     }
 
+    public void deactivateMachine(UUID id) {
+        Machine machine = getMachineEntityById(id);
+        machine.setActive(false);
+        machineRepository.save(machine);
+    }
+
+    public void activateMachine(UUID id) {
+        Machine machine = getMachineEntityById(id);
+        machine.setActive(true);
+        machineRepository.save(machine);
+    }
+
+    public List<MachineResponse> getDeletedMachines() {
+        List<Machine> machines = machineRepository.findByDeletedAtNotNull();
+        return machineMapper.convertToResponses(machines);
+    }
+
+    public List<MachineResponse> getInactiveMachines() {
+        List<Machine> machines = machineRepository.findByActiveFalse();
+        return machineMapper.convertToResponses(machines);
+    }
+
     private Machine getMachineEntityById(UUID id) {
         return machineRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("A keresett gép nem található!"));
