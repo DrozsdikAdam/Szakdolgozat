@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import hu.mes.backend.dtos.product.ProductCreateRequest;
 import hu.mes.backend.dtos.product.ProductResponse;
+import hu.mes.backend.dtos.product.ProductUpdateRequest;
 import hu.mes.backend.mappers.ProductMapper;
 import hu.mes.backend.models.Product;
 import hu.mes.backend.repositories.ProductRepository;
@@ -66,7 +67,7 @@ public class ProductService {
         productRepository.save(product);
     }
 
-    public ProductResponse updateProduct(UUID id, ProductCreateRequest request) {
+    public ProductResponse updateProduct(UUID id, ProductUpdateRequest request) {
         Product existingProduct = getProductEntityById(id);
 
         if (!request.getSku().equals(existingProduct.getSku())
