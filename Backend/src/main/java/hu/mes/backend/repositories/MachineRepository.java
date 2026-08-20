@@ -24,9 +24,15 @@ public interface MachineRepository extends JpaRepository<Machine, UUID> {
 
     List<Machine> findByType(MachineType type);
 
+    List<Machine> findByAssignedUserId(UUID id);
+
     Optional<Machine> findBySerialNumber(String serialNumber);
 
     Boolean existsBySerialNumber(String serialNumber);
+
+    List<Machine> findByDeletedAtNotNull();
+
+    Optional<Machine> findByIdAndDeletedAtNotNull(UUID id);
 
     List<Machine> findByTypeAndStatus(MachineType type, MachineStatus status);
 

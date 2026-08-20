@@ -1,6 +1,7 @@
 package hu.mes.backend.dtos.machine;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import hu.mes.backend.models.enums.MachineStatus;
 import hu.mes.backend.models.enums.MachineType;
@@ -29,5 +30,6 @@ public class MachineUpdateRequest {
     private Double idealCycleTimeSeconds;
     private Integer targetPcsPerHour;
     private String location;
+    private UUID assignedUserId;
 
 }
