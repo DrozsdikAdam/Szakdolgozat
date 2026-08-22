@@ -12,15 +12,19 @@ import org.springframework.stereotype.Component;
 
 import hu.mes.backend.models.BOMItem;
 import hu.mes.backend.models.Inventory;
+import hu.mes.backend.models.Machine;
 import hu.mes.backend.models.Product;
 import hu.mes.backend.models.Role;
 import hu.mes.backend.models.User;
 import hu.mes.backend.models.WorkOrder;
+import hu.mes.backend.models.enums.MachineStatus;
+import hu.mes.backend.models.enums.MachineType;
 import hu.mes.backend.models.enums.RolesEnum;
 import hu.mes.backend.models.enums.WorkOrderPriority;
 import hu.mes.backend.models.enums.WorkOrderStatus;
 import hu.mes.backend.repositories.BOMItemRepository;
 import hu.mes.backend.repositories.InventoryRepository;
+import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.ProductRepository;
 import hu.mes.backend.repositories.RoleRepository;
 import hu.mes.backend.repositories.UserRepository;
@@ -38,6 +42,7 @@ public class DataInitializer implements CommandLineRunner {
 	private final BOMItemRepository bomItemRepository;
 	private final WorkOrderRepository workOrderRepository;
 	private final InventoryRepository inventoryRepository;
+	private final MachineRepository machineRepository;
 
 	@Override
 	public void run(String... args) throws Exception {
@@ -47,6 +52,7 @@ public class DataInitializer implements CommandLineRunner {
 		initBOM();
 		initInventory();
 		initWorkOrder();
+		initMachines();
 		System.out.println(">>> MES Rendszer Tesztadatok sikeresen betöltve!");
 	}
 
@@ -114,122 +120,123 @@ public class DataInitializer implements CommandLineRunner {
 	}
 
 	private void initProduct() {
-		if (productRepository.count() == 0) {
-			Product[] products = {
-					Product.builder().name("Üveg alapanyag (Szódamész)").sku("UG-2024")
-							.description("Ipari üveggyártási alapanyag").unit("kg")
-							.active(true).deleted(false).build(),
-					Product.builder().name("Kerámia agyag").sku("KA-2024")
-							.description("Hőkezelt finomkerámia massza")
-							.unit("kg").active(true).deleted(false).build(),
-					Product.builder().name("Szilikon fogantyú").sku("SZ-FOG-01")
-							.description("Hőálló szilikon markolat")
-							.unit("db").active(true).deleted(false).build(),
-					Product.builder().name("Díszcsomagolás (Karton doboz)").sku("DOB-01")
-							.description("Védő és ajándék díszdoboz").unit("db")
-							.active(true).deleted(false).build(),
+		if (productRepository.count() != 0)
+			return;
+		Product[] products = {
+				Product.builder().name("Üveg alapanyag (Szódamész)").sku("UG-2024")
+						.description("Ipari üveggyártási alapanyag").unit("kg")
+						.active(true).deleted(false).build(),
+				Product.builder().name("Kerámia agyag").sku("KA-2024")
+						.description("Hőkezelt finomkerámia massza")
+						.unit("kg").active(true).deleted(false).build(),
+				Product.builder().name("Szilikon fogantyú").sku("SZ-FOG-01")
+						.description("Hőálló szilikon markolat")
+						.unit("db").active(true).deleted(false).build(),
+				Product.builder().name("Díszcsomagolás (Karton doboz)").sku("DOB-01")
+						.description("Védő és ajándék díszdoboz").unit("db")
+						.active(true).deleted(false).build(),
 
-					Product.builder().name("Kávés Bögre").sku("KB-2024")
-							.description("Prémium kerámia bögre szilikon fogantyúval")
-							.unit("db").active(true)
-							.deleted(false).build(),
-					Product.builder().name("Vizes Pohár").sku("VP-2024")
-							.description("3dl-es edzett üveg vizes pohár")
-							.unit("db").active(true).deleted(false).build(),
-					Product.builder().name("Sörös Pohár").sku("SP-2024")
-							.description("0.5L-es vastagfalú söröskorsó")
-							.unit("db").active(true).deleted(false).build(),
-					Product.builder().name("Boros Pohár").sku("BP-2024")
-							.description("4.5dl-es kristály borospohár")
-							.unit("db").active(true).deleted(false).build(),
-					Product.builder().name("Pálinkás Pohár").sku("PP-2024")
-							.description("5cl-es talpas pálinkáspohár")
-							.unit("db").active(true).deleted(false).build(),
-			};
-			for (Product product : products) {
-				productRepository.save(product);
-			}
+				Product.builder().name("Kávés Bögre").sku("KB-2024")
+						.description("Prémium kerámia bögre szilikon fogantyúval")
+						.unit("db").active(true)
+						.deleted(false).build(),
+				Product.builder().name("Vizes Pohár").sku("VP-2024")
+						.description("3dl-es edzett üveg vizes pohár")
+						.unit("db").active(true).deleted(false).build(),
+				Product.builder().name("Sörös Pohár").sku("SP-2024")
+						.description("0.5L-es vastagfalú söröskorsó")
+						.unit("db").active(true).deleted(false).build(),
+				Product.builder().name("Boros Pohár").sku("BP-2024")
+						.description("4.5dl-es kristály borospohár")
+						.unit("db").active(true).deleted(false).build(),
+				Product.builder().name("Pálinkás Pohár").sku("PP-2024")
+						.description("5cl-es talpas pálinkáspohár")
+						.unit("db").active(true).deleted(false).build(),
+		};
+		for (Product product : products) {
+			productRepository.save(product);
 		}
 	}
 
 	private void initBOM() {
-		if (bomItemRepository.count() == 0) {
-			Product rawGlass = productRepository.findBySku("UG-2024").orElse(null);
-			Product rawClay = productRepository.findBySku("KA-2024").orElse(null);
-			Product handle = productRepository.findBySku("SZ-FOG-01").orElse(null);
-			Product box = productRepository.findBySku("DOB-01").orElse(null);
+		if (bomItemRepository.count() != 0)
+			return;
+		Product rawGlass = productRepository.findBySku("UG-2024").orElse(null);
+		Product rawClay = productRepository.findBySku("KA-2024").orElse(null);
+		Product handle = productRepository.findBySku("SZ-FOG-01").orElse(null);
+		Product box = productRepository.findBySku("DOB-01").orElse(null);
 
-			Product mug = productRepository.findBySku("KB-2024").orElse(null);
-			Product waterGlass = productRepository.findBySku("VP-2024").orElse(null);
-			Product beerGlass = productRepository.findBySku("SP-2024").orElse(null);
-			Product wineGlass = productRepository.findBySku("BP-2024").orElse(null);
-			Product shotGlass = productRepository.findBySku("PP-2024").orElse(null);
+		Product mug = productRepository.findBySku("KB-2024").orElse(null);
+		Product waterGlass = productRepository.findBySku("VP-2024").orElse(null);
+		Product beerGlass = productRepository.findBySku("SP-2024").orElse(null);
+		Product wineGlass = productRepository.findBySku("BP-2024").orElse(null);
+		Product shotGlass = productRepository.findBySku("PP-2024").orElse(null);
 
-			if (rawGlass != null && rawClay != null && handle != null && box != null) {
-				if (mug != null) {
-					bomItemRepository.save(BOMItem.builder().parentProduct(mug)
-							.componentProduct(rawClay)
-							.quantity(new BigDecimal("0.3500")).active(true).build());
-					bomItemRepository.save(BOMItem.builder().parentProduct(mug)
-							.componentProduct(handle)
-							.quantity(new BigDecimal("1.0000")).active(true).build());
-					bomItemRepository.save(BOMItem.builder().parentProduct(mug)
-							.componentProduct(box)
-							.quantity(new BigDecimal("1.0000")).active(true).build());
-				}
+		if (rawGlass != null && rawClay != null && handle != null && box != null) {
+			if (mug != null) {
+				bomItemRepository.save(BOMItem.builder().parentProduct(mug)
+						.componentProduct(rawClay)
+						.quantity(new BigDecimal("0.3500")).active(true).build());
+				bomItemRepository.save(BOMItem.builder().parentProduct(mug)
+						.componentProduct(handle)
+						.quantity(new BigDecimal("1.0000")).active(true).build());
+				bomItemRepository.save(BOMItem.builder().parentProduct(mug)
+						.componentProduct(box)
+						.quantity(new BigDecimal("1.0000")).active(true).build());
+			}
 
-				if (waterGlass != null) {
-					bomItemRepository.save(BOMItem.builder().parentProduct(waterGlass)
-							.componentProduct(rawGlass)
-							.quantity(new BigDecimal("0.2500")).active(true).build());
-					bomItemRepository.save(BOMItem.builder().parentProduct(waterGlass)
-							.componentProduct(box)
-							.quantity(new BigDecimal("1.0000")).active(true).build());
-				}
+			if (waterGlass != null) {
+				bomItemRepository.save(BOMItem.builder().parentProduct(waterGlass)
+						.componentProduct(rawGlass)
+						.quantity(new BigDecimal("0.2500")).active(true).build());
+				bomItemRepository.save(BOMItem.builder().parentProduct(waterGlass)
+						.componentProduct(box)
+						.quantity(new BigDecimal("1.0000")).active(true).build());
+			}
 
-				if (beerGlass != null) {
-					bomItemRepository.save(BOMItem.builder().parentProduct(beerGlass)
-							.componentProduct(rawGlass)
-							.quantity(new BigDecimal("0.5500")).active(true).build());
-					bomItemRepository.save(BOMItem.builder().parentProduct(beerGlass)
-							.componentProduct(box)
-							.quantity(new BigDecimal("1.0000")).active(true).build());
-				}
+			if (beerGlass != null) {
+				bomItemRepository.save(BOMItem.builder().parentProduct(beerGlass)
+						.componentProduct(rawGlass)
+						.quantity(new BigDecimal("0.5500")).active(true).build());
+				bomItemRepository.save(BOMItem.builder().parentProduct(beerGlass)
+						.componentProduct(box)
+						.quantity(new BigDecimal("1.0000")).active(true).build());
+			}
 
-				if (wineGlass != null) {
-					bomItemRepository.save(BOMItem.builder().parentProduct(wineGlass)
-							.componentProduct(rawGlass)
-							.quantity(new BigDecimal("0.2000")).active(true).build());
-					bomItemRepository.save(BOMItem.builder().parentProduct(wineGlass)
-							.componentProduct(box)
-							.quantity(new BigDecimal("1.0000")).active(true).build());
-				}
+			if (wineGlass != null) {
+				bomItemRepository.save(BOMItem.builder().parentProduct(wineGlass)
+						.componentProduct(rawGlass)
+						.quantity(new BigDecimal("0.2000")).active(true).build());
+				bomItemRepository.save(BOMItem.builder().parentProduct(wineGlass)
+						.componentProduct(box)
+						.quantity(new BigDecimal("1.0000")).active(true).build());
+			}
 
-				if (shotGlass != null) {
-					bomItemRepository.save(BOMItem.builder().parentProduct(shotGlass)
-							.componentProduct(rawGlass)
-							.quantity(new BigDecimal("0.1000")).active(true).build());
-					bomItemRepository.save(BOMItem.builder().parentProduct(shotGlass)
-							.componentProduct(box)
-							.quantity(new BigDecimal("1.0000")).active(true).build());
-				}
+			if (shotGlass != null) {
+				bomItemRepository.save(BOMItem.builder().parentProduct(shotGlass)
+						.componentProduct(rawGlass)
+						.quantity(new BigDecimal("0.1000")).active(true).build());
+				bomItemRepository.save(BOMItem.builder().parentProduct(shotGlass)
+						.componentProduct(box)
+						.quantity(new BigDecimal("1.0000")).active(true).build());
 			}
 		}
 	}
 
 	private void initInventory() {
-		if (inventoryRepository.count() == 0) {
-			saveInventory("UG-2024", new BigDecimal("500.0000"), new BigDecimal("25.0000"), "A-01-01");
-			saveInventory("KA-2024", new BigDecimal("350.0000"), new BigDecimal("15.0000"), "A-01-02");
-			saveInventory("SZ-FOG-01", new BigDecimal("1200.0000"), new BigDecimal("50.0000"), "B-02-01");
-			saveInventory("DOB-01", new BigDecimal("2500.0000"), new BigDecimal("100.0000"), "B-02-02");
+		if (inventoryRepository.count() != 0)
+			return;
+		saveInventory("UG-2024", new BigDecimal("500.0000"), new BigDecimal("25.0000"), "A-01-01");
+		saveInventory("KA-2024", new BigDecimal("350.0000"), new BigDecimal("15.0000"), "A-01-02");
+		saveInventory("SZ-FOG-01", new BigDecimal("1200.0000"), new BigDecimal("50.0000"), "B-02-01");
+		saveInventory("DOB-01", new BigDecimal("2500.0000"), new BigDecimal("100.0000"), "B-02-02");
 
-			saveInventory("KB-2024", new BigDecimal("150.0000"), new BigDecimal("0.0000"), "K-01-01");
-			saveInventory("VP-2024", new BigDecimal("300.0000"), new BigDecimal("20.0000"), "K-01-02");
-			saveInventory("SP-2024", new BigDecimal("200.0000"), new BigDecimal("10.0000"), "K-01-03");
-			saveInventory("BP-2024", new BigDecimal("180.0000"), new BigDecimal("0.0000"), "K-02-01");
-			saveInventory("PP-2024", new BigDecimal("450.0000"), new BigDecimal("0.0000"), "K-02-02");
-		}
+		saveInventory("KB-2024", new BigDecimal("150.0000"), new BigDecimal("0.0000"), "K-01-01");
+		saveInventory("VP-2024", new BigDecimal("300.0000"), new BigDecimal("20.0000"), "K-01-02");
+		saveInventory("SP-2024", new BigDecimal("200.0000"), new BigDecimal("10.0000"), "K-01-03");
+		saveInventory("BP-2024", new BigDecimal("180.0000"), new BigDecimal("0.0000"), "K-02-01");
+		saveInventory("PP-2024", new BigDecimal("450.0000"), new BigDecimal("0.0000"), "K-02-02");
+
 	}
 
 	private void saveInventory(String sku, BigDecimal quantity, BigDecimal reserved, String location) {
@@ -245,90 +252,168 @@ public class DataInitializer implements CommandLineRunner {
 	}
 
 	private void initWorkOrder() {
-		if (workOrderRepository.count() == 0) {
-			User bela = userRepository.findByName("bela").orElse(null);
-			User tomi = userRepository.findByName("tomi").orElse(null);
-			User zoli = userRepository.findByName("zoli").orElse(null);
+		if (workOrderRepository.count() != 0)
+			return;
 
-			Product mug = productRepository.findBySku("KB-2024").orElse(null);
-			Product beerGlass = productRepository.findBySku("SP-2024").orElse(null);
-			Product wineGlass = productRepository.findBySku("BP-2024").orElse(null);
-			Product waterGlass = productRepository.findBySku("VP-2024").orElse(null);
-			Product shotGlass = productRepository.findBySku("PP-2024").orElse(null);
+		User bela = userRepository.findByName("bela").orElse(null);
+		User tomi = userRepository.findByName("tomi").orElse(null);
+		User zoli = userRepository.findByName("zoli").orElse(null);
 
-			if (mug != null) {
-				workOrderRepository.save(WorkOrder.builder()
-						.orderNumber("WO-20260817-001")
-						.product(mug)
-						.assignedUser(bela)
-						.customerName("Gasztró Trend Kft.")
-						.targetQuantity(new BigDecimal("100.0000"))
-						.producedQuantity(new BigDecimal("100.0000"))
-						.scrapQuantity(new BigDecimal("2.0000"))
-						.status(WorkOrderStatus.COMPLETED)
-						.priority(WorkOrderPriority.HIGH)
-						.startDate(LocalDateTime.now().minusDays(2))
-						.endDate(LocalDateTime.now().minusDays(1))
-						.build());
-			}
+		Product mug = productRepository.findBySku("KB-2024").orElse(null);
+		Product beerGlass = productRepository.findBySku("SP-2024").orElse(null);
+		Product wineGlass = productRepository.findBySku("BP-2024").orElse(null);
+		Product waterGlass = productRepository.findBySku("VP-2024").orElse(null);
+		Product shotGlass = productRepository.findBySku("PP-2024").orElse(null);
 
-			if (beerGlass != null) {
-				workOrderRepository.save(WorkOrder.builder()
-						.orderNumber("WO-20260817-002")
-						.product(beerGlass)
-						.assignedUser(tomi)
-						.customerName("Borsodi Sörgyár Zrt.")
-						.targetQuantity(new BigDecimal("250.0000"))
-						.producedQuantity(new BigDecimal("180.0000"))
-						.scrapQuantity(new BigDecimal("5.0000"))
-						.status(WorkOrderStatus.IN_PROGRESS)
-						.priority(WorkOrderPriority.URGENT)
-						.startDate(LocalDateTime.now().minusHours(5))
-						.build());
-			}
-
-			if (wineGlass != null) {
-				workOrderRepository.save(WorkOrder.builder()
-						.orderNumber("WO-20260817-003")
-						.product(wineGlass)
-						.assignedUser(zoli)
-						.customerName("Tokaj Borászat Kft.")
-						.targetQuantity(new BigDecimal("80.0000"))
-						.producedQuantity(new BigDecimal("80.0000"))
-						.scrapQuantity(new BigDecimal("1.0000"))
-						.status(WorkOrderStatus.QUALITY_CHECK)
-						.priority(WorkOrderPriority.HIGH)
-						.startDate(LocalDateTime.now().minusHours(8))
-						.build());
-			}
-
-			if (waterGlass != null) {
-				workOrderRepository.save(WorkOrder.builder()
-						.orderNumber("WO-20260817-004")
-						.product(waterGlass)
-						.assignedUser(bela)
-						.customerName("Danone Hungary")
-						.targetQuantity(new BigDecimal("150.0000"))
-						.producedQuantity(BigDecimal.ZERO)
-						.scrapQuantity(BigDecimal.ZERO)
-						.status(WorkOrderStatus.PREPARED)
-						.priority(WorkOrderPriority.MEDIUM)
-						.build());
-			}
-
-			if (shotGlass != null) {
-				workOrderRepository.save(WorkOrder.builder()
-						.orderNumber("WO-20260817-005")
-						.product(shotGlass)
-						.assignedUser(null)
-						.customerName("Zwack Unicum Nyrt.")
-						.targetQuantity(new BigDecimal("500.0000"))
-						.producedQuantity(BigDecimal.ZERO)
-						.scrapQuantity(BigDecimal.ZERO)
-						.status(WorkOrderStatus.PLANNED)
-						.priority(WorkOrderPriority.LOW)
-						.build());
-			}
+		if (mug != null) {
+			workOrderRepository.save(WorkOrder.builder()
+					.orderNumber("WO-20260817-001")
+					.product(mug)
+					.assignedUser(bela)
+					.customerName("Gasztró Trend Kft.")
+					.targetQuantity(new BigDecimal("100.0000"))
+					.producedQuantity(new BigDecimal("100.0000"))
+					.scrapQuantity(new BigDecimal("2.0000"))
+					.status(WorkOrderStatus.COMPLETED)
+					.priority(WorkOrderPriority.HIGH)
+					.startDate(LocalDateTime.now().minusDays(2))
+					.endDate(LocalDateTime.now().minusDays(1))
+					.build());
 		}
+
+		if (beerGlass != null) {
+			workOrderRepository.save(WorkOrder.builder()
+					.orderNumber("WO-20260817-002")
+					.product(beerGlass)
+					.assignedUser(tomi)
+					.customerName("Borsodi Sörgyár Zrt.")
+					.targetQuantity(new BigDecimal("250.0000"))
+					.producedQuantity(new BigDecimal("180.0000"))
+					.scrapQuantity(new BigDecimal("5.0000"))
+					.status(WorkOrderStatus.IN_PROGRESS)
+					.priority(WorkOrderPriority.URGENT)
+					.startDate(LocalDateTime.now().minusHours(5))
+					.build());
+		}
+
+		if (wineGlass != null) {
+			workOrderRepository.save(WorkOrder.builder()
+					.orderNumber("WO-20260817-003")
+					.product(wineGlass)
+					.assignedUser(zoli)
+					.customerName("Tokaj Borászat Kft.")
+					.targetQuantity(new BigDecimal("80.0000"))
+					.producedQuantity(new BigDecimal("80.0000"))
+					.scrapQuantity(new BigDecimal("1.0000"))
+					.status(WorkOrderStatus.QUALITY_CHECK)
+					.priority(WorkOrderPriority.HIGH)
+					.startDate(LocalDateTime.now().minusHours(8))
+					.build());
+		}
+
+		if (waterGlass != null) {
+			workOrderRepository.save(WorkOrder.builder()
+					.orderNumber("WO-20260817-004")
+					.product(waterGlass)
+					.assignedUser(bela)
+					.customerName("Danone Hungary")
+					.targetQuantity(new BigDecimal("150.0000"))
+					.producedQuantity(BigDecimal.ZERO)
+					.scrapQuantity(BigDecimal.ZERO)
+					.status(WorkOrderStatus.PREPARED)
+					.priority(WorkOrderPriority.MEDIUM)
+					.build());
+		}
+
+		if (shotGlass != null) {
+			workOrderRepository.save(WorkOrder.builder()
+					.orderNumber("WO-20260817-005")
+					.product(shotGlass)
+					.assignedUser(null)
+					.customerName("Zwack Unicum Nyrt.")
+					.targetQuantity(new BigDecimal("500.0000"))
+					.producedQuantity(BigDecimal.ZERO)
+					.scrapQuantity(BigDecimal.ZERO)
+					.status(WorkOrderStatus.PLANNED)
+					.priority(WorkOrderPriority.LOW)
+					.build());
+		}
+	}
+
+	private void initMachines() {
+		if (machineRepository.count() != 0)
+			return;
+
+		User bela = userRepository.findByName("Béla").orElse(null);
+		User tomi = userRepository.findByName("Tamás").orElse(null);
+		User zoli = userRepository.findByName("Zoltán").orElse(null);
+
+		machineRepository.save(Machine.builder()
+				.name("DMG MORI 5-Tengelyes CNC")
+				.code("DMG-5X")
+				.type(MachineType.CNC)
+				.status(MachineStatus.RUNNING)
+				.manufacturer("DMG MORI")
+				.model("DMU 50")
+				.serialNumber("123456789")
+				.warrantyNumber("123456789")
+				.warrantyEndDate(LocalDateTime.now().plusYears(2))
+				.idealCycleTimeSeconds(12.0)
+				.targetPcsPerHour(300)
+				.location("Csarnok A - Sor 1")
+				.assignedUser(null)
+				.active(true)
+				.build());
+
+		machineRepository.save(Machine.builder()
+				.name("KraussMaffei Fröccsöntő Gép")
+				.code("KM-550")
+				.type(MachineType.INJECTION_MOLDING)
+				.status(MachineStatus.IDLE)
+				.manufacturer("KraussMaffei")
+				.model("CX 550")
+				.serialNumber("987654321")
+				.warrantyNumber("987654321")
+				.warrantyEndDate(LocalDateTime.now().plusYears(2))
+				.idealCycleTimeSeconds(8.0)
+				.targetPcsPerHour(450)
+				.location("Csarnok A - Sor 2")
+				.assignedUser(tomi)
+				.active(true)
+				.build());
+
+		machineRepository.save(Machine.builder()
+				.name("KUKA Hegesztő Robotkar")
+				.code("KR-166")
+				.type(MachineType.ROBOT)
+				.status(MachineStatus.IDLE)
+				.manufacturer("KUKA")
+				.model("KR 166")
+				.serialNumber("246813579")
+				.warrantyNumber("246813579")
+				.warrantyEndDate(LocalDateTime.now().plusYears(2))
+				.idealCycleTimeSeconds(15.0)
+				.targetPcsPerHour(240)
+				.location("Csarnok B - Cell 1")
+				.assignedUser(zoli)
+				.active(true)
+				.build());
+
+		machineRepository.save(Machine.builder()
+				.name("Multivac Automatizált Csomagoló")
+				.code("MVC-2000")
+				.type(MachineType.PACKAGING)
+				.status(MachineStatus.MAINTENANCE)
+				.manufacturer("Multivac")
+				.model("R 530")
+				.serialNumber("741852963")
+				.warrantyNumber("741852963")
+				.warrantyEndDate(LocalDateTime.now().plusYears(2))
+				.idealCycleTimeSeconds(5.0)
+				.targetPcsPerHour(720)
+				.location("Csarnok B - Sor 3")
+				.assignedUser(bela)
+				.active(true)
+				.build());
 	}
 }
