@@ -344,9 +344,9 @@ public class DataInitializer implements CommandLineRunner {
 		if (machineRepository.count() != 0)
 			return;
 
+		User tomi = userRepository.findByName("Tomi").orElse(null);
+		User tibor = userRepository.findByName("Tibor").orElse(null);
 		User bela = userRepository.findByName("Béla").orElse(null);
-		User tomi = userRepository.findByName("Tamás").orElse(null);
-		User zoli = userRepository.findByName("Zoltán").orElse(null);
 
 		machineRepository.save(Machine.builder()
 				.name("DMG MORI 5-Tengelyes CNC")
@@ -395,7 +395,7 @@ public class DataInitializer implements CommandLineRunner {
 				.idealCycleTimeSeconds(15.0)
 				.targetPcsPerHour(240)
 				.location("Csarnok B - Cell 1")
-				.assignedUser(zoli)
+				.assignedUser(tibor)
 				.active(true)
 				.build());
 
