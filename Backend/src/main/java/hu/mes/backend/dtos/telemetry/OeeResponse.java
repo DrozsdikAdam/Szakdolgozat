@@ -22,6 +22,6 @@ public class OeeResponse {
     private Integer totalScrapCount;
 
     private Long uptimeMinutes;
-    private Long downTimeMinutes;
+    private Long downtimeMinutes;
 
 }
