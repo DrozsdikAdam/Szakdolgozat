@@ -14,8 +14,6 @@ import hu.mes.backend.models.enums.MachineType;
 @Repository
 public interface MachineRepository extends JpaRepository<Machine, UUID> {
 
-    Optional<Machine> findByCode(String code);
-
     Boolean existsByCode(String code);
 
     List<Machine> findByActiveTrue();
@@ -25,10 +23,6 @@ public interface MachineRepository extends JpaRepository<Machine, UUID> {
     List<Machine> findByType(MachineType type);
 
     List<Machine> findByAssignedUserId(UUID id);
-
-    Optional<Machine> findBySerialNumber(String serialNumber);
-
-    Boolean existsBySerialNumber(String serialNumber);
 
     List<Machine> findByDeletedAtNotNull();
 

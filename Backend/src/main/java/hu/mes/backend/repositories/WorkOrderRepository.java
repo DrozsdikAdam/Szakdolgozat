@@ -1,7 +1,6 @@
 package hu.mes.backend.repositories;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,8 +13,6 @@ import hu.mes.backend.models.enums.WorkOrderStatus;
 
 @Repository
 public interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
-
-    Optional<WorkOrder> findByOrderNumber(String orderNumber);
 
     List<WorkOrder> findByCustomerName(String customerName);
 

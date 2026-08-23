@@ -1,6 +1,5 @@
 package hu.mes.backend.mappers;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -8,7 +7,6 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import hu.mes.backend.dtos.user.UserResponse;
-import hu.mes.backend.models.Role;
 import hu.mes.backend.models.User;
 import hu.mes.backend.models.enums.RolesEnum;
 
@@ -16,8 +14,8 @@ import hu.mes.backend.models.enums.RolesEnum;
 public class UserMapper {
     public UserResponse convertToResponse(User user) {
         Set<RolesEnum> roleEnums = user.getRoles() != null
-                ? user.getRoles().stream().map(Role::getName).collect(Collectors.toSet())
-                : Collections.emptySet();
+                ? user.getRoles().stream().map(role -> role.getName()).collect(Collectors.toSet())
+                : Set.of();
 
         return UserResponse.builder()
                 .id(user.getId())

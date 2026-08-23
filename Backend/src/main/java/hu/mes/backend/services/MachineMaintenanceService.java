@@ -15,7 +15,6 @@ import hu.mes.backend.models.MachineMaintenance;
 import hu.mes.backend.models.User;
 import hu.mes.backend.models.enums.MachineStatus;
 import hu.mes.backend.models.enums.MaintenanceStatus;
-import hu.mes.backend.models.enums.MaintenanceType;
 import hu.mes.backend.repositories.MachineMaintenanceRepository;
 import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.UserRepository;
