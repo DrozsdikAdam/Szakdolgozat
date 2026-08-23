@@ -25,6 +25,7 @@ export interface MachineMaintenanceCreateRequest {
     machineId: string,
     title: string,
     type: MaintenanceType,
+    status: MaintenanceStatus,
     technicianId?: string,
     description?: string,
     start?: string,
