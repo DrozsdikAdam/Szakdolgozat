@@ -9,6 +9,7 @@ import { SelectField } from "../../common/form/SelectField";
 import { InputField } from "../../common/form/InputField";
 import { TYPE_OPTIONS } from "../../../constants/maintenanceType";
 import { TextAreaField } from "../../common/form/TextAreaField";
+import { validateMinLength, validateRequired } from "../../../utils/validators";
 
 export const CreateMaintenanceModal = ({ isOpen, onClose, onSuccess, machines, technicians }: CreateMaintenanceModalProps) => {
 
@@ -21,7 +22,19 @@ export const CreateMaintenanceModal = ({ isOpen, onClose, onSuccess, machines, t
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
 
+    const isValid = (): boolean => {
+        const err = validateRequired(machineId, "gép")
+            || validateRequired(title, "cím")
+            || validateMinLength(title, 3, "cím")
+        if (err) {
+            setError(err)
+            return false
+        }
+        return true
+    }
+
     const handleSubmit = async () => {
+        if (!isValid()) return
         setIsLoading(true)
         setError(null)
 
