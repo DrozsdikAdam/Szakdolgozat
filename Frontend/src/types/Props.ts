@@ -6,7 +6,7 @@ export interface Props {
 }
 
 export interface TitleProps {
-    page: "inventory" | "product" | "bom" | "workorder" | "user"
+    page: "inventory" | "product" | "bom" | "workorder" | "user" | "maintenance"
 }
 
 export interface BadgeProps {
