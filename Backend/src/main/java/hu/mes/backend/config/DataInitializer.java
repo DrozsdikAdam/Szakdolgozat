@@ -13,17 +13,21 @@ import org.springframework.stereotype.Component;
 import hu.mes.backend.models.BOMItem;
 import hu.mes.backend.models.Inventory;
 import hu.mes.backend.models.Machine;
+import hu.mes.backend.models.MachineMaintenance;
 import hu.mes.backend.models.Product;
 import hu.mes.backend.models.Role;
 import hu.mes.backend.models.User;
 import hu.mes.backend.models.WorkOrder;
 import hu.mes.backend.models.enums.MachineStatus;
 import hu.mes.backend.models.enums.MachineType;
+import hu.mes.backend.models.enums.MaintenanceStatus;
+import hu.mes.backend.models.enums.MaintenanceType;
 import hu.mes.backend.models.enums.RolesEnum;
 import hu.mes.backend.models.enums.WorkOrderPriority;
 import hu.mes.backend.models.enums.WorkOrderStatus;
 import hu.mes.backend.repositories.BOMItemRepository;
 import hu.mes.backend.repositories.InventoryRepository;
+import hu.mes.backend.repositories.MachineMaintenanceRepository;
 import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.ProductRepository;
 import hu.mes.backend.repositories.RoleRepository;
@@ -43,6 +47,7 @@ public class DataInitializer implements CommandLineRunner {
 	private final WorkOrderRepository workOrderRepository;
 	private final InventoryRepository inventoryRepository;
 	private final MachineRepository machineRepository;
+	private final MachineMaintenanceRepository machineMaintenanceRepository;
 
 	@Override
 	public void run(String... args) throws Exception {
@@ -53,6 +58,7 @@ public class DataInitializer implements CommandLineRunner {
 		initInventory();
 		initWorkOrder();
 		initMachines();
+		initMaintenances();
 		System.out.println(">>> MES Rendszer Tesztadatok sikeresen betöltve!");
 	}
 
@@ -93,7 +99,7 @@ public class DataInitializer implements CommandLineRunner {
 				User.builder().name("Feri").password("Jelszo123!").email("feri@email.hu")
 						.phoneNumber("+36301234567")
 						.roles(new HashSet<>(Set.of(roleRepository
-								.findByName(RolesEnum.SYSTEMADMIN).get())))
+								.findByName(RolesEnum.TECHNICIAN).get())))
 						.build(),
 				User.builder().name("Tomi").password("Jelszo123!").email("tomi@email.hu")
 						.phoneNumber("+36301234567")
@@ -255,9 +261,9 @@ public class DataInitializer implements CommandLineRunner {
 		if (workOrderRepository.count() != 0)
 			return;
 
-		User bela = userRepository.findByName("bela").orElse(null);
-		User tomi = userRepository.findByName("tomi").orElse(null);
-		User zoli = userRepository.findByName("zoli").orElse(null);
+		User bela = userRepository.findByName("Béla").orElse(null);
+		User tomi = userRepository.findByName("Tomi").orElse(null);
+		User tibor = userRepository.findByName("Tibor").orElse(null);
 
 		Product mug = productRepository.findBySku("KB-2024").orElse(null);
 		Product beerGlass = productRepository.findBySku("SP-2024").orElse(null);
@@ -300,7 +306,7 @@ public class DataInitializer implements CommandLineRunner {
 			workOrderRepository.save(WorkOrder.builder()
 					.orderNumber("WO-20260817-003")
 					.product(wineGlass)
-					.assignedUser(zoli)
+					.assignedUser(tibor)
 					.customerName("Tokaj Borászat Kft.")
 					.targetQuantity(new BigDecimal("80.0000"))
 					.producedQuantity(new BigDecimal("80.0000"))
@@ -416,4 +422,44 @@ public class DataInitializer implements CommandLineRunner {
 				.active(true)
 				.build());
 	}
+
+	private void initMaintenances() {
+		if (machineMaintenanceRepository.count() != 0)
+			return;
+		User feri = userRepository.findByName("Feri").orElse(null);
+		Machine dmg = machineRepository.findByCode("DMG-5X").orElse(null);
+		Machine multivac = machineRepository.findByCode("MVC-2000").orElse(null);
+		if (dmg != null) {
+			machineMaintenanceRepository.save(MachineMaintenance.builder()
+					.machine(dmg)
+					.technician(feri)
+					.title("Féléves nagykarbantartás és hidraulikaolaj cseréje")
+					.description("Főorsó csapágyazásának zsírozása, szűrők és olaj cseréje.")
+					.rootCause("Tervezett megelőző karbantartási ciklus")
+					.actionTaken("Olaj kicserélve, szűrők kicserélve, tesztüzem sikeresen lefutott.")
+					.status(MaintenanceStatus.COMPLETED)
+					.type(MaintenanceType.PREVENTIVE)
+					.downtimeMinutes(120)
+					.cost(BigDecimal.valueOf(45000))
+					.start(LocalDateTime.now().minusDays(2).minusHours(3))
+					.end(LocalDateTime.now().minusDays(2).minusHours(1))
+					.build());
+		}
+		if (multivac != null) {
+			machineMaintenanceRepository.save(MachineMaintenance.builder()
+					.machine(multivac)
+					.technician(feri)
+					.title("Vágókés szorulás és pneumatikus nyomáscsökkenés")
+					.description("A csomagoló gép vágóegysége akad, a levegőnyomás ingadozik.")
+					.rootCause("Késkopás és légszűrő eldugulás")
+					.actionTaken("Késkészlet szétszerelése és cseréje folyamatban.")
+					.status(MaintenanceStatus.IN_PROGRESS)
+					.type(MaintenanceType.CORRECTIVE)
+					.downtimeMinutes(45)
+					.cost(BigDecimal.valueOf(120000))
+					.start(LocalDateTime.now().minusHours(1))
+					.build());
+		}
+	}
+
 }

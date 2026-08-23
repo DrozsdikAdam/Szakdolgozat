@@ -13,6 +13,7 @@ import hu.mes.backend.models.enums.MachineType;
 
 @Repository
 public interface MachineRepository extends JpaRepository<Machine, UUID> {
+    Optional<Machine> findByCode(String code);
 
     Boolean existsByCode(String code);
 
