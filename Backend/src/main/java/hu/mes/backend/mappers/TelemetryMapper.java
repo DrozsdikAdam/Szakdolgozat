@@ -10,7 +10,7 @@ import hu.mes.backend.models.MachineTelemetry;
 @Component
 public class TelemetryMapper {
 
-    public MachineTelemetryResponse toResponse(MachineTelemetry telemetry) {
+    public MachineTelemetryResponse convertToResponse(MachineTelemetry telemetry) {
         return MachineTelemetryResponse.builder()
                 .id(telemetry.getId())
                 .machineId(telemetry.getMachine().getId())
@@ -30,8 +30,8 @@ public class TelemetryMapper {
                 .build();
     }
 
-    public List<MachineTelemetryResponse> toResponse(List<MachineTelemetry> telemetries) {
-        return telemetries.stream().map(this::toResponse).toList();
+    public List<MachineTelemetryResponse> convertToResponses(List<MachineTelemetry> telemetries) {
+        return telemetries.stream().map(this::convertToResponse).toList();
     }
 
 }
