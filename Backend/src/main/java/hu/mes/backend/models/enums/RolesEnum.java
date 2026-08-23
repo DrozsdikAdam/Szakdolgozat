@@ -9,6 +9,7 @@ public enum RolesEnum {
     SYSTEMADMIN("systemAdmin"),
     OPERATOR("operator"),
     MANAGER("manager"),
+    TECHNICIAN("technician"),
     CEO("ceo");
 
     private final String role;
