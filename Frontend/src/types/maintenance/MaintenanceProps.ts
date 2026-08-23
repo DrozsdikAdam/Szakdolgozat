@@ -1,7 +1,7 @@
 import type { MachineResponse } from "../machine/Machine"
 import type { UserResponse } from "../user/User"
 import type { MachineMaintenanceResponse } from "./MachineMaintenance"
-import type { MaintenanceStatus } from "./MaintenanceStatus"
+import type { MaintenanceStatus, MaintenanceType } from "./MaintenanceStatus"
 
 export interface MaintenanceModalProps {
     isOpen: boolean
@@ -21,4 +21,8 @@ export interface MaintenanceStatusModalProps {
 
 export interface MaintenanceStatusBadgeProps {
     status: MaintenanceStatus
+}
+
+export interface MaintenanceTypeBadgeProps {
+    type: MaintenanceType
 }

@@ -2,7 +2,7 @@ import type { UserRole } from "../types/user/User";
 
 export interface RoleDefinition {
     key: UserRole,
-    label: "Rendszergazda" | "Vezérigazgató" | "Menedzser" | "Operátor",
+    label: "Rendszergazda" | "Vezérigazgató" | "Menedzser" | "Operátor" | "Technikus",
     badgeStyle: string,
     level: number
 }
@@ -31,6 +31,12 @@ export const ROLES: Record<UserRole, RoleDefinition> = {
         label: "Operátor",
         badgeStyle: "bg-blue-500/10 border-blue-500/20 text-blue-400",
         level: 1
+    },
+    TECHNICIAN: {
+        key: "TECHNICIAN",
+        label: "Technikus",
+        badgeStyle: "bg-cyan-500/10 border-cyan-500/20 text-cyan-400",
+        level: 2
     }
 }
 
