@@ -6,7 +6,6 @@ export interface CreateMachineModalProps {
     isOpen: boolean,
     onClose: () => void,
     onSuccess: () => void,
-    machine: MachineResponse | null,
     users: UserResponse[]
 }
 
