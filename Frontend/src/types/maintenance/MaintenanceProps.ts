@@ -17,7 +17,6 @@ export interface UpdateMaintenanceModalProps {
     onClose: () => void
     onSuccess: () => void
     maintenance: MachineMaintenanceResponse | null
-    machines: MachineResponse[]
     technicians: UserResponse[]
 }
 
@@ -28,6 +27,28 @@ export interface MaintenanceStatusModalProps {
     maintenance: MachineMaintenanceResponse | null
     technicians: UserResponse[]
 }
+
+export interface MaintenanceStatsCardProps {
+    maintenances: MachineMaintenanceResponse[]
+}
+
+export interface MaintenanceCardProps {
+    maintenance: MachineMaintenanceResponse
+    onEdit: (item: MachineMaintenanceResponse) => void
+    onStatusUpdate: (item: MachineMaintenanceResponse) => void
+    onDelete: (id: string) => void
+}
+
+export interface MaintenanceFilterBarProps {
+    searchTerm: string
+    setSearchTerm: (val: string) => void
+    statusFilter: MaintenanceStatus | "ALL"
+    setStatusFilter: (val: MaintenanceStatus | "ALL") => void
+    typeFilter: MaintenanceType | "ALL"
+    setTypeFilter: (val: MaintenanceType | "ALL") => void
+    onCreate: () => void
+}
+
 
 export interface MaintenanceStatusBadgeProps {
     status: MaintenanceStatus

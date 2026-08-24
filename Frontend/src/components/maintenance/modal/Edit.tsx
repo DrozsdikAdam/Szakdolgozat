@@ -12,7 +12,7 @@ import { TYPE_OPTIONS } from "../../../constants/maintenanceType";
 import { STATUS_OPTIONS } from "../../../constants/maintenanceStatus";
 import { TextAreaField } from "../../common/form/TextAreaField";
 
-export const EditMaintenanceModal = ({ isOpen, onClose, onSuccess, maintenance, machines, technicians }: UpdateMaintenanceModalProps) => {
+export const EditMaintenanceModal = ({ isOpen, onClose, onSuccess, maintenance, technicians }: UpdateMaintenanceModalProps) => {
 
     const [title, setTitle] = useState<string>("")
     const [description, setDescription] = useState<string>("")
