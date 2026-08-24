@@ -111,6 +111,12 @@ export const EditMaintenanceModal = ({ isOpen, onClose, onSuccess, maintenance, 
             cancelText="Mégse"
         >
             <InputField
+                label="Kijelölt Gép"
+                value={maintenance ? `${maintenance.machineCode} - ${maintenance.machineName}` : ""}
+                disabled
+            />
+
+            <InputField
                 label="Cím / Hibajelenség"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
