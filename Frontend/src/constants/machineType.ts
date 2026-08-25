@@ -45,7 +45,7 @@ export const TYPES: Record<MachineType, TypeDefinition> = {
     },
 }
 
-export const TYPE_OPTIONS: TypeDefinition[] = Object.values(TYPES)
+export const MACHINE_TYPE_OPTIONS: TypeDefinition[] = Object.values(TYPES)
 
 export const getMachineTypeLabel = (type?: MachineType) => type ? TYPES[type].label : "Ismeretlen";
 
