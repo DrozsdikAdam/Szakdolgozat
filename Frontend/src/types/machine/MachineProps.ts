@@ -38,3 +38,11 @@ export interface MachineFilterBarProps {
     setTypeFilter: (val: MachineType | "ALL") => void,
     onCreate: () => void
 }
+
+export interface MachineStatusBadgeProps {
+    status: MachineStatus,
+}
+
+export interface MachineTypeBadgeProps {
+    type: MachineType,
+}

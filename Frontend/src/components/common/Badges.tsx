@@ -7,6 +7,9 @@ import { getUserStatusBadgeStyle, getUserStatusLabel } from "../../constants/use
 import type { MaintenanceStatusBadgeProps, MaintenanceTypeBadgeProps } from "../../types/maintenance/MaintenanceProps";
 import { getMaintenanceStatusBadgeStyle, getMaintenanceStatusLabel } from "../../constants/maintenanceStatus";
 import { getMaintenanceTypeBadgeStyle, getMaintenanceTypeLabel } from "../../constants/maintenanceType";
+import { getMachineTypeBadgeStyle, getMachineTypeLabel } from "../../constants/machineType";
+import { getMachineStatusBadgeStyle, getMachineStatusLabel } from "../../constants/machineStatus";
+import type { MachineStatusBadgeProps, MachineTypeBadgeProps } from "../../types/machine/MachineProps";
 
 export const WorkOrderStatusBadge = ({ status }: WorkOrderStatusBadgeProps) => {
     const props: BadgeProps = {
@@ -52,6 +55,22 @@ export const MaintenanceTypeBadge = ({ type }: MaintenanceTypeBadgeProps) => {
     const props: BadgeProps = {
         content: getMaintenanceTypeLabel(type),
         style: getMaintenanceTypeBadgeStyle(type)
+    }
+    return badge(props)
+}
+
+export const MachineTypeBadge = ({ type }: MachineTypeBadgeProps) => {
+    const props: BadgeProps = {
+        content: getMachineTypeLabel(type),
+        style: getMachineTypeBadgeStyle(type)
+    }
+    return badge(props)
+}
+
+export const MachineStatusBadge = ({ status }: MachineStatusBadgeProps) => {
+    const props: BadgeProps = {
+        content: getMachineStatusLabel(status),
+        style: getMachineStatusBadgeStyle(status)
     }
     return badge(props)
 }
