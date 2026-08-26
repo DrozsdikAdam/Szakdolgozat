@@ -9,8 +9,9 @@ import { InventoryView } from "./views/InventoryView"
 import { Layout } from "./components/Layout"
 import { WorkOrderView } from "./views/WorkOrderView"
 import { UserView } from "./views/UserView"
-import { MachineView } from "./views/MachineView"
+import { MachineView } from "./views/machine/MachineView"
 import { MaintenanceView } from "./views/MaintenanceView"
+import { MachineCreateView } from "./views/machine/MachineCreateView"
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
             <Route path="/workorder" element={<WorkOrderView />} />
             <Route path="/user" element={<UserView />} />
             <Route path="/machine" element={<MachineView />} />
+            <Route path="/machine/create" element={<MachineCreateView />} />
             <Route path="/maintenance" element={<MaintenanceView />} />
           </Route>
 

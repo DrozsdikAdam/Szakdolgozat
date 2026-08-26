@@ -2,13 +2,6 @@ import type { UserResponse } from "../user/User";
 import type { MachineResponse } from "./Machine";
 import type { MachineStatus, MachineType } from "./MachineStatus";
 
-export interface CreateMachineModalProps {
-    isOpen: boolean,
-    onClose: () => void,
-    onSuccess: () => void,
-    users: UserResponse[]
-}
-
 export interface UpdateMachineModalProps {
     isOpen: boolean,
     onClose: () => void,

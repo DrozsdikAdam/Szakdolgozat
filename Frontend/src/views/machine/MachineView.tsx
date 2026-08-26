@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from "react"
-import type { MachineResponse, MachineStatusUpdateRequest } from "../types/machine/Machine"
-import type { UserResponse } from "../types/user/User"
-import type { MachineStatus, MachineType } from "../types/machine/MachineStatus"
-import { assignUserToMachine, deleteMachine, getMachines, unassignUserFromMachine, updateMachineStatus } from "../services/machineService"
-import { getUsers } from "../services/userService"
-import { Background } from "../components/common/Background"
-import { LoadingSpinner } from "../components/common/LoadingSpinner"
-import { Title } from "../components/common/Title"
-import { MachineStatsCard } from "../components/machine/StatsCard"
-import { MachineFilterBar } from "../components/machine/Filterbar"
-import { MachineCard } from "../components/machine/Card"
-import { CreateMachineModal } from "../components/machine/modal/Create"
-import { EditMachineModal } from "../components/machine/modal/Edit"
+import type { MachineResponse, MachineStatusUpdateRequest } from "../../types/machine/Machine"
+import type { UserResponse } from "../../types/user/User"
+import type { MachineStatus, MachineType } from "../../types/machine/MachineStatus"
+import { assignUserToMachine, deleteMachine, getMachines, unassignUserFromMachine, updateMachineStatus } from "../../services/machineService"
+import { getUsers } from "../../services/userService"
+import { Background } from "../../components/common/Background"
+import { LoadingSpinner } from "../../components/common/LoadingSpinner"
+import { Title } from "../../components/common/Title"
+import { MachineStatsCard } from "../../components/machine/StatsCard"
+import { MachineFilterBar } from "../../components/machine/Filterbar"
+import { MachineCard } from "../../components/machine/Card"
+import { EditMachineModal } from "../../components/machine/modal/Edit"
+import { useNavigate } from "react-router-dom"
 
 export const MachineView = () => {
 
@@ -19,11 +19,11 @@ export const MachineView = () => {
     const [users, setUsers] = useState<UserResponse[]>([])
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [error, setError] = useState<string | null>(null)
+    const navigate = useNavigate()
 
     const [searchTerm, setSearchTerm] = useState<string>("")
     const [statusFilter, setStatusFilter] = useState<MachineStatus | "ALL">("ALL")
     const [typeFilter, setTypeFilter] = useState<MachineType | "ALL">("ALL")
-    const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false)
     const [selectedMachine, setSelectedMachine] = useState<MachineResponse | null>(null)
 
     const loadData = async () => {
@@ -103,7 +103,6 @@ export const MachineView = () => {
     }
 
     const closeModals = () => {
-        setIsCreateOpen(false);
         setSelectedMachine(null);
     }
 
@@ -141,14 +140,7 @@ export const MachineView = () => {
                         setStatusFilter={setStatusFilter}
                         typeFilter={typeFilter}
                         setTypeFilter={setTypeFilter}
-                        onCreate={() => setIsCreateOpen(true)}
-                    />
-
-                    <CreateMachineModal
-                        isOpen={isCreateOpen}
-                        onClose={closeModals}
-                        onSuccess={handleSubmit}
-                        users={users}
+                        onCreate={() => navigate("/machine/create")}
                     />
 
                     <EditMachineModal
