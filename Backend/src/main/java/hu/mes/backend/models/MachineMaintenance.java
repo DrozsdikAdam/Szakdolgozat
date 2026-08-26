@@ -55,6 +55,7 @@ public class MachineMaintenance extends BaseEntity {
     private Integer downtimeMinutes;
     private BigDecimal cost;
     private LocalDateTime start;
+    @Column(name = "maintenance_end")
     private LocalDateTime end;
 
 }

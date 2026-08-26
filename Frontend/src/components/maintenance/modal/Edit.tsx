@@ -94,8 +94,8 @@ export const EditMaintenanceModal = ({ isOpen, onClose, onSuccess, maintenance, 
         setTechnicianId(maintenance.technicianId || "")
         setRouteCause(maintenance.rootCause || "")
         setActionTaken(maintenance.actionTaken || "")
-        setDowntimeMinutes(maintenance.downtimeMinutes)
-        setCost(maintenance.cost)
+        setDowntimeMinutes(maintenance.downtimeMinutes || 0)
+        setCost(maintenance.cost || 0)
     }, [isOpen, maintenance])
 
     return (

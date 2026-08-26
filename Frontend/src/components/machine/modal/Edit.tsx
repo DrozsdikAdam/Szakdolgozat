@@ -221,7 +221,7 @@ export const EditMachineModal = ({ isOpen, onClose, onSuccess, machine, users }:
 
             <SelectField
                 label="Üzemeltető"
-                value={assignedUserId}
+                value={assignedUserId || ""}
                 onChange={(e) => setAssignedUserId(e.target.value)}
                 placeholderOption="-- Válassz üzemeltetőt (opcionális) --"
                 options={users.map(t => ({ key: t.id, label: t.username }))}

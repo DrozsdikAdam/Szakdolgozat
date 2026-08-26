@@ -49,7 +49,7 @@ export const EditMaintenanceStatusModal = ({ isOpen, onClose, onSuccess, mainten
             actionTaken,
             downtimeMinutes,
             cost,
-            end: status === "COMPLETED" ? new Date().toISOString() : null
+            end: status === "COMPLETED" ? new Date().toISOString() : undefined
         }
         if (!maintenance) return;
 

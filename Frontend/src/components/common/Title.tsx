@@ -25,6 +25,14 @@ export const Title = ({ page }: TitleProps) => {
             title = "Felhasználók"
             subTitle = "Itt lehet a felhasználókat megnézni és módosítani"
             break;
+        case "machine":
+            title = "Gépek"
+            subTitle = "Itt lehet a gépeket megnézni és módosítani"
+            break;
+        case "maintenance":
+            title = "Karbantartások"
+            subTitle = "Itt lehet a karbantartásokat megnézni és módosítani"
+            break;
     }
 
     return (
