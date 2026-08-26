@@ -12,6 +12,7 @@ import { MachineFilterBar } from "../../components/machine/Filterbar"
 import { MachineCard } from "../../components/machine/Card"
 import { EditMachineModal } from "../../components/machine/modal/Edit"
 import { useNavigate } from "react-router-dom"
+import { DeleteConfirmModal } from "../../components/common/DeleteConfirmModal"
 
 export const MachineView = () => {
 
@@ -25,6 +26,8 @@ export const MachineView = () => {
     const [statusFilter, setStatusFilter] = useState<MachineStatus | "ALL">("ALL")
     const [typeFilter, setTypeFilter] = useState<MachineType | "ALL">("ALL")
     const [selectedMachine, setSelectedMachine] = useState<MachineResponse | null>(null)
+
+    const [machineToDelete, setMachineToDelete] = useState<MachineResponse | null>(null)
 
     const loadData = async () => {
         setIsLoading(true)
@@ -56,6 +59,7 @@ export const MachineView = () => {
     const handleDelete = async (id: string) => {
         setIsLoading(true)
         setError(null)
+
         try {
             await deleteMachine(id)
             loadData()
@@ -63,6 +67,7 @@ export const MachineView = () => {
             setError(err instanceof Error ? err.message : "Ismeretlen hiba")
         } finally {
             setIsLoading(false)
+            setMachineToDelete(null)
         }
     }
 
@@ -151,6 +156,16 @@ export const MachineView = () => {
                         users={users}
                     />
 
+                    {machineToDelete && (
+                        <DeleteConfirmModal
+                            isOpen={!!machineToDelete}
+                            onClose={() => setMachineToDelete(null)}
+                            onConfirm={() => handleDelete(machineToDelete.id)}
+                            title="Gép törlése"
+                            message={`Biztosan törli a gép: ${machineToDelete.code} (${machineToDelete.name})?`}
+                        />
+                    )}
+
                     {error &&
                         <div className="text-left text-red-400 text-sm font-medium">{error}</div>
                     }
@@ -171,7 +186,7 @@ export const MachineView = () => {
                                     machine={machine}
                                     users={users}
                                     onEdit={() => setSelectedMachine(machine)}
-                                    onDelete={handleDelete}
+                                    onDelete={() => setMachineToDelete(machine)}
                                     onStatusChange={handleStatusChange}
                                     onAssignUser={handleAssingUser}
                                 />

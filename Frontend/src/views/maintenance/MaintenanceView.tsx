@@ -15,6 +15,7 @@ import { CreateMaintenanceModal } from "../../components/maintenance/modal/Creat
 import { EditMaintenanceStatusModal } from "../../components/maintenance/modal/EditStatus"
 import { getMachines } from "../../services/machineService"
 import { useNavigate } from "react-router-dom"
+import { DeleteConfirmModal } from "../../components/common/DeleteConfirmModal"
 
 export const MaintenanceView = () => {
 
@@ -30,6 +31,7 @@ export const MaintenanceView = () => {
 
     const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false)
     const [selectedEditStatus, setSelectedEditStatus] = useState<MachineMaintenanceResponse | null>(null)
+    const [maintenanceToDelete, setMaintenanceToDelete] = useState<MachineMaintenanceResponse | null>(null)
 
     const navigate = useNavigate();
 
@@ -66,6 +68,7 @@ export const MaintenanceView = () => {
             console.error(error)
         } finally {
             setIsLoading(false)
+            setMaintenanceToDelete(null)
         }
     }
 
@@ -124,6 +127,16 @@ export const MaintenanceView = () => {
                     onCreate={() => setIsCreateOpen(true)}
                 />
 
+                {maintenanceToDelete && (
+                    <DeleteConfirmModal
+                        isOpen={!!maintenanceToDelete}
+                        onClose={() => setMaintenanceToDelete(null)}
+                        onConfirm={() => handleDelete(maintenanceToDelete.id)}
+                        title="Karbantartás törlése"
+                        message={`Biztosan törli a karbantartás: ${maintenanceToDelete.title} (${maintenanceToDelete.machineCode} - ${maintenanceToDelete.machineName})?`}
+                    />
+                )}
+
                 {error &&
                     <div className="text-left text-red-400 text-sm font-medium">{error}</div>
                 }
@@ -140,7 +153,7 @@ export const MaintenanceView = () => {
                                 maintenance={maintenance}
                                 onEdit={() => navigate(`/maintenance/${maintenance.id}/edit`)}
                                 onStatusUpdate={() => handleStatusUpdate(maintenance)}
-                                onDelete={() => handleDelete(maintenance.id)}
+                                onDelete={() => setMaintenanceToDelete(maintenance)}
                             />
                         ))}
                     </div>

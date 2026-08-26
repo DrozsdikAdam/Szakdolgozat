@@ -13,7 +13,8 @@ export const Modal = ({
     submitIcon,
     cancelText = "Mégse",
     maxWidth = "max-w-md",
-    children
+    children,
+    submitVariant = "primary"
 }: ModalProps) => {
 
     if (!isOpen) return null
@@ -51,6 +52,7 @@ export const Modal = ({
                             icon={submitIcon}
                             text={submitText}
                             className="px-5 py-2 rounded-xl"
+                            variant={submitVariant}
                         />
                     </div>
                 </form>

@@ -34,4 +34,15 @@ export interface ModalProps {
     cancelText?: string,
     maxWidth?: string,
     children: ReactNode
+    submitVariant?: "primary" | "secondary" | "danger"
+}
+
+export interface DeleteConfirmModalProps {
+    isOpen: boolean,
+    onClose: () => void,
+    onConfirm: () => void,
+    title?: string,
+    itemName?: string,
+    message?: string
+    isLoading?: boolean,
 }
