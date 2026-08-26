@@ -1,5 +1,6 @@
 package hu.mes.backend.services;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -94,10 +95,16 @@ public class WorkOrderService {
 		}
 
 		if (newStatus.equals(WorkOrderStatus.COMPLETED)) {
+			BigDecimal scrap = request.getScrapQuantity() != null ? request.getScrapQuantity()
+					: BigDecimal.ZERO;
+			BigDecimal goodProduced = request.getProducedQuantity().subtract(scrap);
+
+			if (goodProduced.compareTo(BigDecimal.ZERO) < 0)
+				goodProduced = BigDecimal.ZERO;
 			bomInventoryService.consumeComponentStock(workOrder.getProduct(), workOrder.getTargetQuantity());
 			InventoryUpdateRequest stockUpdate = new InventoryUpdateRequest(
 					workOrder.getProduct().getId(),
-					request.getProducedQuantity(),
+					goodProduced,
 					null);
 			inventoryService.adjustStock(stockUpdate);
 			workOrder.setEndDate(LocalDateTime.now());

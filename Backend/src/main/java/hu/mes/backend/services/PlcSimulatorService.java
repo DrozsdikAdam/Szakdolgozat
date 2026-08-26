@@ -46,6 +46,7 @@ public class PlcSimulatorService {
             int scrap = generateRandomScrapQuantity(machine.getStatus());
 
             if (activeWorkOrder != null && produced > 0) {
+
                 BigDecimal currentProduced = activeWorkOrder.getProducedQuantity() != null
                         ? activeWorkOrder.getProducedQuantity()
                         : BigDecimal.ZERO;
@@ -57,6 +58,17 @@ public class PlcSimulatorService {
                             : BigDecimal.ZERO;
                     activeWorkOrder.setScrapQuantity(currentScrap.add(BigDecimal.valueOf(scrap)));
                 }
+
+                BigDecimal goodProduced = activeWorkOrder.getProducedQuantity()
+                        .subtract(activeWorkOrder.getScrapQuantity() != null ? activeWorkOrder.getScrapQuantity()
+                                : BigDecimal.ZERO);
+
+                if (activeWorkOrder.getTargetQuantity() != null
+                        && goodProduced.compareTo(activeWorkOrder.getTargetQuantity()) >= 0) {
+                    machine.setStatus(MachineStatus.IDLE);
+                    machineRepository.save(machine);
+                }
+
                 workOrderRepository.save(activeWorkOrder);
             }
 

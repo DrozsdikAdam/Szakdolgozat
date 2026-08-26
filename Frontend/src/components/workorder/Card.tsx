@@ -8,10 +8,6 @@ export const WorkOrderCard = ({ order, onUpdateStatus, onEditOrder, users, onAss
 
     const isCompleted = order.status === "COMPLETED" || order.status === "CANCELLED"
 
-    const progressPercentage = order.targetQuantity > 0
-        ? Math.min(100, Math.max(0, (order.producedQuantity / order.targetQuantity) * 100))
-        : 0
-
     const formatDate = (dateString?: string | null) => {
         if (!dateString) return "-"
         return new Date(dateString).toLocaleDateString("hu-HU", {
@@ -99,12 +95,12 @@ export const WorkOrderCard = ({ order, onUpdateStatus, onEditOrder, users, onAss
             <div className="space-y-1.5 pt-1">
                 <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-400 font-medium">Gyártási folyamat</span>
-                    <span className="text-indigo-300 font-bold">{order.producedQuantity} / {order.targetQuantity} db ({progressPercentage.toFixed(0)}%)</span>
+                    <span className="text-indigo-300 font-bold">{order.goodQuantity} / {order.targetQuantity} db ({order.progressPercentage?.toFixed(0)}%)</span>
                 </div>
                 <div className="w-full bg-slate-800/90 h-2.5 rounded-full overflow-hidden border border-slate-700/60 p-0.5">
                     <div
                         className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 rounded-full transition-all duration-500 shadow-sm shadow-indigo-500/50"
-                        style={{ width: `${progressPercentage}%` }}
+                        style={{ width: `${order.progressPercentage}%` }}
                     ></div>
                 </div>
             </div>

@@ -35,6 +35,9 @@ public class WorkOrderResponse {
     private UUID assignedUserId;
     private String assignedUserName;
 
+    private BigDecimal goodQuantity;
+    private Double progressPercentage;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime startDate;
