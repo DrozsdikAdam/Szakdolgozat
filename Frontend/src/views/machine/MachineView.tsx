@@ -29,8 +29,8 @@ export const MachineView = () => {
 
     const [machineToDelete, setMachineToDelete] = useState<MachineResponse | null>(null)
 
-    const loadData = async () => {
-        setIsLoading(true)
+    const loadData = async (showSpinner: boolean = true) => {
+        if (showSpinner) setIsLoading(true)
         setError(null)
         try {
             const [machinesRes, usersRes] = await Promise.all([
@@ -94,11 +94,11 @@ export const MachineView = () => {
         setError(null)
 
         try {
-            if (!userId) {
+            if (!userId)
                 await unassignUserFromMachine(id);
-            } else {
+            else
                 await assignUserToMachine(id, userId);
-            }
+
             loadData()
         } catch (err) {
             setError(err instanceof Error ? err.message : "Ismeretlen hiba")
@@ -123,7 +123,9 @@ export const MachineView = () => {
 
 
     useEffect(() => {
-        loadData()
+        loadData(true)
+        const interval = setInterval(() => loadData(false), 5000)
+        return () => clearInterval(interval)
     }, [])
     return (
         <div className="relative flex-1 w-full flex flex-col items-center justify-start p-4 sm:p-6 font-sans">

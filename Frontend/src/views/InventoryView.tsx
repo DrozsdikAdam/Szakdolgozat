@@ -20,8 +20,8 @@ export const InventoryView = () => {
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
     const [selectedInventory, setSelectedInventory] = useState<InventoryResponse | null>(null)
 
-    const loadInventories = async () => {
-        setIsLoading(true)
+    const loadInventories = async (showSpinner: boolean = true) => {
+        if (showSpinner) setIsLoading(true)
         setError(null)
         try {
             const response = await getInventories()
@@ -37,9 +37,8 @@ export const InventoryView = () => {
         if (inventoryId) {
             const inventory = inventories.find(inv => inv.id === inventoryId) || null
             setSelectedInventory(inventory)
-        } else {
-            setSelectedInventory(inventories[0] || null)
-        }
+        } else setSelectedInventory(inventories[0] || null)
+
         setIsModalOpen(true)
     }
 
@@ -49,7 +48,9 @@ export const InventoryView = () => {
     }
 
     useEffect(() => {
-        loadInventories()
+        loadInventories(true)
+        const interval = setInterval(() => loadInventories(false), 5000)
+        return () => clearInterval(interval)
     }, [])
 
     const filteredInventories = inventories.filter((inv) => {
