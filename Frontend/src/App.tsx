@@ -10,8 +10,9 @@ import { Layout } from "./components/Layout"
 import { WorkOrderView } from "./views/WorkOrderView"
 import { UserView } from "./views/UserView"
 import { MachineView } from "./views/machine/MachineView"
-import { MaintenanceView } from "./views/MaintenanceView"
+import { MaintenanceView } from "./views/maintenance/MaintenanceView"
 import { MachineCreateView } from "./views/machine/MachineCreateView"
+import { MaintenanceEditView } from "./views/maintenance/MaintenanceEditView"
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
             <Route path="/machine" element={<MachineView />} />
             <Route path="/machine/create" element={<MachineCreateView />} />
             <Route path="/maintenance" element={<MaintenanceView />} />
+            <Route path="/maintenance/:id/edit" element={<MaintenanceEditView />} />
           </Route>
 
           <Route path="/login" element={<LoginView />} />

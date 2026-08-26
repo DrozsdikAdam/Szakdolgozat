@@ -13,7 +13,8 @@ export interface TitleProps {
     | "user"
     | "maintenance"
     | "machine"
-    | "machineCreate";
+    | "machineCreate"
+    | "maintenanceEdit";
 }
 
 export interface BadgeProps {

@@ -1,20 +1,20 @@
-import { Background } from "../components/common/Background"
-import { LoadingSpinner } from "../components/common/LoadingSpinner"
-import { Title } from "../components/common/Title"
-import { FilterBar } from "../components/maintenance/FilterBar"
-import { StatsCard } from "../components/maintenance/StatsCard"
+import { Background } from "../../components/common/Background"
+import { LoadingSpinner } from "../../components/common/LoadingSpinner"
+import { Title } from "../../components/common/Title"
+import { FilterBar } from "../../components/maintenance/FilterBar"
+import { StatsCard } from "../../components/maintenance/StatsCard"
 import { useEffect, useMemo, useState } from "react"
-import type { MachineMaintenanceResponse } from "../types/maintenance/MachineMaintenance"
-import type { UserResponse } from "../types/user/User"
-import type { MachineResponse } from "../types/machine/Machine"
-import type { MaintenanceStatus, MaintenanceType } from "../types/maintenance/MaintenanceStatus"
-import { getUsers } from "../services/userService"
-import { deleteMaintenance, getMaintenances } from "../services/maintenanceService"
-import { MaintenanceCard } from "../components/maintenance/Card"
-import { CreateMaintenanceModal } from "../components/maintenance/modal/Create"
-import { EditMaintenanceModal } from "../components/maintenance/modal/Edit"
-import { EditMaintenanceStatusModal } from "../components/maintenance/modal/EditStatus"
-import { getMachines } from "../services/machineService"
+import type { MachineMaintenanceResponse } from "../../types/maintenance/MachineMaintenance"
+import type { UserResponse } from "../../types/user/User"
+import type { MachineResponse } from "../../types/machine/Machine"
+import type { MaintenanceStatus, MaintenanceType } from "../../types/maintenance/MaintenanceStatus"
+import { getUsers } from "../../services/userService"
+import { deleteMaintenance, getMaintenances } from "../../services/maintenanceService"
+import { MaintenanceCard } from "../../components/maintenance/Card"
+import { CreateMaintenanceModal } from "../../components/maintenance/modal/Create"
+import { EditMaintenanceStatusModal } from "../../components/maintenance/modal/EditStatus"
+import { getMachines } from "../../services/machineService"
+import { useNavigate } from "react-router-dom"
 
 export const MaintenanceView = () => {
 
@@ -29,8 +29,9 @@ export const MaintenanceView = () => {
     const [typeFilter, setTypeFilter] = useState<MaintenanceType | "ALL">("ALL")
 
     const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false)
-    const [selectedEdit, setSelectedEdit] = useState<MachineMaintenanceResponse | null>(null)
     const [selectedEditStatus, setSelectedEditStatus] = useState<MachineMaintenanceResponse | null>(null)
+
+    const navigate = useNavigate();
 
     const loadData = async () => {
         setIsLoading(true)
@@ -68,10 +69,6 @@ export const MaintenanceView = () => {
         }
     }
 
-    const handleEdit = (maintenance: MachineMaintenanceResponse) => {
-        setSelectedEdit(maintenance)
-    }
-
     const handleStatusUpdate = (maintenance: MachineMaintenanceResponse) => {
         setSelectedEditStatus(maintenance)
     }
@@ -102,13 +99,7 @@ export const MaintenanceView = () => {
                 machines={machines}
                 technicians={technicians}
             />
-            <EditMaintenanceModal
-                isOpen={!!selectedEdit}
-                maintenance={selectedEdit}
-                onClose={() => setSelectedEdit(null)}
-                onSuccess={loadData}
-                technicians={technicians}
-            />
+
             <EditMaintenanceStatusModal
                 isOpen={!!selectedEditStatus}
                 maintenance={selectedEditStatus}
@@ -147,7 +138,7 @@ export const MaintenanceView = () => {
                             <MaintenanceCard
                                 key={maintenance.id}
                                 maintenance={maintenance}
-                                onEdit={() => handleEdit(maintenance)}
+                                onEdit={() => navigate(`/maintenance/${maintenance.id}/edit`)}
                                 onStatusUpdate={() => handleStatusUpdate(maintenance)}
                                 onDelete={() => handleDelete(maintenance.id)}
                             />

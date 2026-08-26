@@ -29,13 +29,17 @@ export const Title = ({ page }: TitleProps) => {
             title = "Gépek"
             subTitle = "Itt lehet a gépeket megnézni és módosítani"
             break;
+        case "machineCreate":
+            title = "Új gép létrehozása"
+            subTitle = "Itt lehet új gépet létrehozni"
+            break;
         case "maintenance":
             title = "Karbantartások"
             subTitle = "Itt lehet a karbantartásokat megnézni és módosítani"
             break;
-        case "machineCreate":
-            title = "Új gép létrehozása"
-            subTitle = "Itt lehet új gépet létrehozni"
+        case "maintenanceEdit":
+            title = "Karbantartás szerkesztése"
+            subTitle = "Itt lehet a karbantartást szerkeszteni"
             break;
     }
 
