@@ -41,6 +41,10 @@ export const Title = ({ page }: TitleProps) => {
             title = "Karbantartás szerkesztése"
             subTitle = "Itt lehet a karbantartást szerkeszteni"
             break;
+        case "analytics":
+            title = "OEE & PLC Telemetria Analitika"
+            subTitle = "Valós idejű gépállapotok, szenzoradatok és termelési hatékonyság"
+            break;
     }
 
     return (

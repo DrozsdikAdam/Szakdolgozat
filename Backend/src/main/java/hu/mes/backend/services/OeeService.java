@@ -73,6 +73,9 @@ public class OeeService {
 				* (qualityPercentage / 100.0)
 				* 100.0;
 
+		performancePercentage = Math.min(100.0, performancePercentage);
+		oeePercentage = Math.min(100.0, oeePercentage);
+
 		return OeeResponse.builder()
 				.availabilityPercentage(availabilityPercentage)
 				.performancePercentage(performancePercentage)

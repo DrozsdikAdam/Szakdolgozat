@@ -15,10 +15,12 @@ import hu.mes.backend.models.enums.WorkOrderStatus;
 import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.MachineTelemetryRepository;
 import hu.mes.backend.repositories.WorkOrderRepository;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class PlcSimulatorService {
 
     private final MachineRepository machineRepository;
@@ -142,7 +144,7 @@ public class PlcSimulatorService {
         Integer produced = 0;
         switch (status) {
             case RUNNING:
-                produced = (int) Math.floor(Math.random() * 100) + 1;
+                produced = Math.random() < 0.85 ? 1 : 0;
                 break;
             default:
                 produced = 0;
