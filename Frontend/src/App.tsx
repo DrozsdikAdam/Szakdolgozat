@@ -13,6 +13,7 @@ import { MachineView } from "./views/machine/MachineView"
 import { MaintenanceView } from "./views/maintenance/MaintenanceView"
 import { MachineCreateView } from "./views/machine/MachineCreateView"
 import { MaintenanceEditView } from "./views/maintenance/MaintenanceEditView"
+import { AnalyticsView } from "./views/AnalyticsView"
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
             <Route path="/machine/create" element={<MachineCreateView />} />
             <Route path="/maintenance" element={<MaintenanceView />} />
             <Route path="/maintenance/:id/edit" element={<MaintenanceEditView />} />
+            <Route path="/analytics" element={<AnalyticsView />} />
           </Route>
 
           <Route path="/login" element={<LoginView />} />

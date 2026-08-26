@@ -1,24 +1,21 @@
 import { RefreshCw } from "lucide-react"
 import type { AnalyticsFilterBarProps } from "../../types/telemetry/TelemetryProps"
+import { SelectField } from "../common/form/SelectField"
 
 export const AnalyticsFilterBar = ({ machines, selectedMachineId, onSelectMachine, isLive, onToggleLive, timeRange, onChangeTimeRange, onRefresh, isLoading }: AnalyticsFilterBarProps) => {
     return (
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-xl shadow-xl">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-1">
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">
-                    Kiválasztott Gép:
-                </label>
-                <select
+                <SelectField
+                    label="Kiválasztott Gép"
                     value={selectedMachineId}
                     onChange={(e) => onSelectMachine(e.target.value)}
+                    options={machines.map((m) => ({
+                        key: m.id,
+                        label: `${m.code} - ${m.name} (${m.status})`
+                    }))}
                     className="w-full sm:w-72 px-3.5 py-2 rounded-xl bg-slate-800/90 border border-slate-700 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium transition-all"
-                >
-                    {machines.map((m) => (
-                        <option key={m.id} value={m.id}>
-                            {m.code} - {m.name} ({m.status})
-                        </option>
-                    ))}
-                </select>
+                />
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5 justify-end">

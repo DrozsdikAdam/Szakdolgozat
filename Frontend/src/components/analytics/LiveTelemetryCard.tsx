@@ -1,45 +1,9 @@
-import { Thermometer, Zap, Gauge, Radio, Waves, CheckCircle, AlertTriangle, AlertOctagon, Wrench } from "lucide-react"
+import { Thermometer, Zap, Gauge, Radio, Waves } from "lucide-react"
 import type { TelemertyResponse } from "../../types/telemetry/Telemetry"
-import type { MachineStatus } from "../../types/machine/MachineStatus"
+import { MachineStatusBadge } from "../common/Badges"
 
 export const LiveTelemetryCard = ({ telemetry }: { telemetry: TelemertyResponse | null }) => {
-    const getStatusBadge = (status?: MachineStatus) => {
-        switch (status) {
-            case "RUNNING":
-                return {
-                    label: "Működik (Termelés)",
-                    color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
-                    icon: <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                }
-            case "IDLE":
-                return {
-                    label: "Készenlét (Üresjárat)",
-                    color: "text-amber-400 bg-amber-500/10 border-amber-500/30",
-                    icon: <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                }
-            case "MAINTENANCE":
-                return {
-                    label: "Karbantartás alatt",
-                    color: "text-blue-400 bg-blue-500/10 border-blue-500/30",
-                    icon: <Wrench className="w-3.5 h-3.5 text-blue-400" />
-                }
-            case "ERROR":
-                return {
-                    label: "Hibaállapot (Leállás)",
-                    color: "text-rose-400 bg-rose-500/10 border-rose-500/30",
-                    icon: <AlertOctagon className="w-3.5 h-3.5 text-rose-400" />
-                }
-            case "OFFLINE":
-            default:
-                return {
-                    label: "Kikapcsolva (Offline)",
-                    color: "text-slate-400 bg-slate-500/10 border-slate-500/30",
-                    icon: <Radio className="w-3.5 h-3.5 text-slate-400" />
-                }
-        }
-    }
 
-    const statusInfo = getStatusBadge(telemetry?.status)
     const temp = telemetry?.temperature ?? 0
     const power = telemetry?.powerKw ?? 0
     const pressure = telemetry?.pressureBar ?? 0
@@ -59,10 +23,7 @@ export const LiveTelemetryCard = ({ telemetry }: { telemetry: TelemertyResponse 
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <div className={`px-3 py-1 rounded-xl text-xs font-semibold border flex items-center gap-1.5 ${statusInfo.color}`}>
-                        {statusInfo.icon}
-                        {statusInfo.label}
-                    </div>
+                    <MachineStatusBadge status={telemetry?.status || "OFFLINE"} />
                 </div>
             </div>
 
@@ -79,7 +40,7 @@ export const LiveTelemetryCard = ({ telemetry }: { telemetry: TelemertyResponse 
                         {temp.toFixed(1)} <span className="text-sm font-sans text-slate-400">°C</span>
                     </div>
                     <div className="text-[11px] text-slate-400">
-                        {temp > 80 ? "⚠️ Magas hőmérséklet!" : "Optimális működési tartomány"}
+                        {temp > 80 ? "Magas hőmérséklet!" : "Optimális működési tartomány"}
                     </div>
                 </div>
 
@@ -118,7 +79,7 @@ export const LiveTelemetryCard = ({ telemetry }: { telemetry: TelemertyResponse 
                         {vibration.toFixed(2)} <span className="text-sm font-sans text-slate-400">mm/s</span>
                     </div>
                     <div className="text-[11px] text-slate-400">
-                        {vibration > 4.0 ? "⚠️ Megnövekedett vibráció!" : "Normál mechanikai állapot"}
+                        {vibration > 4.0 ? "Megnövekedett vibráció!" : "Normál mechanikai állapot"}
                     </div>
                 </div>
             </div>
