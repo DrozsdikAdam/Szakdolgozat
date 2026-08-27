@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "../hooks/UseAuth"
 import { Activity, Boxes, Factory, Layers, LogOut, Package, Square, User, Wrench } from "lucide-react"
+import { NotificationBell } from "./notification/NotificationBell"
 
 export const Navbar = () => {
     const { user, logout } = useAuth()
@@ -78,6 +79,7 @@ export const Navbar = () => {
                         <LogOut size={16} />
                         <span className="hidden sm:inline">Kijelentkezés</span>
                     </button>
+                    <NotificationBell />
                 </div>
             </div>
         </header>

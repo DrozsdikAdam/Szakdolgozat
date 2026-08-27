@@ -20,6 +20,7 @@ export const MachineView = () => {
 
     const [machines, setMachines] = useState<MachineResponse[]>([])
     const [users, setUsers] = useState<UserResponse[]>([])
+    const [technicians, setTechnicians] = useState<UserResponse[]>([])
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [error, setError] = useState<string | null>(null)
     const navigate = useNavigate()
@@ -43,14 +44,14 @@ export const MachineView = () => {
                 getWorkOrders()
             ])
 
-            const operators = usersRes.filter(
-                u => u.roles.includes("OPERATOR")
-                    || u.roles.includes("TECHNICIAN")
-                    || u.roles.includes("MANAGER"));
+            const operators = usersRes.filter(u => u.roles.includes("OPERATOR") || u.roles.includes("SYSTEMADMIN"));
+            const techs = usersRes.filter(u => u.roles.includes("TECHNICIAN") || u.roles.includes("SYSTEMADMIN"));
 
-            setMachines(machinesRes)
-            setUsers(operators)
-            setWorkOrders(workOrdersRes)
+            setMachines(machinesRes);
+            setUsers(operators);
+            setTechnicians(techs);
+            setWorkOrders(workOrdersRes);
+
         } catch (err) {
             setError(err instanceof Error ? err.message : "Ismeretlen hiba")
         } finally {
@@ -200,7 +201,7 @@ export const MachineView = () => {
                             onClose={() => setMachineToEmergencyStop(null)}
                             onSuccess={loadData}
                             machineId={machineToEmergencyStop.id}
-                            technicians={users.filter(u => u.roles.includes("TECHNICIAN"))}
+                            technicians={technicians}
                         />
                     )}
 

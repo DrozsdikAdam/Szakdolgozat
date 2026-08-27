@@ -35,8 +35,8 @@ export const TelemetryCharts = ({ history }: { history: TelemertyResponse[] }) =
             <div className="rounded-2xl bg-slate-900/60 border border-slate-800 p-5 shadow-xl space-y-4 backdrop-blur-xl">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
                     <div>
-                        <h4 className="text-sm font-bold text-white tracking-tight">Hőmérséklet & Rezgés Trend</h4>
-                        <p className="text-xs text-slate-400">Időbeli alakulás (°C és mm/s)</p>
+                        <h4 className="text-sm font-bold text-white tracking-tight">Nyomás & Rezgés Trend</h4>
+                        <p className="text-xs text-slate-400">Időbeli alakulás (bar és mm/s)</p>
                     </div>
                 </div>
 
@@ -68,8 +68,8 @@ export const TelemetryCharts = ({ history }: { history: TelemertyResponse[] }) =
                             <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
                             <Area
                                 type="monotone"
-                                dataKey="temperature"
-                                name="Hőmérséklet (°C)"
+                                dataKey="pressureBar"
+                                name="Nyomás (bar)"
                                 stroke="#f59e0b"
                                 fillOpacity={1}
                                 fill="url(#tempGradient)"
@@ -92,8 +92,8 @@ export const TelemetryCharts = ({ history }: { history: TelemertyResponse[] }) =
             <div className="rounded-2xl bg-slate-900/60 border border-slate-800 p-5 shadow-xl space-y-4 backdrop-blur-xl">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
                     <div>
-                        <h4 className="text-sm font-bold text-white tracking-tight">Teljesítmény & Nyomás</h4>
-                        <p className="text-xs text-slate-400">Villamos áramfelvétel (kW) és Nyomás (bar)</p>
+                        <h4 className="text-sm font-bold text-white tracking-tight">Teljesítmény & Hőmérséklet</h4>
+                        <p className="text-xs text-slate-400">Villamos áramfelvétel (kW) és Hőmérséklet (°C)</p>
                     </div>
                 </div>
 
@@ -134,8 +134,8 @@ export const TelemetryCharts = ({ history }: { history: TelemertyResponse[] }) =
                             />
                             <Area
                                 type="monotone"
-                                dataKey="pressureBar"
-                                name="Nyomás (bar)"
+                                dataKey="temperature"
+                                name="Hőmérséklet (°C)"
                                 stroke="#06b6d4"
                                 fillOpacity={1}
                                 fill="url(#pressureGradient)"
