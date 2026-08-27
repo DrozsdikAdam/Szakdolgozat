@@ -3,6 +3,7 @@ package hu.mes.backend.controllers;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import hu.mes.backend.dtos.machine.EmergencyStopRequest;
 import hu.mes.backend.dtos.machine.MachineCreateRequest;
 import hu.mes.backend.dtos.machine.MachineResponse;
 import hu.mes.backend.dtos.machine.MachineStatusUpdateRequest;
@@ -78,6 +79,13 @@ public class MachineController {
     public ResponseEntity<MachineResponse> createMachine(@Valid @RequestBody MachineCreateRequest request) {
         MachineResponse newMachine = machineService.createMachine(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(newMachine);
+    }
+
+    @PostMapping("/{id}/emergency-stop")
+    public ResponseEntity<MachineResponse> emergencyStop(@PathVariable UUID id,
+            @Valid @RequestBody EmergencyStopRequest request) {
+        MachineResponse updatedMachine = machineService.emergencyStop(id, request);
+        return ResponseEntity.status(HttpStatus.OK).body(updatedMachine);
     }
 
     @PatchMapping("/{id}")

@@ -1,4 +1,4 @@
-import type { MachineCreateRequest, MachineResponse, MachineStatusUpdateRequest, MachineUpdateRequest } from "../types/machine/Machine"
+import type { EmergencyStopRequest, MachineCreateRequest, MachineResponse, MachineStatusUpdateRequest, MachineUpdateRequest } from "../types/machine/Machine"
 import type { MachineStatus, MachineType } from "../types/machine/MachineStatus"
 import { apiFetch } from "../utils/apiFetch"
 
@@ -86,5 +86,12 @@ export const deleteMachine = async (id: string) => {
 export const restoreMachine = async (id: string) => {
     return apiFetch<void>(`${baseUrl}/${id}/restore`, {
         method: "PATCH",
+    })
+}
+
+export const emergencyStop = async (id: string, request: EmergencyStopRequest) => {
+    return apiFetch<MachineResponse>(`${baseUrl}/${id}/emergency-stop`, {
+        method: "POST",
+        body: JSON.stringify(request),
     })
 }

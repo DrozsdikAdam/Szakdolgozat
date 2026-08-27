@@ -51,6 +51,12 @@ export interface MachineUpdateRequest {
     assignedUserId?: string,
 }
 
+export interface EmergencyStopRequest {
+    reason: string,
+    description?: string,
+    technicianId?: string,
+}
+
 export interface MachineStatusUpdateRequest {
     status: MachineStatus,
 }

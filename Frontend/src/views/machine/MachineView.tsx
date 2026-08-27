@@ -13,6 +13,7 @@ import { MachineCard } from "../../components/machine/Card"
 import { EditMachineModal } from "../../components/machine/modal/Edit"
 import { useNavigate } from "react-router-dom"
 import { DeleteConfirmModal } from "../../components/common/DeleteConfirmModal"
+import { EmergencyStopModal } from "../../components/machine/modal/EmergencyStop"
 
 export const MachineView = () => {
 
@@ -28,6 +29,7 @@ export const MachineView = () => {
     const [selectedMachine, setSelectedMachine] = useState<MachineResponse | null>(null)
 
     const [machineToDelete, setMachineToDelete] = useState<MachineResponse | null>(null)
+    const [machineToEmergencyStop, setMachineToEmergencyStop] = useState<MachineResponse | null>(null)
 
     const loadData = async (showSpinner: boolean = true) => {
         if (showSpinner) setIsLoading(true)
@@ -109,6 +111,7 @@ export const MachineView = () => {
 
     const closeModals = () => {
         setSelectedMachine(null);
+        setMachineToEmergencyStop(null);
     }
 
     const filteredMachines = useMemo(() => {
@@ -158,6 +161,16 @@ export const MachineView = () => {
                         users={users}
                     />
 
+                    {machineToEmergencyStop && (
+                        <EmergencyStopModal
+                            isOpen={!!machineToEmergencyStop}
+                            onClose={() => setMachineToEmergencyStop(null)}
+                            onSuccess={loadData}
+                            machineId={machineToEmergencyStop.id}
+                            technicians={users.filter(u => u.roles.includes("TECHNICIAN"))}
+                        />
+                    )}
+
                     {machineToDelete && (
                         <DeleteConfirmModal
                             isOpen={!!machineToDelete}
@@ -191,6 +204,7 @@ export const MachineView = () => {
                                     onDelete={() => setMachineToDelete(machine)}
                                     onStatusChange={handleStatusChange}
                                     onAssignUser={handleAssingUser}
+                                    onEmergencyStop={() => setMachineToEmergencyStop(machine)}
                                 />
                             ))}
                         </div>

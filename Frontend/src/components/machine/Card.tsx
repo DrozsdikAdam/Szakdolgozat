@@ -1,11 +1,11 @@
-import { Pencil, Trash2 } from "lucide-react"
+import { Pencil, PowerOff, Trash2 } from "lucide-react"
 import type { MachineCardProps } from "../../types/machine/MachineProps"
 import { MachineStatusBadge, MachineTypeBadge } from "../common/Badges"
 import { SelectField } from "../common/form/SelectField"
 import { MACHINE_STATUS_OPTIONS } from "../../constants/machineStatus"
 import type { MachineStatus } from "../../types/machine/MachineStatus"
 
-export const MachineCard = ({ machine, onEdit, onDelete, onStatusChange, users, onAssignUser }: MachineCardProps) => {
+export const MachineCard = ({ machine, onEdit, onDelete, onStatusChange, users, onAssignUser, onEmergencyStop }: MachineCardProps) => {
     return (
         <div className="flex flex-col rounded-2xl p-5 shadow-xl border border-slate-800 bg-slate-900/60 backdrop-blur-xl hover:border-slate-700/60 transition-all space-y-4">
             <div className="flex items-center justify-between">
@@ -56,6 +56,13 @@ export const MachineCard = ({ machine, onEdit, onDelete, onStatusChange, users, 
                         className="p-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all"
                     >
                         <Trash2 size={18} />
+                    </button>
+                    <button
+                        onClick={() => onEmergencyStop(machine.id)}
+                        title="Leállt a gép"
+                        className="p-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all"
+                    >
+                        <PowerOff size={18} />
                     </button>
                 </div>
                 <div className="flex-1 max-w-xs">

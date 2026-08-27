@@ -16,6 +16,7 @@ export interface MachineCardProps {
     onDelete: (id: string) => void,
     onStatusChange: (id: string, status: MachineStatus) => void,
     users: UserResponse[],
+    onEmergencyStop: (id: string) => void,
     onAssignUser: (machineId: string, userId: string) => void
 }
 
@@ -30,6 +31,14 @@ export interface MachineFilterBarProps {
     typeFilter: MachineType | "ALL",
     setTypeFilter: (val: MachineType | "ALL") => void,
     onCreate: () => void
+}
+
+export interface EmergencyStopModalProps {
+    isOpen: boolean,
+    onClose: () => void,
+    onSuccess: () => void,
+    machineId: string,
+    technicians: UserResponse[]
 }
 
 export interface MachineStatusBadgeProps {

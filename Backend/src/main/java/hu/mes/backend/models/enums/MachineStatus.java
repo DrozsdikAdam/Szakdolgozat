@@ -9,6 +9,7 @@ public enum MachineStatus {
     RUNNING("Aktív"),
     IDLE("Tétlen"),
     ERROR("Hiba"),
+    STOPPED("Leállítva"),
     MAINTENANCE("Karbantartás"),
     OFFLINE("Kikapcsolva");
 

@@ -67,6 +67,7 @@ public class PlcSimulatorService {
                         && goodProduced.compareTo(activeWorkOrder.getTargetQuantity()) >= 0) {
                     machine.setStatus(MachineStatus.IDLE);
                     machineRepository.save(machine);
+                    activeWorkOrder.setStatus(WorkOrderStatus.QUALITY_CHECK);
                 }
 
                 workOrderRepository.save(activeWorkOrder);
@@ -98,6 +99,9 @@ public class PlcSimulatorService {
             case IDLE:
                 power = Math.random() * 2.0 + 4.0;
                 break;
+            case STOPPED:
+                power = 0.5;
+                break;
             default:
                 power = 0.0;
                 break;
@@ -107,7 +111,7 @@ public class PlcSimulatorService {
 
     private Double generateRandomPressure(MachineStatus status) {
         double pressure = 0.0;
-        if (status == MachineStatus.OFFLINE)
+        if (status == MachineStatus.OFFLINE || status == MachineStatus.STOPPED)
             return pressure;
 
         pressure = Math.random() * 1.4 + 5.8;
@@ -145,6 +149,9 @@ public class PlcSimulatorService {
             case MAINTENANCE:
                 temp = Math.random() * 15 + 30;
                 break;
+            case STOPPED:
+                temp = Math.random() * 2 + 22;
+                break;
             default:
                 temp = Math.random() * 10 + 25;
                 break;
@@ -157,6 +164,9 @@ public class PlcSimulatorService {
         switch (status) {
             case RUNNING:
                 produced = Math.random() < 0.85 ? 1 : 0;
+                break;
+            case STOPPED:
+                produced = 0;
                 break;
             default:
                 produced = 0;

@@ -2,7 +2,7 @@ import type { MachineStatus } from "../types/machine/MachineStatus";
 
 export interface StatusDefinition {
     key: MachineStatus,
-    label: "Termel" | "Készenlétben" | "Karbantartás alatt" | "Hiba" | "Kikapcsolva",
+    label: "Termel" | "Készenlétben" | "Karbantartás alatt" | "Hiba" | "Kikapcsolva" | "Leállítva",
     badgeStyle: string,
 }
 
@@ -31,6 +31,11 @@ export const MACHINE_STATUSES: Record<MachineStatus, StatusDefinition> = {
         key: "OFFLINE",
         label: "Kikapcsolva",
         badgeStyle: "bg-rose-500/10 border-rose-500/20 text-rose-400",
+    },
+    STOPPED: {
+        key: "STOPPED",
+        label: "Leállítva",
+        badgeStyle: "bg-yellow-500/10 border-yellow-500/20 text-yellow-400",
     },
 }
 

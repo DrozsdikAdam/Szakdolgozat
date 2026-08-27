@@ -6,14 +6,18 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import hu.mes.backend.dtos.machine.EmergencyStopRequest;
 import hu.mes.backend.dtos.machine.MachineCreateRequest;
 import hu.mes.backend.dtos.machine.MachineResponse;
 import hu.mes.backend.dtos.machine.MachineUpdateRequest;
+import hu.mes.backend.dtos.maintenance.MachineMaintenanceCreateRequest;
 import hu.mes.backend.mappers.MachineMapper;
 import hu.mes.backend.models.Machine;
 import hu.mes.backend.models.User;
 import hu.mes.backend.models.enums.MachineStatus;
 import hu.mes.backend.models.enums.MachineType;
+import hu.mes.backend.models.enums.MaintenanceStatus;
+import hu.mes.backend.models.enums.MaintenanceType;
 import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -25,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class MachineService {
 
+    private final MachineMaintenanceService machineMaintenanceService;
     private final MachineRepository machineRepository;
     private final MachineMapper machineMapper;
     private final UserRepository userRepository;
@@ -202,6 +207,29 @@ public class MachineService {
     public List<MachineResponse> getInactiveMachines() {
         List<Machine> machines = machineRepository.findByActiveFalse();
         return machineMapper.convertToResponses(machines);
+    }
+
+    public MachineResponse emergencyStop(UUID id, EmergencyStopRequest request) {
+        Machine machine = getMachineEntityById(id);
+        machine.setStatus(MachineStatus.ERROR);
+        machineRepository.save(machine);
+
+        MachineMaintenanceCreateRequest req = MachineMaintenanceCreateRequest.builder()
+                .machineId(id)
+                .machineCode(machine.getCode())
+                .machineName(machine.getName())
+                .type(MaintenanceType.CORRECTIVE)
+                .title("Vészleállítás: " + request.getReason())
+                .rootCause(request.getReason())
+                .description(request.getDescription() != null ? request.getDescription()
+                        : "Operátori vészleállítás történt.")
+                .status(MaintenanceStatus.SCHEDULED)
+                .technicianId(request.getTechnicianId())
+                .start(LocalDateTime.now())
+                .build();
+
+        machineMaintenanceService.createMaintenance(req);
+        return machineMapper.convertToResponse(machine);
     }
 
     private Machine getMachineEntityById(UUID id) {

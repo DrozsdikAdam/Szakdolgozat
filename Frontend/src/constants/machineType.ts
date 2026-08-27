@@ -2,7 +2,7 @@ import type { MachineType } from "../types/machine/MachineStatus";
 
 export interface TypeDefinition {
     key: MachineType,
-    label: "CNC Megmunkáló" | "Fröccsöntő Gép" | "Összeszerelő Sor" | "Csomagoló Gép" | "Lézervágó" | "Robota kar" | "Hegesztőgép",
+    label: "CNC Megmunkáló" | "Fröccsöntő Gép" | "Összeszerelő Sor" | "Csomagoló Gép" | "Lézervágó" | "Robot kar" | "Hegesztőgép",
     badgeStyle: string
 }
 
@@ -35,7 +35,7 @@ export const TYPES: Record<MachineType, TypeDefinition> = {
     },
     ROBOT: {
         key: "ROBOT",
-        label: "Robota kar",
+        label: "Robot kar",
         badgeStyle: "bg-yellow-500/10 border-yellow-500/20 text-yellow-400"
     },
     WELDING: {
