@@ -15,6 +15,7 @@ import hu.mes.backend.models.MachineMaintenance;
 import hu.mes.backend.models.User;
 import hu.mes.backend.models.enums.MachineStatus;
 import hu.mes.backend.models.enums.MaintenanceStatus;
+import hu.mes.backend.models.enums.NotificationType;
 import hu.mes.backend.repositories.MachineMaintenanceRepository;
 import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.UserRepository;
@@ -31,6 +32,7 @@ public class MachineMaintenanceService {
     private final MachineRepository machineRepository;
     private final UserRepository userRepository;
     private final MaintenanceMapper maintenanceMapper;
+    private final NotificationService notificationService;
 
     public List<MachineMaintenanceResponse> getAllMaintenances() {
         List<MachineMaintenance> maintenances = machineMaintenanceRepository.findAll();
@@ -95,6 +97,11 @@ public class MachineMaintenanceService {
                 .start(request.getStart())
                 .end(request.getEnd())
                 .build();
+
+        notificationService.send("Új karbantartási feladat: " + machine.getName(),
+                "A karbantartási feladatot kijelölték!" + request.getTitle(),
+                NotificationType.INFO,
+                "/maintenance");
 
         return maintenanceMapper.convertToResponse(machineMaintenanceRepository.save(maintenance));
     }

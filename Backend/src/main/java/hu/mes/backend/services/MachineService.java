@@ -18,6 +18,7 @@ import hu.mes.backend.models.enums.MachineStatus;
 import hu.mes.backend.models.enums.MachineType;
 import hu.mes.backend.models.enums.MaintenanceStatus;
 import hu.mes.backend.models.enums.MaintenanceType;
+import hu.mes.backend.models.enums.NotificationType;
 import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -33,6 +34,7 @@ public class MachineService {
     private final MachineRepository machineRepository;
     private final MachineMapper machineMapper;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public List<MachineResponse> getAllMachines() {
         List<Machine> machines = machineRepository.findByActiveTrue();
@@ -227,6 +229,11 @@ public class MachineService {
                 .technicianId(request.getTechnicianId())
                 .start(LocalDateTime.now())
                 .build();
+
+        notificationService.send("Vészleállítás: " + machine.getCode(),
+                "Vészleállítás történt a(z) " + machine.getName() + " gépen. Ok: " + request.getReason(),
+                NotificationType.ERROR,
+                "/machine");
 
         machineMaintenanceService.createMaintenance(req);
         return machineMapper.convertToResponse(machine);

@@ -17,6 +17,7 @@ import hu.mes.backend.dtos.inventory.InventoryUpdateRequest;
 import hu.mes.backend.mappers.InventoryMapper;
 import hu.mes.backend.models.Inventory;
 import hu.mes.backend.models.Product;
+import hu.mes.backend.models.enums.NotificationType;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +26,7 @@ public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
     private final InventoryMapper inventoryMapper;
+    private final NotificationService notificationService;
 
     public void initializeInventory(Product product) {
         if (product == null)
@@ -62,6 +64,7 @@ public class InventoryService {
 
         inventory.setQuantity(newQuantity);
         inventory.setUpdatedAt(LocalDateTime.now());
+        checkLowStockAndNotify(inventory);
         return inventoryMapper.convertToResponse(inventoryRepository.save(inventory));
     }
 
@@ -81,7 +84,9 @@ public class InventoryService {
 
         inventory.setReservedQuantity(reserved.add(request.getAmount()));
         inventory.setUpdatedAt(LocalDateTime.now());
+        checkLowStockAndNotify(inventory);
         return inventoryMapper.convertToResponse(inventoryRepository.save(inventory));
+
     }
 
     public InventoryResponse consumeReservedStock(InventoryUpdateRequest request) {
@@ -99,6 +104,7 @@ public class InventoryService {
         inventory.setQuantity(quantity.subtract(request.getAmount()));
         inventory.setReservedQuantity(reserved.subtract(request.getAmount()));
         inventory.setUpdatedAt(LocalDateTime.now());
+        checkLowStockAndNotify(inventory);
         return inventoryMapper.convertToResponse(inventoryRepository.save(inventory));
     }
 
@@ -119,6 +125,20 @@ public class InventoryService {
 
     public List<InventoryResponse> getAllInventories() {
         return inventoryMapper.convertToResponses(inventoryRepository.findAll());
+    }
+
+    private void checkLowStockAndNotify(Inventory inventory) {
+        BigDecimal reserved = inventory.getReservedQuantity() != null ? inventory.getReservedQuantity()
+                : BigDecimal.ZERO;
+        BigDecimal quantity = inventory.getQuantity() != null ? inventory.getQuantity() : BigDecimal.ZERO;
+        BigDecimal available = quantity.subtract(reserved);
+        if (available.compareTo(BigDecimal.valueOf(10)) <= 0) {
+            notificationService.send(
+                    "⚠️ Alacsony készlet: " + inventory.getProduct().getName(),
+                    "A szabad raktárkészlet " + available + " db-ra csökkent!",
+                    NotificationType.WARNING,
+                    "/inventory");
+        }
     }
 
 }

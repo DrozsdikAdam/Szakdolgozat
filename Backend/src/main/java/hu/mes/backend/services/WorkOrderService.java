@@ -18,6 +18,7 @@ import hu.mes.backend.mappers.WorkOrderMapper;
 import hu.mes.backend.models.Product;
 import hu.mes.backend.models.User;
 import hu.mes.backend.models.WorkOrder;
+import hu.mes.backend.models.enums.NotificationType;
 import hu.mes.backend.models.enums.WorkOrderPriority;
 import hu.mes.backend.models.enums.WorkOrderStatus;
 import hu.mes.backend.repositories.ProductRepository;
@@ -39,6 +40,7 @@ public class WorkOrderService {
 	private final WorkOrderMapper workOrderMapper;
 	private final UserRepository userRepository;
 	private final BOMInventoryService bomInventoryService;
+	private final NotificationService notificationService;
 
 	public WorkOrderResponse createWorkOrder(WorkOrderCreateRequest request) {
 		String orderNumber = generateOrderNumber();
@@ -106,6 +108,12 @@ public class WorkOrderService {
 					workOrder.getProduct().getId(),
 					goodProduced,
 					null);
+
+			notificationService.send("✅ Gyártási rendelés lezárva: " + workOrder.getOrderNumber(),
+					"A késztermékek (" + goodProduced + " db) bevételezve a raktárba.",
+					NotificationType.SUCCESS,
+					"/workorder");
+
 			inventoryService.adjustStock(stockUpdate);
 			workOrder.setEndDate(LocalDateTime.now());
 		}

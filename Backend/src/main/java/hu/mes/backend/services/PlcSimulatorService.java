@@ -11,6 +11,7 @@ import hu.mes.backend.models.Machine;
 import hu.mes.backend.models.MachineTelemetry;
 import hu.mes.backend.models.WorkOrder;
 import hu.mes.backend.models.enums.MachineStatus;
+import hu.mes.backend.models.enums.NotificationType;
 import hu.mes.backend.models.enums.WorkOrderStatus;
 import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.MachineTelemetryRepository;
@@ -26,6 +27,7 @@ public class PlcSimulatorService {
     private final MachineRepository machineRepository;
     private final MachineTelemetryRepository telemetryRepository;
     private final WorkOrderRepository workOrderRepository;
+    private final NotificationService notificationService;
 
     @Scheduled(fixedRate = 5000)
     public void generateTelemetryData() {
@@ -68,6 +70,12 @@ public class PlcSimulatorService {
                     machine.setStatus(MachineStatus.IDLE);
                     machineRepository.save(machine);
                     activeWorkOrder.setStatus(WorkOrderStatus.QUALITY_CHECK);
+
+                    notificationService.send("Gyártás kész: " + activeWorkOrder.getOrderNumber(),
+                            "A(z) " + activeWorkOrder.getProduct().getName() + " elérte a célmennyiséget ("
+                                    + activeWorkOrder.getTargetQuantity() + " db). Minőségellenőrzésre vár!",
+                            NotificationType.SUCCESS,
+                            "/workorder");
                 }
 
                 workOrderRepository.save(activeWorkOrder);
