@@ -14,6 +14,8 @@ import hu.mes.backend.dtos.maintenance.MachineMaintenanceCreateRequest;
 import hu.mes.backend.mappers.MachineMapper;
 import hu.mes.backend.models.Machine;
 import hu.mes.backend.models.User;
+import hu.mes.backend.models.enums.AuditAction;
+import hu.mes.backend.models.enums.AuditEntityType;
 import hu.mes.backend.models.enums.MachineStatus;
 import hu.mes.backend.models.enums.MachineType;
 import hu.mes.backend.models.enums.MaintenanceStatus;
@@ -35,6 +37,7 @@ public class MachineService {
     private final MachineMapper machineMapper;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     public List<MachineResponse> getAllMachines() {
         List<Machine> machines = machineRepository.findByActiveTrue();
@@ -100,6 +103,8 @@ public class MachineService {
                 .build();
 
         machineRepository.save(machine);
+        auditLogService.log("USER", null, AuditAction.CREATE, AuditEntityType.MACHINE, machine.getCode(),
+                "Új gép regisztrálva: " + machine.getName() + " (" + machine.getCode() + ")");
         return machineMapper.convertToResponse(machine);
     }
 
@@ -135,6 +140,8 @@ public class MachineService {
                 : null);
 
         machineRepository.save(machine);
+        auditLogService.log("USER", null, AuditAction.UPDATE, AuditEntityType.MACHINE, machine.getCode(),
+                "Gép adatai módosítva: " + machine.getName());
         return machineMapper.convertToResponse(machine);
     }
 
@@ -144,6 +151,8 @@ public class MachineService {
 
         machine.setStatus(status);
         machineRepository.save(machine);
+        auditLogService.log("USER", null, AuditAction.STATUS_CHANGE, AuditEntityType.MACHINE, machine.getCode(),
+                "Gép állapota módosítva: " + status.getDisplayValue());
         return machineMapper.convertToResponse(machine);
     }
 
@@ -234,6 +243,9 @@ public class MachineService {
                 "Vészleállítás történt a(z) " + machine.getName() + " gépen. Ok: " + request.getReason(),
                 NotificationType.ERROR,
                 "/machine");
+
+        auditLogService.log("OPERATOR", null, AuditAction.EMERGENCY_STOP, AuditEntityType.MACHINE, machine.getCode(),
+                "🚨 Vészleállítás történt! Ok: " + request.getReason());
 
         machineMaintenanceService.createMaintenance(req);
         return machineMapper.convertToResponse(machine);

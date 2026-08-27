@@ -18,6 +18,8 @@ import hu.mes.backend.mappers.WorkOrderMapper;
 import hu.mes.backend.models.Product;
 import hu.mes.backend.models.User;
 import hu.mes.backend.models.WorkOrder;
+import hu.mes.backend.models.enums.AuditAction;
+import hu.mes.backend.models.enums.AuditEntityType;
 import hu.mes.backend.models.enums.NotificationType;
 import hu.mes.backend.models.enums.WorkOrderPriority;
 import hu.mes.backend.models.enums.WorkOrderStatus;
@@ -41,6 +43,7 @@ public class WorkOrderService {
 	private final UserRepository userRepository;
 	private final BOMInventoryService bomInventoryService;
 	private final NotificationService notificationService;
+	private final AuditLogService auditLogService;
 
 	public WorkOrderResponse createWorkOrder(WorkOrderCreateRequest request) {
 		String orderNumber = generateOrderNumber();
@@ -73,6 +76,8 @@ public class WorkOrderService {
 				.build();
 
 		workOrderRepository.save(workOrder);
+		auditLogService.log("PLANNER", null, AuditAction.CREATE, AuditEntityType.WORKORDER, orderNumber,
+				"Új rendelés létrehozva: " + workOrder.getTargetQuantity() + " db " + product.getName());
 		return workOrderMapper.convertToResponse(workOrder);
 	}
 
@@ -132,6 +137,8 @@ public class WorkOrderService {
 		workOrder.setScrapQuantity(request.getScrapQuantity());
 
 		workOrderRepository.save(workOrder);
+		auditLogService.log("OPERATOR", null, AuditAction.STATUS_CHANGE, AuditEntityType.WORKORDER,
+				workOrder.getOrderNumber(), "Státuszváltás: " + oldStatus + " -> " + newStatus);
 		return workOrderMapper.convertToResponse(workOrder);
 	}
 

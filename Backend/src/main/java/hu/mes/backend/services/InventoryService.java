@@ -17,6 +17,8 @@ import hu.mes.backend.dtos.inventory.InventoryUpdateRequest;
 import hu.mes.backend.mappers.InventoryMapper;
 import hu.mes.backend.models.Inventory;
 import hu.mes.backend.models.Product;
+import hu.mes.backend.models.enums.AuditAction;
+import hu.mes.backend.models.enums.AuditEntityType;
 import hu.mes.backend.models.enums.NotificationType;
 
 @Service
@@ -27,6 +29,7 @@ public class InventoryService {
     private final InventoryRepository inventoryRepository;
     private final InventoryMapper inventoryMapper;
     private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     public void initializeInventory(Product product) {
         if (product == null)
@@ -65,6 +68,9 @@ public class InventoryService {
         inventory.setQuantity(newQuantity);
         inventory.setUpdatedAt(LocalDateTime.now());
         checkLowStockAndNotify(inventory);
+        auditLogService.log("WAREHOUSE", null, AuditAction.STOCK_ADJUSTMENT, AuditEntityType.INVENTORY,
+                inventory.getProduct().getSku(), "Készletkorrekció: " + request.getAmount() + " db. Új egyenleg: "
+                        + newQuantity + " db (" + inventory.getProduct().getName() + ")");
         return inventoryMapper.convertToResponse(inventoryRepository.save(inventory));
     }
 

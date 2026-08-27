@@ -13,6 +13,8 @@ import hu.mes.backend.mappers.MaintenanceMapper;
 import hu.mes.backend.models.Machine;
 import hu.mes.backend.models.MachineMaintenance;
 import hu.mes.backend.models.User;
+import hu.mes.backend.models.enums.AuditAction;
+import hu.mes.backend.models.enums.AuditEntityType;
 import hu.mes.backend.models.enums.MachineStatus;
 import hu.mes.backend.models.enums.MaintenanceStatus;
 import hu.mes.backend.models.enums.NotificationType;
@@ -33,6 +35,7 @@ public class MachineMaintenanceService {
     private final UserRepository userRepository;
     private final MaintenanceMapper maintenanceMapper;
     private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     public List<MachineMaintenanceResponse> getAllMaintenances() {
         List<MachineMaintenance> maintenances = machineMaintenanceRepository.findAll();
@@ -103,6 +106,9 @@ public class MachineMaintenanceService {
                 NotificationType.INFO,
                 "/maintenance");
 
+        auditLogService.log("TECHNICIAN", null, AuditAction.MAINTENANCE_LOG, AuditEntityType.MAINTENANCE,
+                machine.getCode(), "Karbantartás rögzítve: " + request.getTitle() + " (" + machine.getName() + ")");
+
         return maintenanceMapper.convertToResponse(machineMaintenanceRepository.save(maintenance));
     }
 
@@ -134,6 +140,9 @@ public class MachineMaintenanceService {
         maintenance.setCost(request.getCost());
         maintenance.setStart(request.getStart());
         maintenance.setEnd(request.getEnd());
+
+        auditLogService.log("TECHNICIAN", null, AuditAction.UPDATE, AuditEntityType.MAINTENANCE, machine.getCode(),
+                "Karbantartás frissítve: " + maintenance.getTitle() + " (Státusz: " + request.getStatus() + ")");
 
         return maintenanceMapper.convertToResponse(machineMaintenanceRepository.save(maintenance));
     }
