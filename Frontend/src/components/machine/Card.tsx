@@ -5,7 +5,10 @@ import { SelectField } from "../common/form/SelectField"
 import { MACHINE_STATUS_OPTIONS } from "../../constants/machineStatus"
 import type { MachineStatus } from "../../types/machine/MachineStatus"
 
-export const MachineCard = ({ machine, onEdit, onDelete, onStatusChange, users, onAssignUser, onEmergencyStop }: MachineCardProps) => {
+export const MachineCard = ({ machine, onEdit, onDelete, workOrders, onStartWorkOrder, onStatusChange, users, onAssignUser, onEmergencyStop }: MachineCardProps) => {
+
+    const activeOrder = machine.assignedUserId ? workOrders.find(wo => wo.assignedUserId === machine.assignedUserId && wo.status === "IN_PROGRESS") : null;
+
     return (
         <div className="flex flex-col rounded-2xl p-5 shadow-xl border border-slate-800 bg-slate-900/60 backdrop-blur-xl hover:border-slate-700/60 transition-all space-y-4">
             <div className="flex items-center justify-between">
@@ -40,6 +43,70 @@ export const MachineCard = ({ machine, onEdit, onDelete, onStatusChange, users, 
                     <p className="text-sm text-slate-400">Munkavezető: </p>
                     <p className="text-sm text-slate-400">{machine.assignedUserName || ""}</p>
                 </div>
+            </div>
+            <div>
+                {activeOrder ?
+                    <div className="flex flex-col gap-1 p-3 bg-slate-800/60 backdrop-blur-xl rounded-lg mt-2 border-l-4 border-blue-500">
+                        <div className="flex items-center gap-2 mb-1">
+                            <p className="text-sm font-bold text-slate-200">
+                                {activeOrder.orderNumber}
+                            </p>
+                            <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 text-xs rounded border border-blue-500/20">
+                                Folyamatban
+                            </span>
+                        </div>
+
+                        <div className="text-sm text-slate-400">
+                            Termék: <span className="text-slate-200">{activeOrder.productName}</span>
+                        </div>
+                        <div className="text-sm text-slate-400">
+                            Elindítva: <span className="text-slate-200">
+                                {activeOrder.startDate ? new Date(activeOrder.startDate)
+                                    .toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : "-"
+                                }
+                            </span>
+                        </div>
+                        <div className="text-sm text-slate-400">
+                            Kész darab: <span className="text-slate-200">{activeOrder.goodQuantity} / {activeOrder.targetQuantity} db</span>
+                        </div>
+                        <div className="text-sm text-slate-400">
+                            Selejt: <span className="text-slate-200">{activeOrder.scrapQuantity} db</span>
+                        </div>
+                        <div className="space-y-1 mt-1">
+                            <div className="flex justify-between text-xs text-slate-400">
+                                <span>Gyártási haladás</span>
+                                <span className="text-indigo-300 font-bold">{activeOrder.progressPercentage?.toFixed(0)}%</span>
+                            </div>
+                            <div className="w-full bg-slate-950/80 rounded-full h-2 border border-slate-700/60 overflow-hidden p-0.5">
+                                <div
+                                    className="bg-gradient-to-r from-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-500 shadow-sm shadow-indigo-500/50"
+                                    style={{ width: `${activeOrder.progressPercentage}%` }}
+                                ></div>
+                            </div>
+                        </div>
+
+                    </div>
+                    :
+                    <div className="flex flex-col gap-2">
+                        <p className="text-sm text-slate-400">Nincs aktív gyártási feladat</p>
+                        <div className="flex items-center gap-2 mt-2">
+                            <SelectField
+                                label="Új rendelés indítása a gépen"
+                                placeholderOption="-- Válasszon rendelést az indításhoz --"
+                                options={workOrders
+                                    .filter(wo => wo.status === "PLANNED" || wo.status === "PREPARED")
+                                    .map(wo => ({
+                                        key: wo.id,
+                                        label: `${wo.orderNumber} - ${wo.productName} (${wo.targetQuantity} db)`
+                                    }))}
+                                onChange={(e) => {
+                                    if (e.target.value) onStartWorkOrder(machine.id, e.target.value, machine.assignedUserId);
+                                }}
+                            />
+
+                        </div>
+                    </div>
+                }
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-3 pt-3 border-t border-slate-800/80">
                 <div className="flex items-center gap-2">

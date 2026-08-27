@@ -1,4 +1,5 @@
 import type { UserResponse } from "../user/User";
+import type { WorkOrderResponse } from "../workorder/workOrder";
 import type { MachineResponse } from "./Machine";
 import type { MachineStatus, MachineType } from "./MachineStatus";
 
@@ -12,9 +13,11 @@ export interface UpdateMachineModalProps {
 
 export interface MachineCardProps {
     machine: MachineResponse,
+    workOrders: WorkOrderResponse[],
     onEdit: (m: MachineResponse) => void,
     onDelete: (id: string) => void,
     onStatusChange: (id: string, status: MachineStatus) => void,
+    onStartWorkOrder: (machineId: string, workOrderId: string, machineUserId?: string) => void,
     users: UserResponse[],
     onEmergencyStop: (id: string) => void,
     onAssignUser: (machineId: string, userId: string) => void

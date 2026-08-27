@@ -14,7 +14,8 @@ import { EditMachineModal } from "../../components/machine/modal/Edit"
 import { useNavigate } from "react-router-dom"
 import { DeleteConfirmModal } from "../../components/common/DeleteConfirmModal"
 import { EmergencyStopModal } from "../../components/machine/modal/EmergencyStop"
-
+import type { WorkOrderResponse, WorkOrderStatusUpdateRequest } from "../../types/workorder/workOrder"
+import { getWorkOrders, updateWorkOrderStatus, updateWorkOrderUser } from "../../services/workOrderService"
 export const MachineView = () => {
 
     const [machines, setMachines] = useState<MachineResponse[]>([])
@@ -30,14 +31,16 @@ export const MachineView = () => {
 
     const [machineToDelete, setMachineToDelete] = useState<MachineResponse | null>(null)
     const [machineToEmergencyStop, setMachineToEmergencyStop] = useState<MachineResponse | null>(null)
+    const [workOrders, setWorkOrders] = useState<WorkOrderResponse[]>([])
 
     const loadData = async (showSpinner: boolean = true) => {
         if (showSpinner) setIsLoading(true)
         setError(null)
         try {
-            const [machinesRes, usersRes] = await Promise.all([
+            const [machinesRes, usersRes, workOrdersRes] = await Promise.all([
                 getMachines(),
-                getUsers()
+                getUsers(),
+                getWorkOrders()
             ])
 
             const operators = usersRes.filter(
@@ -47,6 +50,7 @@ export const MachineView = () => {
 
             setMachines(machinesRes)
             setUsers(operators)
+            setWorkOrders(workOrdersRes)
         } catch (err) {
             setError(err instanceof Error ? err.message : "Ismeretlen hiba")
         } finally {
@@ -57,6 +61,35 @@ export const MachineView = () => {
     const handleSubmit = async () => {
         loadData();
     }
+
+    const handleStartWorkOrder = async (machineId: string, workOrderId: string, machineUserId?: string) => {
+        if (!machineUserId) {
+            setError("A gyártás indításához előbb rendeljen hozzá egy felelős gépkezelőt a géphez!");
+            return;
+        }
+        setIsLoading(true);
+        setError(null);
+        const workOrder = workOrders.find(wo => wo.id === workOrderId);
+        if (!workOrder) {
+            setIsLoading(false);
+            return;
+        }
+
+        const orderRequest: WorkOrderStatusUpdateRequest = {
+            status: "IN_PROGRESS",
+            producedQuantity: workOrder.producedQuantity || 0,
+            scrapQuantity: workOrder.scrapQuantity || 0
+        };
+
+        try {
+            await updateWorkOrderUser(workOrderId, machineUserId);
+            await updateWorkOrderStatus(workOrderId, orderRequest);
+            await updateMachineStatus(machineId, { status: "RUNNING" });
+            loadData();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Ismeretlen hiba történt a gyártás indításakor");
+        }
+    };
 
     const handleDelete = async (id: string) => {
         setIsLoading(true)
@@ -199,11 +232,13 @@ export const MachineView = () => {
                                 <MachineCard
                                     key={machine.id}
                                     machine={machine}
+                                    workOrders={workOrders}
                                     users={users}
                                     onEdit={() => setSelectedMachine(machine)}
                                     onDelete={() => setMachineToDelete(machine)}
                                     onStatusChange={handleStatusChange}
                                     onAssignUser={handleAssingUser}
+                                    onStartWorkOrder={handleStartWorkOrder}
                                     onEmergencyStop={() => setMachineToEmergencyStop(machine)}
                                 />
                             ))}
