@@ -38,7 +38,7 @@ export const WorkOrderView = () => {
         }
         setIsLoading(true)
         setError(null)
-        const producedQuantity = newStatus === "COMPLETED" ? order.targetQuantity : order.producedQuantity;
+        const producedQuantity = (order.producedQuantity && order.producedQuantity > 0) ? order.producedQuantity : order.targetQuantity;
 
         const request: WorkOrderStatusUpdateRequest = {
             status: newStatus,
@@ -57,9 +57,11 @@ export const WorkOrderView = () => {
 
     }
 
-    const loadData = async () => {
-        setIsLoading(true)
+    const loadData = async (showSpinner: boolean = true) => {
+        if (showSpinner) setIsLoading(true)
+
         setError(null)
+
         try {
             let [productsData, ordersData, usersData] = await Promise.all([
                 getProducts(),
@@ -79,17 +81,17 @@ export const WorkOrderView = () => {
 
     const filteredOrders = useMemo(() => {
         let filtered = [...orders]
-        if (statusFilter !== "ALL") {
+        if (statusFilter !== "ALL")
             filtered = filtered.filter(order => order.status === statusFilter)
-        }
-        if (priorityFilter !== "ALL") {
+
+        if (priorityFilter !== "ALL")
             filtered = filtered.filter(order => order.priority === priorityFilter)
-        }
-        if (workOrderUserFilter === "UNASSIGNED") {
+
+        if (workOrderUserFilter === "UNASSIGNED")
             filtered = filtered.filter(order => !order.assignedUserId)
-        } else if (workOrderUserFilter !== "ALL") {
+        else if (workOrderUserFilter !== "ALL")
             filtered = filtered.filter(order => order.assignedUserId === workOrderUserFilter)
-        }
+
         if (searchTerm.trim()) {
             const term = searchTerm.toLowerCase().trim()
             filtered = filtered.filter(order =>
@@ -127,7 +129,9 @@ export const WorkOrderView = () => {
     }
 
     useEffect(() => {
-        loadData()
+        loadData(true)
+        const interval = setInterval(() => loadData(false), 5000)
+        return () => clearInterval(interval)
     }, [])
 
     return (

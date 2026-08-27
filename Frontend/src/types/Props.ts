@@ -6,7 +6,16 @@ export interface Props {
 }
 
 export interface TitleProps {
-    page: "inventory" | "product" | "bom" | "workorder" | "user"
+    page: "inventory"
+    | "product"
+    | "bom"
+    | "workorder"
+    | "user"
+    | "maintenance"
+    | "machine"
+    | "machineCreate"
+    | "maintenanceEdit"
+    | "analytics";
 }
 
 export interface BadgeProps {
@@ -26,4 +35,15 @@ export interface ModalProps {
     cancelText?: string,
     maxWidth?: string,
     children: ReactNode
+    submitVariant?: "primary" | "secondary" | "danger"
+}
+
+export interface DeleteConfirmModalProps {
+    isOpen: boolean,
+    onClose: () => void,
+    onConfirm: () => void,
+    title?: string,
+    itemName?: string,
+    message?: string
+    isLoading?: boolean,
 }

@@ -9,6 +9,11 @@ import { InventoryView } from "./views/InventoryView"
 import { Layout } from "./components/Layout"
 import { WorkOrderView } from "./views/WorkOrderView"
 import { UserView } from "./views/UserView"
+import { MachineView } from "./views/machine/MachineView"
+import { MaintenanceView } from "./views/maintenance/MaintenanceView"
+import { MachineCreateView } from "./views/machine/MachineCreateView"
+import { MaintenanceEditView } from "./views/maintenance/MaintenanceEditView"
+import { AnalyticsView } from "./views/AnalyticsView"
 
 function App() {
   return (
@@ -33,6 +38,11 @@ function App() {
             <Route path="/inventory" element={<InventoryView />} />
             <Route path="/workorder" element={<WorkOrderView />} />
             <Route path="/user" element={<UserView />} />
+            <Route path="/machine" element={<MachineView />} />
+            <Route path="/machine/create" element={<MachineCreateView />} />
+            <Route path="/maintenance" element={<MaintenanceView />} />
+            <Route path="/maintenance/:id/edit" element={<MaintenanceEditView />} />
+            <Route path="/analytics" element={<AnalyticsView />} />
           </Route>
 
           <Route path="/login" element={<LoginView />} />

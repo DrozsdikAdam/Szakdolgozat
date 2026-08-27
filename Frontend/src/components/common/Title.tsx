@@ -25,6 +25,26 @@ export const Title = ({ page }: TitleProps) => {
             title = "Felhasználók"
             subTitle = "Itt lehet a felhasználókat megnézni és módosítani"
             break;
+        case "machine":
+            title = "Gépek"
+            subTitle = "Itt lehet a gépeket megnézni és módosítani"
+            break;
+        case "machineCreate":
+            title = "Új gép létrehozása"
+            subTitle = "Itt lehet új gépet létrehozni"
+            break;
+        case "maintenance":
+            title = "Karbantartások"
+            subTitle = "Itt lehet a karbantartásokat megnézni és módosítani"
+            break;
+        case "maintenanceEdit":
+            title = "Karbantartás szerkesztése"
+            subTitle = "Itt lehet a karbantartást szerkeszteni"
+            break;
+        case "analytics":
+            title = "OEE & PLC Telemetria Analitika"
+            subTitle = "Valós idejű gépállapotok, szenzoradatok és termelési hatékonyság"
+            break;
     }
 
     return (

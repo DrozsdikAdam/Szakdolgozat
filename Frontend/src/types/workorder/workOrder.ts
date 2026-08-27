@@ -25,6 +25,8 @@ export interface WorkOrderResponse {
     assignedUserName: string | null,
     status: WorkOrderStatus,
     priority: WorkOrderPriority,
+    goodQuantity: number,
+    progressPercentage: number,
     createdAt: string,
     updatedAt?: string,
     startDate?: string,

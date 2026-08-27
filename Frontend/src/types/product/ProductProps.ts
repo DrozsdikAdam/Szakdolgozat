@@ -12,7 +12,7 @@ export interface EditProps {
 
 export interface DeleteProps {
     id: string,
-    handleDeleteProduct: (id: string) => Promise<void>
+    handleDeleteProduct: (id: string) => void
 }
 
 export interface ActivateProps {

@@ -33,6 +33,6 @@ export interface UserPromoteRequest {
     roles: UserRole[]
 }
 
-export type UserRole = "SYSTEMADMIN" | "CEO" | "MANAGER" | "OPERATOR"
+export type UserRole = "SYSTEMADMIN" | "CEO" | "MANAGER" | "OPERATOR" | "TECHNICIAN"
 
 export type UserStatus = "ACTIVE" | "INACTIVE"

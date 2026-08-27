@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import hu.mes.backend.dtos.product.ProductCreateRequest;
 import hu.mes.backend.dtos.product.ProductResponse;
+import hu.mes.backend.dtos.product.ProductUpdateRequest;
 import hu.mes.backend.services.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -66,7 +67,7 @@ public class ProductController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ProductResponse> updateProduct(@PathVariable UUID id,
-            @Valid @RequestBody ProductCreateRequest request) {
+            @Valid @RequestBody ProductUpdateRequest request) {
         return ResponseEntity.ok(productService.updateProduct(id, request));
     }
 

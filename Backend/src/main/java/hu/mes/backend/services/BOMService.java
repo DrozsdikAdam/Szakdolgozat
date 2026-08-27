@@ -2,8 +2,10 @@ package hu.mes.backend.services;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -40,6 +42,9 @@ public class BOMService {
         if (item.isPresent())
             throw new IllegalArgumentException("Ez a komponens már hozzá van adva a listához!");
 
+        if (isComponentSubtree(component.getId(), parent.getId()))
+            throw new IllegalArgumentException("Ciklikus függőség!");
+
         BOMItem bomItem = BOMItem.builder()
                 .parentProduct(parent)
                 .componentProduct(component)
@@ -56,6 +61,7 @@ public class BOMService {
             multiplier = BigDecimal.ONE;
 
         Product product = productService.getProductEntityById(parentProductId);
+        getBOMTree(parentProductId, multiplier, new HashSet<>());
 
         BOMTreeNode node = new BOMTreeNode();
         node.setProductId(product.getId());
@@ -73,5 +79,33 @@ public class BOMService {
 
         node.setChildren(children);
         return node;
+    }
+
+    private void getBOMTree(UUID parentProductId, BigDecimal multiplier, Set<UUID> visitedProducts) {
+        visitedProducts.add(parentProductId);
+        List<BOMItem> items = bomRepository.findByParentProductId(parentProductId);
+        for (BOMItem item : items) {
+            if (item.getActive()) {
+                if (visitedProducts.contains(item.getComponentProduct().getId())) {
+                    throw new IllegalArgumentException(
+                            "Ciklikus függőség: A kiválasztott alkatrész már tartalmazza a szülő terméket a saját darabjegyzékében!");
+                }
+                getBOMTree(item.getComponentProduct().getId(), multiplier.multiply(item.getQuantity()),
+                        visitedProducts);
+            }
+        }
+        visitedProducts.remove(parentProductId);
+    }
+
+    private boolean isComponentSubtree(UUID currentParentId, UUID targetComponentId) {
+        if (currentParentId.equals(targetComponentId))
+            return true;
+
+        for (BOMItem item : bomRepository.findByParentProductId(currentParentId))
+            if (item.getActive()
+                    && isComponentSubtree(item.getComponentProduct().getId(), targetComponentId))
+                return true;
+
+        return false;
     }
 }

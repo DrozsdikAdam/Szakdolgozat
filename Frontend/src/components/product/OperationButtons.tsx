@@ -6,8 +6,12 @@ import {
     restoreProduct,
     deleteProduct,
 } from "../../services/productService"
+import { DeleteConfirmModal } from "../common/DeleteConfirmModal"
+import { useState } from "react"
 
 export const OperationButtons = ({ product, activeTab, loadProducts, openModal, setError, setIsLoading }: OperationProps) => {
+
+    const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false)
 
     const handleDeactivateProduct = async (id: string) => {
         try {
@@ -42,6 +46,7 @@ export const OperationButtons = ({ product, activeTab, loadProducts, openModal, 
             setError(error instanceof Error ? error.message : String(error))
         } finally {
             setIsLoading(false)
+            setIsDeleteOpen(false)
         }
     }
 
@@ -71,7 +76,7 @@ export const OperationButtons = ({ product, activeTab, loadProducts, openModal, 
 
     const deleteProps: DeleteProps = {
         id,
-        handleDeleteProduct
+        handleDeleteProduct: () => setIsDeleteOpen(true)
     }
 
     const activateProps: ActivateProps = {
@@ -94,7 +99,15 @@ export const OperationButtons = ({ product, activeTab, loadProducts, openModal, 
 
     if (activeTab === "active") {
         return (
+
             <div className="flex gap-1.5 items-center justify-center">
+                <DeleteConfirmModal
+                    isOpen={isDeleteOpen}
+                    onClose={() => setIsDeleteOpen(false)}
+                    onConfirm={() => handleDeleteProduct(product.id)}
+                    title="Törlés"
+                    message={`Biztosan törli a terméket: ${product.name}?`}
+                />
                 <EditButton {...editProps} />
                 <DeactivateButton {...deactivateProductProps} />
                 <DeleteButton {...deleteProps} />
@@ -105,6 +118,13 @@ export const OperationButtons = ({ product, activeTab, loadProducts, openModal, 
     if (activeTab === "inactive") {
         return (
             <div className="flex gap-1.5 items-center justify-center">
+                <DeleteConfirmModal
+                    isOpen={isDeleteOpen}
+                    onClose={() => setIsDeleteOpen(false)}
+                    onConfirm={() => handleDeleteProduct(product.id)}
+                    title="Törlés"
+                    message={`Biztosan törli a terméket: ${product.name}?`}
+                />
                 <EditButton {...editProps} />
                 <ActivateButton {...activateProps} />
                 <DeleteButton {...deleteProps} />

@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "../hooks/UseAuth"
-import { Boxes, Factory, Layers, LogOut, Package, Square, User } from "lucide-react"
+import { Activity, Boxes, Factory, Layers, LogOut, Package, Square, User, Wrench } from "lucide-react"
 
 export const Navbar = () => {
     const { user, logout } = useAuth()
@@ -17,6 +17,9 @@ export const Navbar = () => {
         { path: "/bom", label: "Gyártási tervek", icon: Layers },
         { path: "/workorder", label: "Gyártási rendelések", icon: Square },
         { path: "/user", label: "Felhasználók", icon: User },
+        { path: "/machine", label: "Gépek", icon: Factory },
+        { path: "/maintenance", label: "Karbantartás", icon: Wrench },
+        { path: "/analytics", label: "Analitika", icon: Activity },
     ]
 
     return (
