@@ -1,9 +1,12 @@
 import { NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "../hooks/UseAuth"
-import { Activity, Boxes, Factory, Layers, LogOut, Package, Square, User, Wrench } from "lucide-react"
+import { Activity, Boxes, Factory, Layers, LogOut, Menu, Package, Square, User, Wrench, X } from "lucide-react"
 import { NotificationBell } from "./notification/NotificationBell"
+import { useState } from "react"
 
 export const Navbar = () => {
+
+    const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false)
     const { user, logout } = useAuth()
     const navigate = useNavigate()
 
@@ -42,7 +45,7 @@ export const Navbar = () => {
                 </div>
 
                 {/* Navigation Links */}
-                <nav className="flex items-center gap-1 sm:gap-2">
+                <nav className="hidden xl:flex items-center gap-1 xl:gap-2">
                     {navItems.map((item) => {
                         const Icon = item.icon
                         return (
@@ -63,6 +66,33 @@ export const Navbar = () => {
                     })}
                 </nav>
 
+                {/* Mobil Menü */}
+                {isMobileOpen && (
+                    <div className="absolute top-16 left-0 right-0 w-full bg-slate-900/95 border-b border-slate-800 backdrop-blur-2xl xl:hidden pb-4">
+                        <div className="px-4 py-2 space-y-1">
+                            {navItems.map((item) => {
+                                const Icon = item.icon
+                                return (
+                                    <NavLink
+                                        key={item.path}
+                                        to={item.path}
+                                        onClick={() => setIsMobileOpen(false)}
+                                        className={({ isActive }) =>
+                                            `flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200 ${isActive
+                                                ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/40"
+                                                : "text-slate-300 hover:text-white hover:bg-slate-800 border border-transparent"
+                                            }`
+                                        }
+                                    >
+                                        <Icon size={20} />
+                                        <span>{item.label}</span>
+                                    </NavLink>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex items-center gap-3">
                     {user && (
                         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs text-slate-300">
@@ -80,6 +110,13 @@ export const Navbar = () => {
                         <span className="hidden sm:inline">Kijelentkezés</span>
                     </button>
                     <NotificationBell />
+
+                    <button
+                        onClick={() => setIsMobileOpen(!isMobileOpen)}
+                        className="xl:hidden p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-all border border-slate-700/60"
+                    >
+                        {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
+                    </button>
                 </div>
             </div>
         </header>
