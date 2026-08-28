@@ -45,6 +45,10 @@ export const Title = ({ page }: TitleProps) => {
             title = "OEE & PLC Telemetria Analitika"
             subTitle = "Valós idejű gépállapotok, szenzoradatok és termelési hatékonyság"
             break;
+        case "audit":
+            title = "Audit Napló"
+            subTitle = "Itt lehet a rendszer naplókat megtekinteni"
+            break;
     }
 
     return (

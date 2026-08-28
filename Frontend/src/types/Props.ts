@@ -15,7 +15,8 @@ export interface TitleProps {
     | "machine"
     | "machineCreate"
     | "maintenanceEdit"
-    | "analytics";
+    | "analytics"
+    | "audit";
 }
 
 export interface BadgeProps {
