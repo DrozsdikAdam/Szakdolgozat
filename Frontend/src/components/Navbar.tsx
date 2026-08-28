@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "../hooks/UseAuth"
-import { Activity, Boxes, Factory, Layers, LogOut, Menu, Package, Square, User, Wrench, X } from "lucide-react"
+import { Activity, Boxes, Factory, FileText, Layers, LogOut, Menu, Package, Square, User, Wrench, X } from "lucide-react"
 import { NotificationBell } from "./notification/NotificationBell"
 import { useState } from "react"
 
@@ -24,6 +24,7 @@ export const Navbar = () => {
         { path: "/machine", label: "Gépek", icon: Factory },
         { path: "/maintenance", label: "Karbantartás", icon: Wrench },
         { path: "/analytics", label: "Analitika", icon: Activity },
+        { path: "/logs", label: "Napló", icon: FileText },
     ]
 
     return (

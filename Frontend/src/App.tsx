@@ -14,6 +14,7 @@ import { MaintenanceView } from "./views/maintenance/MaintenanceView"
 import { MachineCreateView } from "./views/machine/MachineCreateView"
 import { MaintenanceEditView } from "./views/maintenance/MaintenanceEditView"
 import { AnalyticsView } from "./views/AnalyticsView"
+import { AuditLogView } from "./views/AuditLogView"
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
             <Route path="/maintenance" element={<MaintenanceView />} />
             <Route path="/maintenance/:id/edit" element={<MaintenanceEditView />} />
             <Route path="/analytics" element={<AnalyticsView />} />
+            <Route path="/logs" element={<AuditLogView />} />
           </Route>
 
           <Route path="/login" element={<LoginView />} />
