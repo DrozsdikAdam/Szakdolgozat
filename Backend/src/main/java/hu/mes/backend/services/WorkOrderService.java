@@ -7,8 +7,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import hu.mes.backend.dtos.common.PagedResponse;
 import hu.mes.backend.dtos.inventory.InventoryUpdateRequest;
 import hu.mes.backend.dtos.workorder.WorkOrderCreateRequest;
 import hu.mes.backend.dtos.workorder.WorkOrderResponse;
@@ -142,9 +145,14 @@ public class WorkOrderService {
 		return workOrderMapper.convertToResponse(workOrder);
 	}
 
-	public List<WorkOrderResponse> getAllWorkOrders() {
-		return workOrderMapper.convertToResponses(
-				workOrderRepository.findAllByOrderByCreatedAtDesc());
+	public PagedResponse<WorkOrderResponse> getAllWorkOrders(WorkOrderStatus status, Pageable pageable) {
+		Page<WorkOrder> pageResult;
+		if (status != null) {
+			pageResult = workOrderRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
+		} else {
+			pageResult = workOrderRepository.findAllByOrderByCreatedAtDesc(pageable);
+		}
+		return PagedResponse.of(pageResult, workOrderMapper.convertToResponses(pageResult.getContent()));
 	}
 
 	public WorkOrderResponse getWorkOrderById(UUID id) {
@@ -153,9 +161,9 @@ public class WorkOrderService {
 		return workOrderMapper.convertToResponse(order);
 	}
 
-	public List<WorkOrderResponse> getWorkOrdersByStatus(WorkOrderStatus status) {
-		return workOrderMapper.convertToResponses(
-				workOrderRepository.findByStatus(status));
+	public PagedResponse<WorkOrderResponse> getWorkOrdersByStatus(WorkOrderStatus status, Pageable pageable) {
+		Page<WorkOrder> page = workOrderRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
+		return PagedResponse.of(page, workOrderMapper.convertToResponses(page.getContent()));
 	}
 
 	public List<WorkOrderResponse> getWorkOrdersByPriority(WorkOrderPriority priority) {

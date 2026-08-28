@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -18,6 +20,8 @@ public interface MachineRepository extends JpaRepository<Machine, UUID> {
     Boolean existsByCode(String code);
 
     List<Machine> findByActiveTrue();
+
+    Page<Machine> findByActiveTrue(Pageable pageable);
 
     List<Machine> findByStatus(MachineStatus status);
 

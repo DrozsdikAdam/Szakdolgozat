@@ -31,9 +31,10 @@ public class MachineMaintenanceController {
     private final MachineMaintenanceService machineMaintenanceService;
 
     @GetMapping
-    public ResponseEntity<List<MachineMaintenanceResponse>> getAllMaintenances() {
-        List<MachineMaintenanceResponse> response = machineMaintenanceService.getAllMaintenances();
-        return ResponseEntity.ok(response);
+    public ResponseEntity<hu.mes.backend.dtos.common.PagedResponse<MachineMaintenanceResponse>> getAllMaintenances(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(machineMaintenanceService.getAllMaintenances(org.springframework.data.domain.PageRequest.of(page, size)));
     }
 
     @GetMapping("/{id}")

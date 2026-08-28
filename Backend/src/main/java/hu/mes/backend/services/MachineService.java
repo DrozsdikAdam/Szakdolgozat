@@ -4,8 +4,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import hu.mes.backend.dtos.common.PagedResponse;
 import hu.mes.backend.dtos.machine.EmergencyStopRequest;
 import hu.mes.backend.dtos.machine.MachineCreateRequest;
 import hu.mes.backend.dtos.machine.MachineResponse;
@@ -38,6 +41,11 @@ public class MachineService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
+
+    public PagedResponse<MachineResponse> getAllMachines(Pageable pageable) {
+        Page<Machine> page = machineRepository.findByActiveTrue(pageable);
+        return PagedResponse.of(page, machineMapper.convertToResponses(page.getContent()));
+    }
 
     public List<MachineResponse> getAllMachines() {
         List<Machine> machines = machineRepository.findByActiveTrue();

@@ -6,12 +6,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import hu.mes.backend.repositories.InventoryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import hu.mes.backend.dtos.common.PagedResponse;
 import hu.mes.backend.dtos.inventory.InventoryResponse;
 import hu.mes.backend.dtos.inventory.InventoryUpdateRequest;
 import hu.mes.backend.mappers.InventoryMapper;
@@ -127,6 +130,11 @@ public class InventoryService {
         inventory.setReservedQuantity(reserved.subtract(request.getAmount()));
         inventory.setUpdatedAt(LocalDateTime.now());
         return inventoryMapper.convertToResponse(inventoryRepository.save(inventory));
+    }
+
+    public PagedResponse<InventoryResponse> getAllInventories(Pageable pageable) {
+        Page<Inventory> page = inventoryRepository.findAll(pageable);
+        return PagedResponse.of(page, inventoryMapper.convertToResponses(page.getContent()));
     }
 
     public List<InventoryResponse> getAllInventories() {

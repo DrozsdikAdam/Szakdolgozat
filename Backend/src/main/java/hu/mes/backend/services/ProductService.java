@@ -3,8 +3,11 @@ package hu.mes.backend.services;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import hu.mes.backend.dtos.common.PagedResponse;
 import hu.mes.backend.dtos.product.ProductCreateRequest;
 import hu.mes.backend.dtos.product.ProductResponse;
 import hu.mes.backend.dtos.product.ProductUpdateRequest;
@@ -41,6 +44,11 @@ public class ProductService {
         inventoryService.initializeInventory(savedProduct);
 
         return productMapper.convertToResponse(savedProduct);
+    }
+
+    public PagedResponse<ProductResponse> getAllProducts(Pageable pageable) {
+        Page<Product> page = productRepository.findByActiveTrue(pageable);
+        return PagedResponse.of(page, productMapper.convertToResponses(page.getContent()));
     }
 
     public List<ProductResponse> getAllProducts() {

@@ -7,9 +7,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import hu.mes.backend.dtos.common.PagedResponse;
 import hu.mes.backend.dtos.user.UserCreateRequest;
 import hu.mes.backend.dtos.user.UserPromoteRequest;
 import hu.mes.backend.dtos.user.UserResponse;
@@ -33,6 +36,11 @@ public class UserService {
     private final UserMapper userMapper;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+
+    public PagedResponse<UserResponse> getAllUsers(Pageable pageable) {
+        Page<User> page = userRepository.findAll(pageable);
+        return PagedResponse.of(page, userMapper.convertToResponses(page.getContent()));
+    }
 
     public List<UserResponse> getAllUsers() {
         return userMapper.convertToResponses(userRepository.findAll());

@@ -3,8 +3,11 @@ package hu.mes.backend.services;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import hu.mes.backend.dtos.common.PagedResponse;
 import hu.mes.backend.dtos.maintenance.MachineMaintenanceCreateRequest;
 import hu.mes.backend.dtos.maintenance.MachineMaintenanceResponse;
 import hu.mes.backend.dtos.maintenance.MachineMaintenanceStatusUpdateRequest;
@@ -36,6 +39,11 @@ public class MachineMaintenanceService {
     private final MaintenanceMapper maintenanceMapper;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
+
+    public PagedResponse<MachineMaintenanceResponse> getAllMaintenances(Pageable pageable) {
+        Page<MachineMaintenance> page = machineMaintenanceRepository.findAll(pageable);
+        return PagedResponse.of(page, maintenanceMapper.convertToResponses(page.getContent()));
+    }
 
     public List<MachineMaintenanceResponse> getAllMaintenances() {
         List<MachineMaintenance> maintenances = machineMaintenanceRepository.findAll();
