@@ -1,6 +1,6 @@
 export const validateUsername = (username?: string): string | null => {
     const trimmedUsername = username?.trim()
-    const usernameRegex = /^[a-zA-Z0-9]+$/
+    const usernameRegex = /^[a-zA-Z0-9áéíóöőúüűÁÉÍÓÖŐÚÜŰ._\s-]+$/
 
     if (!trimmedUsername) return "A felhasználónév mező kitöltése kötelező!"
     if (trimmedUsername.length < 3) return "A felhasználónévnek legalább 3 karakteresnek kell lennie!"

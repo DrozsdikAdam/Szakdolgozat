@@ -2,7 +2,9 @@ import { NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "../hooks/UseAuth"
 import { Activity, Boxes, Factory, FileText, Layers, LogOut, Menu, Package, Square, User, Wrench, X } from "lucide-react"
 import { NotificationBell } from "./notification/NotificationBell"
-import { useState } from "react"
+import { useState, type ComponentType } from "react"
+import { hasAnyRole } from "../utils/rbac"
+import type { UserRole } from "../types/user/User"
 
 export const Navbar = () => {
 
@@ -15,17 +17,53 @@ export const Navbar = () => {
         navigate("/login")
     }
 
-    const navItems = [
-        { path: "/product", label: "Termékek", icon: Package },
-        { path: "/inventory", label: "Raktárkészlet", icon: Boxes },
-        { path: "/bom", label: "Gyártási tervek", icon: Layers },
-        { path: "/workorder", label: "Gyártási rendelések", icon: Square },
-        { path: "/user", label: "Felhasználók", icon: User },
-        { path: "/machine", label: "Gépek", icon: Factory },
-        { path: "/maintenance", label: "Karbantartás", icon: Wrench },
-        { path: "/analytics", label: "Analitika", icon: Activity },
-        { path: "/logs", label: "Napló", icon: FileText },
+    type NavItem = {
+        path: string
+        label: string
+        icon: ComponentType<{ size?: number }>
+        roles: UserRole[]
+    }
+
+    const navItems: NavItem[] = [
+        {
+            path: "/product", label: "Termékek", icon: Package,
+            roles: ["SYSTEMADMIN", "CEO", "MANAGER", "OPERATOR"]
+        },
+        {
+            path: "/inventory", label: "Raktárkészlet", icon: Boxes,
+            roles: ["SYSTEMADMIN", "CEO", "MANAGER", "OPERATOR", "TECHNICIAN"]
+        },
+        {
+            path: "/bom", label: "Gyártási tervek", icon: Layers,
+            roles: ["SYSTEMADMIN", "CEO", "MANAGER"]
+        },
+        {
+            path: "/workorder", label: "Gyártási rendelések", icon: Square,
+            roles: ["SYSTEMADMIN", "CEO", "MANAGER", "OPERATOR"]
+        },
+        {
+            path: "/user", label: "Felhasználók", icon: User,
+            roles: ["SYSTEMADMIN", "CEO"]
+        },
+        {
+            path: "/machine", label: "Gépek", icon: Factory,
+            roles: ["SYSTEMADMIN", "CEO", "MANAGER", "OPERATOR", "TECHNICIAN"]
+        },
+        {
+            path: "/maintenance", label: "Karbantartás", icon: Wrench,
+            roles: ["SYSTEMADMIN", "CEO", "MANAGER", "TECHNICIAN"]
+        },
+        {
+            path: "/analytics", label: "Analitika", icon: Activity,
+            roles: ["SYSTEMADMIN", "CEO", "MANAGER"]
+        },
+        {
+            path: "/logs", label: "Napló", icon: FileText,
+            roles: ["SYSTEMADMIN", "CEO"]
+        },
     ]
+
+    const filteredNavItems = navItems.filter((item) => hasAnyRole(user, item.roles))
 
     return (
         <header className="w-full bg-slate-900/80 border-b border-slate-800 backdrop-blur-xl sticky top-0 z-40">
@@ -47,7 +85,7 @@ export const Navbar = () => {
 
                 {/* Navigation Links */}
                 <nav className="hidden xl:flex items-center gap-1 xl:gap-2">
-                    {navItems.map((item) => {
+                    {filteredNavItems.map((item) => {
                         const Icon = item.icon
                         return (
                             <NavLink
@@ -71,7 +109,7 @@ export const Navbar = () => {
                 {isMobileOpen && (
                     <div className="absolute top-16 left-0 right-0 w-full bg-slate-900/95 border-b border-slate-800 backdrop-blur-2xl xl:hidden pb-4">
                         <div className="px-4 py-2 space-y-1">
-                            {navItems.map((item) => {
+                            {filteredNavItems.map((item) => {
                                 const Icon = item.icon
                                 return (
                                     <NavLink
