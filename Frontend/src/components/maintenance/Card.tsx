@@ -2,6 +2,7 @@ import { Pencil, Trash2, ChevronDown, ChevronUp, Wrench } from "lucide-react";
 import type { MaintenanceCardProps } from "../../types/maintenance/MaintenanceProps";
 import { MaintenanceStatusBadge, MaintenanceTypeBadge } from "../common/Badges";
 import { useState } from "react";
+import { Can } from "../common/Can";
 
 export const MaintenanceCard = ({ maintenance, onEdit, onStatusUpdate, onDelete }: MaintenanceCardProps) => {
 
@@ -59,26 +60,30 @@ export const MaintenanceCard = ({ maintenance, onEdit, onStatusUpdate, onDelete 
                 )}
             </div>
             <div className="flex items-center justify-around">
-                <button
-                    onClick={() => onEdit(maintenance)}
-                    className="px-4 flex items-center gap-2 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
-                >
-                    <Pencil size={18} /> Módosítás
-                </button>
-                <button
-                    onClick={() => onStatusUpdate(maintenance)}
-                    className="px-4 flex items-center gap-2 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-sm transition-all shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40"
-                >
-                    <Wrench size={18} /> Státusz
-                </button>
-                <button
-                    onClick={() => onDelete(maintenance.id)}
-                    className={`px-4 flex items-center gap-2 py-2 rounded-xl bg-rose-600 hover:bg-rose-500
+                <Can roles={["SYSTEMADMIN", "TECHNICIAN"]}>
+                    <button
+                        onClick={() => onEdit(maintenance)}
+                        className="px-4 flex items-center gap-2 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
+                    >
+                        <Pencil size={18} /> Módosítás
+                    </button>
+                    <button
+                        onClick={() => onStatusUpdate(maintenance)}
+                        className="px-4 flex items-center gap-2 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-sm transition-all shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40"
+                    >
+                        <Wrench size={18} /> Státusz
+                    </button>
+                </Can>
+                <Can roles={["SYSTEMADMIN"]}>
+                    <button
+                        onClick={() => onDelete(maintenance.id)}
+                        className={`px-4 flex items-center gap-2 py-2 rounded-xl bg-rose-600 hover:bg-rose-500
                          text-white font-semibold text-sm transition-all shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40`}
-                >
-                    <Trash2 size={18} />
-                    Törlés
-                </button>
+                    >
+                        <Trash2 size={18} />
+                        Törlés
+                    </button>
+                </Can>
             </div>
         </div>
     )

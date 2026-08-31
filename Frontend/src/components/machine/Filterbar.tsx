@@ -6,6 +6,7 @@ import type { MachineStatus, MachineType } from "../../types/machine/MachineStat
 import { FilterSearch } from "../common/filter/FilterSearch"
 import { FilterSelect } from "../common/filter/FilterSelect"
 import { SubmitButton } from "../common/form/SubmitButton"
+import { Can } from "../common/Can"
 
 export const MachineFilterBar = ({ searchTerm, setSearchTerm, statusFilter, setStatusFilter, typeFilter, setTypeFilter, onCreate }: MachineFilterBarProps) => {
     return (
@@ -33,13 +34,14 @@ export const MachineFilterBar = ({ searchTerm, setSearchTerm, statusFilter, setS
                     allOptionsLabel="Mindegyik"
                 />
             </div>
-
-            <SubmitButton
-                onClick={onCreate}
-                text="Új gép"
-                icon={<Plus size={18} />}
-                className="px-5 py-2.5 rounded-xl cursor-pointer"
-            />
+            <Can roles={["SYSTEMADMIN", "MANAGER"]}>
+                <SubmitButton
+                    onClick={onCreate}
+                    text="Új gép"
+                    icon={<Plus size={18} />}
+                    className="px-5 py-2.5 rounded-xl cursor-pointer"
+                />
+            </Can>
         </div>
     )
 }

@@ -2,6 +2,7 @@ import type { InventoryFilterBarProps } from "../../types/inventory/inventoryPro
 import { MapPin, Plus } from "lucide-react"
 import { FilterSearch } from "../common/filter/FilterSearch"
 import { SubmitButton } from "../common/form/SubmitButton"
+import { Can } from "../common/Can"
 
 export const InventoryFilterBar = ({ searchTerm, setSearchTerm, locationFilter, setLocationFilter, openModal }: InventoryFilterBarProps) => {
     return (
@@ -20,13 +21,14 @@ export const InventoryFilterBar = ({ searchTerm, setSearchTerm, locationFilter, 
                     icon={<MapPin size={18} />}
                 />
             </div>
-
-            <SubmitButton
-                text="Készlet módosítása"
-                icon={<Plus size={18} />}
-                onClick={() => openModal()}
-                className="px-5 py-2.5 rounded-xl cursor-pointer"
-            />
+            <Can roles={["SYSTEMADMIN", "MANAGER", "TECHNICIAN"]}>
+                <SubmitButton
+                    text="Készlet módosítása"
+                    icon={<Plus size={18} />}
+                    onClick={() => openModal()}
+                    className="px-5 py-2.5 rounded-xl cursor-pointer"
+                />
+            </Can>
         </div>
     )
 }

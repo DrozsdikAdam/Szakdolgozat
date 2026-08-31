@@ -2,6 +2,7 @@ import { Plus } from "lucide-react"
 import type { FilterBarProps } from "../../types/product/ProductProps";
 import { FilterSearch } from "../common/filter/FilterSearch";
 import { SubmitButton } from "../common/form/SubmitButton";
+import { Can } from "../common/Can";
 
 export const FilterBar = ({ activeTab, searchTerm, setSearchTerm, setActiveTab, openModal }: FilterBarProps) => {
     return (
@@ -23,13 +24,14 @@ export const FilterBar = ({ activeTab, searchTerm, setSearchTerm, setActiveTab, 
                     Törölt termékek
                 </button>
             </div>
-
-            <SubmitButton
-                onClick={() => openModal(null)}
-                text="Új termék"
-                icon={<Plus size={18} />}
-                className="px-5 py-2.5 rounded-xl cursor-pointer"
-            />
+            <Can roles={["SYSTEMADMIN", "MANAGER"]}>
+                <SubmitButton
+                    onClick={() => openModal(null)}
+                    text="Új termék"
+                    icon={<Plus size={18} />}
+                    className="px-5 py-2.5 rounded-xl cursor-pointer"
+                />
+            </Can>
         </div>
     )
 }

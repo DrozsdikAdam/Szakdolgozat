@@ -5,6 +5,7 @@ import { workOrderPriorityOptions, workOrderStatusOptions } from "../../constant
 import { FilterSearch } from "../common/filter/FilterSearch";
 import { FilterSelect } from "../common/filter/FilterSelect";
 import { SubmitButton } from "../common/form/SubmitButton";
+import { Can } from "../common/Can";
 
 export const WorkOrderFilterBar = ({ searchTerm, setSearchTerm, statusFilter, setStatusFilter, priorityFilter, setPriorityFilter, openCreateModal, workOrderUserFilter, setWorkOrderUserFilter, activeWorkers }: WorkOrderFilterBarProps) => {
 
@@ -42,13 +43,14 @@ export const WorkOrderFilterBar = ({ searchTerm, setSearchTerm, statusFilter, se
                 />
 
             </div>
-
-            <SubmitButton
-                onClick={openCreateModal}
-                text="Új gyártási rendelés"
-                icon={<Plus size={18} />}
-                className="px-5 py-2.5 rounded-xl cursor-pointer"
-            />
+            <Can roles={["SYSTEMADMIN", "MANAGER"]}>
+                <SubmitButton
+                    onClick={openCreateModal}
+                    text="Új gyártási rendelés"
+                    icon={<Plus size={18} />}
+                    className="px-5 py-2.5 rounded-xl cursor-pointer"
+                />
+            </Can>
         </div>
     )
 }

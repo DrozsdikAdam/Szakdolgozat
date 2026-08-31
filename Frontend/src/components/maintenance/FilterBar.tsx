@@ -6,6 +6,7 @@ import { TYPE_OPTIONS } from "../../constants/maintenanceType";
 import { FilterSearch } from "../common/filter/FilterSearch";
 import { FilterSelect } from "../common/filter/FilterSelect";
 import { SubmitButton } from "../common/form/SubmitButton";
+import { Can } from "../common/Can";
 
 export const FilterBar = ({ searchTerm, setSearchTerm, statusFilter, setStatusFilter, typeFilter, setTypeFilter, onCreate }: MaintenanceFilterBarProps) => {
 
@@ -36,13 +37,14 @@ export const FilterBar = ({ searchTerm, setSearchTerm, statusFilter, setStatusFi
                 />
 
             </div>
-
-            <SubmitButton
-                onClick={onCreate}
-                icon={<Plus size={18} />}
-                text="Új karbantartás"
-                className="px-5 py-2.5 rounded-xl cursor-pointer"
-            />
+            <Can roles={["SYSTEMADMIN", "MANAGER", "TECHNICIAN"]}>
+                <SubmitButton
+                    onClick={onCreate}
+                    icon={<Plus size={18} />}
+                    text="Új karbantartás"
+                    className="px-5 py-2.5 rounded-xl cursor-pointer"
+                />
+            </Can>
         </div>
     )
 }

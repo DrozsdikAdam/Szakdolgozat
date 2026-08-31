@@ -1,4 +1,5 @@
 import type { TableProps } from "../../types/product/ProductProps"
+import { Can } from "../common/Can"
 import { OperationButtons } from "./OperationButtons"
 
 export const Table = ({ products, activeTab, loadProducts, openModal, setError, setIsLoading }: TableProps) => {
@@ -13,7 +14,9 @@ export const Table = ({ products, activeTab, loadProducts, openModal, setError, 
                         <th className="px-4 py-2.5 text-center">Mértékegység</th>
                         <th className="px-4 py-2.5 text-center">Létrehozva</th>
                         <th className="px-4 py-2.5 text-center">Státusz</th>
-                        <th className="px-4 py-2.5 text-center">Műveletek</th>
+                        <Can roles={["SYSTEMADMIN", "MANAGER"]}>
+                            <th className="px-4 py-2.5 text-center">Műveletek</th>
+                        </Can>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 text-slate-200">
@@ -39,16 +42,18 @@ export const Table = ({ products, activeTab, loadProducts, openModal, setError, 
                                     </span>
                                 )}
                             </td>
-                            <td className="px-4 py-2.5 text-center">
-                                <OperationButtons
-                                    product={product}
-                                    activeTab={activeTab}
-                                    loadProducts={loadProducts}
-                                    openModal={openModal}
-                                    setError={setError}
-                                    setIsLoading={setIsLoading}
-                                />
-                            </td>
+                            <Can roles={["SYSTEMADMIN", "MANAGER"]}>
+                                <td className="px-4 py-2.5 text-center">
+                                    <OperationButtons
+                                        product={product}
+                                        activeTab={activeTab}
+                                        loadProducts={loadProducts}
+                                        openModal={openModal}
+                                        setError={setError}
+                                        setIsLoading={setIsLoading}
+                                    />
+                                </td>
+                            </Can>
                         </tr>
                     ))}
                 </tbody>
