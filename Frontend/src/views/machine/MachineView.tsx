@@ -180,13 +180,13 @@ export const MachineView = () => {
     }, [searchTerm, statusFilter, typeFilter])
 
     return (
-        <div className="relative flex-1 w-full flex flex-col items-center justify-start p-4 sm:p-6 font-sans">
+        <div className="page-container">
             <Background />
 
             {isLoading && <LoadingSpinner />}
 
             {!isLoading &&
-                <div className="w-full max-w-7xl backdrop-blur-xl bg-slate-900/60 border border-slate-800 shadow-2xl rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-5 relative z-10">
+                <div className="page-card space-y-4 sm:space-y-5">
 
                     <Title page="machine" />
 

@@ -62,23 +62,23 @@ export const AdjustInventory = ({ inventories, inventory, isOpen, closeModal, on
     }
 
     useEffect(() => {
+        if (!isOpen) return
+
         if (inventory) {
             setSelectedInventory(inventory)
             setQuantity(inventory.quantity)
             setLocation(inventory.location)
             setError(null)
-            return;
-        }
-
-        if (isOpen && inventories && inventories.length > 0) {
-            const first = inventories[0]
-            setSelectedInventory(first)
-            setQuantity(first.quantity)
-            setLocation(first.location)
+        } else if (inventories && inventories.length > 0) {
+            const initial = selectedInventory && inventories.some(i => i.id === selectedInventory.id)
+                ? selectedInventory
+                : inventories[0]
+            setSelectedInventory(initial)
+            setQuantity(initial.quantity)
+            setLocation(initial.location)
             setError(null)
-            return;
         }
-    }, [inventory, isOpen, inventories])
+    }, [inventory, isOpen])
 
     if (!isOpen) return null
 
@@ -124,6 +124,6 @@ export const AdjustInventory = ({ inventories, inventory, isOpen, closeModal, on
                 value={location ?? ""}
                 onChange={(e) => setLocation(e.target.value || null)}
             />
-        </Modal >
+        </Modal>
     )
 }

@@ -19,9 +19,9 @@ export const UserStatsCards = ({ users }: UserStatCardProps) => {
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 w-full">
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-xl flex items-center justify-between shadow-xl">
+            <div className="stats-card shadow-xl">
                 <div className="space-y-1">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Összes</span>
+                    <span className="text-xs font-semibold text-muted uppercase tracking-wider">Összes</span>
                     <h3 className="text-2xl font-extrabold text-blue-400">{stats.all}</h3>
                 </div>
                 <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
@@ -29,9 +29,9 @@ export const UserStatsCards = ({ users }: UserStatCardProps) => {
                 </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-xl flex items-center justify-between shadow-xl">
+            <div className="stats-card shadow-xl">
                 <div className="space-y-1">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Aktív</span>
+                    <span className="text-xs font-semibold text-muted uppercase tracking-wider">Aktív</span>
                     <h3 className="text-2xl font-extrabold text-amber-400">{stats.active}</h3>
                 </div>
                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
@@ -39,9 +39,9 @@ export const UserStatsCards = ({ users }: UserStatCardProps) => {
                 </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-xl flex items-center justify-between shadow-xl">
+            <div className="stats-card shadow-xl">
                 <div className="space-y-1">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Operátorok</span>
+                    <span className="text-xs font-semibold text-muted uppercase tracking-wider">Operátorok</span>
                     <h3 className="text-2xl font-extrabold text-emerald-400">{stats.operator}</h3>
                 </div>
                 <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
@@ -49,9 +49,9 @@ export const UserStatsCards = ({ users }: UserStatCardProps) => {
                 </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-xl flex items-center justify-between shadow-xl">
+            <div className="stats-card shadow-xl">
                 <div className="space-y-1">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Adminisztrátorok</span>
+                    <span className="text-xs font-semibold text-muted uppercase tracking-wider">Adminisztrátorok</span>
                     <h3 className="text-2xl font-extrabold text-purple-400">{stats.admin}</h3>
                 </div>
                 <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
@@ -59,9 +59,9 @@ export const UserStatsCards = ({ users }: UserStatCardProps) => {
                 </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-xl flex items-center justify-between shadow-xl">
+            <div className="stats-card shadow-xl">
                 <div className="space-y-1">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Inaktív</span>
+                    <span className="text-xs font-semibold text-muted uppercase tracking-wider">Inaktív</span>
                     <h3 className="text-2xl font-extrabold text-rose-400">{stats.inactive}</h3>
                 </div>
                 <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400">

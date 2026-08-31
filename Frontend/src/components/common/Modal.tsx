@@ -20,11 +20,11 @@ export const Modal = ({
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className={`w-full ${maxWidth} bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4`}>
-                <div className="flex items-center justify-between w-full pb-2 border-b border-slate-800">
-                    <h1 className="text-xl font-bold text-white tracking-tight">{title}</h1>
-                    <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all">
+        <div className="modal-overlay">
+            <div className={`modal-box ${maxWidth} space-y-4`}>
+                <div className="modal-header">
+                    <h1 className="text-xl font-bold text-main tracking-tight">{title}</h1>
+                    <button onClick={onClose} className="p-1 rounded-lg text-muted hover:text-secondary hover:bg-slate-800 transition-all">
                         <X size={18} />
                     </button>
                 </div>
