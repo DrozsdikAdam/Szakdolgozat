@@ -23,7 +23,7 @@ public class UserCreateRequest {
 
     @NotBlank(message = "A felhasználónév nem lehet üres!")
     @Size(min = 3, max = 50, message = "A felhasználónévnek legalább 3, de legfeljebb 50 karakternek kell lennie!")
-    @Pattern(regexp = "^[a-zA-Z0-9áéíóöőúüűÁÉÍÓÖŐÚÜŰ._\\s-]+$", message = "A felhasználónév csak betűket és számokat tartalmazhat")
+    @Pattern(regexp = "^[\\p{L}0-9._\\s-]+$", message = "A felhasználónév csak betűket és számokat tartalmazhat")
     private String username;
 
     @NotBlank(message = "Az email cím megadása kötelező!")

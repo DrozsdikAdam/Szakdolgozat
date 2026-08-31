@@ -1,9 +1,9 @@
 export const validateUsername = (username?: string): string | null => {
-    const trimmedUsername = username?.trim()
-    const usernameRegex = /^[a-zA-Z0-9áéíóöőúüűÁÉÍÓÖŐÚÜŰ._\s-]+$/
+    const trimmedUsername = username?.trim().normalize("NFC")
+    const usernameRegex = /^[\p{L}\p{N}._\s-]+$/u
 
     if (!trimmedUsername) return "A felhasználónév mező kitöltése kötelező!"
-    if (trimmedUsername.length < 3) return "A felhasználónévnek legalább 3 karakteresnek kell lennie!"
+    if (!trimmedUsername || trimmedUsername.length < 3) return "A felhasználónévnek legalább 3 karakteresnek kell lennie!"
     if (trimmedUsername.length > 50) return "A felhasználónévnek maximum 50 karakteresnek kell lennie!"
     if (!usernameRegex.test(trimmedUsername)) return "A felhasználónév csak betűket és számokat tartalmazhat!"
 

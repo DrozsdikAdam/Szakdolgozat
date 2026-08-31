@@ -15,7 +15,7 @@ import lombok.AllArgsConstructor;
 public class LoginRequest {
 
     @NotBlank(message = "A felhasználónév kitöltése kötelező")
-    @Pattern(regexp = "^[a-zA-Z0-9áéíóöőúüűÁÉÍÓÖŐÚÜŰ._\\s-]+$", message = "A felhasználónév csak betűket és számokat tartalmazhat")
+    @Pattern(regexp = "^[\\p{L}0-9._\\s-]+$", message = "A felhasználónév csak betűket és számokat tartalmazhat")
     private String username;
 
     @NotBlank(message = "A jelszó kitöltése kötelező")
