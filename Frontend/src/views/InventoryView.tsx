@@ -9,10 +9,20 @@ import { AdjustInventory } from "../components/inventory/modal/Adjust"
 import { InventoryChartCards } from "../components/inventory/ChartCards"
 import { LoadingSpinner } from "../components/common/LoadingSpinner"
 import type { InventoryFilterBarProps, InventoryTableProps } from "../types/inventory/inventoryProps"
+import type { PagedResponse } from "../types/common/PagedResponse"
+import { Pagination } from "../components/common/Pagination"
 
 export const InventoryView = () => {
 
-    const [inventories, setInventories] = useState<InventoryResponse[]>([])
+    const [pagedInventories, setPagedInventories] = useState<PagedResponse<InventoryResponse>>({
+        content: [],
+        pageNumber: 0,
+        pageSize: 10,
+        totalPages: 0,
+        totalElements: 0,
+        first: true,
+        last: true
+    })
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [error, setError] = useState<string | null>(null)
     const [searchTerm, setSearchTerm] = useState<string>("")
@@ -24,8 +34,8 @@ export const InventoryView = () => {
         if (showSpinner) setIsLoading(true)
         setError(null)
         try {
-            const response = await getInventories()
-            setInventories(response)
+            const response = await getInventories(pagedInventories.pageNumber, pagedInventories.pageSize)
+            setPagedInventories(response)
         } catch (error) {
             setError(error instanceof Error ? error.message : String(error))
         } finally {
@@ -35,9 +45,9 @@ export const InventoryView = () => {
 
     const openModal = (inventoryId?: string) => {
         if (inventoryId) {
-            const inventory = inventories.find(inv => inv.id === inventoryId) || null
+            const inventory = pagedInventories.content.find(inv => inv.id === inventoryId) || null
             setSelectedInventory(inventory)
-        } else setSelectedInventory(inventories[0] || null)
+        } else setSelectedInventory(pagedInventories.content[0] || null)
 
         setIsModalOpen(true)
     }
@@ -51,9 +61,13 @@ export const InventoryView = () => {
         loadInventories(true)
         const interval = setInterval(() => loadInventories(false), 5000)
         return () => clearInterval(interval)
-    }, [])
+    }, [pagedInventories.pageNumber, pagedInventories.pageSize])
 
-    const filteredInventories = inventories.filter((inv) => {
+    useEffect(() => {
+        setPagedInventories(prev => ({ ...prev, pageNumber: 0 }))
+    }, [searchTerm, locationFilter])
+
+    const filteredInventories = pagedInventories.content.filter((inv) => {
         const productName = inv.productName || ""
         const productSku = inv.productSku || ""
         const location = inv.location || ""
@@ -103,7 +117,7 @@ export const InventoryView = () => {
                         <div className="text-left text-rose-400 text-sm font-medium">{error}</div>
                     )}
 
-                    {inventories.length > 0 && (
+                    {pagedInventories.totalElements > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {filteredInventories.slice(0, 3).map((inv) => (
                                 <InventoryChartCards key={inv.id} {...inv} />
@@ -111,15 +125,32 @@ export const InventoryView = () => {
                         </div>
                     )}
 
-                    {inventories.length === 0 && (
+                    {pagedInventories.totalElements === 0 && (
                         <div className="text-left text-slate-400 text-sm font-medium">Nincs raktári tétel</div>
                     )}
 
-                    {inventories.length > 0 && filteredInventories.length === 0 && (
+                    {pagedInventories.totalElements > 0 && filteredInventories.length === 0 && (
                         <div className="text-left text-slate-400 text-sm font-medium">Nincs a keresésnek megfelelő raktári tétel</div>
                     )}
 
-                    {filteredInventories.length > 0 && <InventoryTable {...tableProps} />}
+                    {filteredInventories.length > 0 && (
+                        <Pagination
+                            pageNumber={pagedInventories.pageNumber}
+                            pageSize={pagedInventories.pageSize}
+                            totalElements={pagedInventories.totalElements}
+                            totalPages={pagedInventories.totalPages}
+                            first={pagedInventories.first}
+                            last={pagedInventories.last}
+                            onPageChange={(newPageNumber) => {
+                                setPagedInventories(prev => ({ ...prev, pageNumber: newPageNumber }))
+                            }}
+                            onPageSizeChange={(newPageSize) => {
+                                setPagedInventories(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 0 }))
+                            }}
+                        >
+                            <InventoryTable {...tableProps} />
+                        </Pagination>
+                    )}
                 </div>
             )}
         </div>

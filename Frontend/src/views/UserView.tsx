@@ -11,10 +11,20 @@ import { getUsers, toggleUserStatus } from "../services/userService"
 import { Card } from "../components/user/Card"
 import type { UserFilterBarProps } from "../types/user/UserProps"
 import { PromoteUser } from "../components/user/modal/Promote"
+import type { PagedResponse } from "../types/common/PagedResponse"
+import { Pagination } from "../components/common/Pagination"
 
 export const UserView = () => {
 
-    const [users, setUsers] = useState<UserResponse[]>([])
+    const [pagedUsers, setPagedUsers] = useState<PagedResponse<UserResponse>>({
+        content: [],
+        pageNumber: 0,
+        pageSize: 10,
+        totalPages: 0,
+        totalElements: 0,
+        first: true,
+        last: true
+    })
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
     const [searchTerm, setSearchTerm] = useState<string>("")
@@ -28,8 +38,8 @@ export const UserView = () => {
         setIsLoading(true)
         setError(null)
         try {
-            const users = await getUsers()
-            setUsers(users)
+            const response = await getUsers(pagedUsers.pageNumber, pagedUsers.pageSize)
+            setPagedUsers(response)
         } catch (error) {
             setError(error instanceof Error ? error.message : "Hiba a betöltés közben!")
         } finally {
@@ -37,7 +47,7 @@ export const UserView = () => {
         }
     }
 
-    const filteredUsers = users.filter(user => {
+    const filteredUsers = pagedUsers.content.filter(user => {
         const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (user.phoneNumber ? user.phoneNumber.toLowerCase().includes(searchTerm.toLowerCase()) : false)
@@ -50,7 +60,11 @@ export const UserView = () => {
 
     useEffect(() => {
         loadUsers()
-    }, [])
+    }, [pagedUsers.pageNumber, pagedUsers.pageSize])
+
+    useEffect(() => {
+        setPagedUsers(prev => ({ ...prev, pageNumber: 0 }))
+    }, [searchTerm, roleFilter, statusFilter])
 
     const handleEdit = (user: UserResponse) => {
         setSelectedEditUser(user)
@@ -95,7 +109,7 @@ export const UserView = () => {
 
                     <Title page="user" />
 
-                    <UserStatsCards users={users} />
+                    <UserStatsCards users={pagedUsers.content} />
 
                     <FilterBar {...FilterBarProps} />
 
@@ -103,26 +117,41 @@ export const UserView = () => {
                         <div className="text-left text-red-400 text-sm font-medium">{error}</div>
                     }
 
-                    {users.length === 0 &&
+                    {pagedUsers.totalElements === 0 &&
                         <div className="text-left text-slate-400 text-sm font-medium">Nincs felhasználó</div>
                     }
 
-                    {users.length > 0 && filteredUsers.length === 0 && (
+                    {pagedUsers.totalElements > 0 && filteredUsers.length === 0 && (
                         <div className="text-left text-slate-400 text-sm font-medium">Nincs a keresésnek megfelelő felhasználó</div>
                     )}
 
-                    {
-                        filteredUsers.length > 0 && <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 w-full">
-                            {filteredUsers.map(user =>
-                                <Card
-                                    key={user.id}
-                                    user={user}
-                                    onEdit={handleEdit}
-                                    onPromote={handlePromote}
-                                    onToggleStatus={handleToggleStatus} />)
-                            }
-                        </div>
-                    }
+                    {filteredUsers.length > 0 && (
+                        <Pagination
+                            pageNumber={pagedUsers.pageNumber}
+                            pageSize={pagedUsers.pageSize}
+                            totalElements={pagedUsers.totalElements}
+                            totalPages={pagedUsers.totalPages}
+                            first={pagedUsers.first}
+                            last={pagedUsers.last}
+                            onPageChange={(newPageNumber) => {
+                                setPagedUsers(prev => ({ ...prev, pageNumber: newPageNumber }))
+                            }}
+                            onPageSizeChange={(newPageSize) => {
+                                setPagedUsers(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 0 }))
+                            }}
+                        >
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 w-full">
+                                {filteredUsers.map(user =>
+                                    <Card
+                                        key={user.id}
+                                        user={user}
+                                        onEdit={handleEdit}
+                                        onPromote={handlePromote}
+                                        onToggleStatus={handleToggleStatus} />)
+                                }
+                            </div>
+                        </Pagination>
+                    )}
                 </div>
             }
         </div>

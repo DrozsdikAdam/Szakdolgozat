@@ -3,7 +3,7 @@ import type { MachineResponse, MachineStatusUpdateRequest } from "../../types/ma
 import type { UserResponse } from "../../types/user/User"
 import type { MachineStatus, MachineType } from "../../types/machine/MachineStatus"
 import { assignUserToMachine, deleteMachine, getMachines, unassignUserFromMachine, updateMachineStatus } from "../../services/machineService"
-import { getUsers } from "../../services/userService"
+import { getAssignableUsers } from "../../services/userService"
 import { Background } from "../../components/common/Background"
 import { LoadingSpinner } from "../../components/common/LoadingSpinner"
 import { Title } from "../../components/common/Title"
@@ -16,9 +16,20 @@ import { DeleteConfirmModal } from "../../components/common/DeleteConfirmModal"
 import { EmergencyStopModal } from "../../components/machine/modal/EmergencyStop"
 import type { WorkOrderResponse, WorkOrderStatusUpdateRequest } from "../../types/workorder/workOrder"
 import { getWorkOrders, updateWorkOrderStatus, updateWorkOrderUser } from "../../services/workOrderService"
+import type { PagedResponse } from "../../types/common/PagedResponse"
+import { Pagination } from "../../components/common/Pagination"
+
 export const MachineView = () => {
 
-    const [machines, setMachines] = useState<MachineResponse[]>([])
+    const [pagedMachines, setPagedMachines] = useState<PagedResponse<MachineResponse>>({
+        content: [],
+        pageNumber: 0,
+        pageSize: 10,
+        totalPages: 0,
+        totalElements: 0,
+        first: true,
+        last: true
+    })
     const [users, setUsers] = useState<UserResponse[]>([])
     const [technicians, setTechnicians] = useState<UserResponse[]>([])
     const [isLoading, setIsLoading] = useState<boolean>(true)
@@ -39,18 +50,18 @@ export const MachineView = () => {
         setError(null)
         try {
             const [machinesRes, usersRes, workOrdersRes] = await Promise.all([
-                getMachines(),
-                getUsers(),
-                getWorkOrders()
+                getMachines(pagedMachines.pageNumber, pagedMachines.pageSize),
+                getAssignableUsers(),
+                getWorkOrders(0, 100)
             ])
 
             const operators = usersRes.filter(u => u.roles.includes("OPERATOR") || u.roles.includes("SYSTEMADMIN"));
             const techs = usersRes.filter(u => u.roles.includes("TECHNICIAN") || u.roles.includes("SYSTEMADMIN"));
 
-            setMachines(machinesRes);
+            setPagedMachines(machinesRes);
             setUsers(operators);
             setTechnicians(techs);
-            setWorkOrders(workOrdersRes);
+            setWorkOrders(workOrdersRes.content);
 
         } catch (err) {
             setError(err instanceof Error ? err.message : "Ismeretlen hiba")
@@ -149,21 +160,25 @@ export const MachineView = () => {
     }
 
     const filteredMachines = useMemo(() => {
-        return machines.filter(m => {
+        return pagedMachines.content.filter(m => {
             const matchesSearch = m.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 m.name.toLowerCase().includes(searchTerm.toLowerCase())
             const matchesStatus = statusFilter === "ALL" || m.status === statusFilter
             const matchesType = typeFilter === "ALL" || m.type === typeFilter
             return matchesSearch && matchesStatus && matchesType
         })
-    }, [machines, searchTerm, statusFilter, typeFilter])
-
+    }, [pagedMachines.content, searchTerm, statusFilter, typeFilter])
 
     useEffect(() => {
         loadData(true)
         const interval = setInterval(() => loadData(false), 5000)
         return () => clearInterval(interval)
-    }, [])
+    }, [pagedMachines.pageNumber, pagedMachines.pageSize])
+
+    useEffect(() => {
+        setPagedMachines(prev => ({ ...prev, pageNumber: 0 }))
+    }, [searchTerm, statusFilter, typeFilter])
+
     return (
         <div className="relative flex-1 w-full flex flex-col items-center justify-start p-4 sm:p-6 font-sans">
             <Background />
@@ -175,7 +190,7 @@ export const MachineView = () => {
 
                     <Title page="machine" />
 
-                    <MachineStatsCard machines={machines} />
+                    <MachineStatsCard machines={pagedMachines.content} />
 
                     <MachineFilterBar
                         searchTerm={searchTerm}
@@ -219,32 +234,47 @@ export const MachineView = () => {
                         <div className="text-left text-red-400 text-sm font-medium">{error}</div>
                     }
 
-                    {machines.length === 0 && (
+                    {pagedMachines.totalElements === 0 && (
                         <div className="text-left text-slate-400 text-sm font-medium">Még nincs rögzítve gép a rendszerben.</div>
                     )}
 
-                    {machines.length > 0 && filteredMachines.length === 0 && (
+                    {pagedMachines.totalElements > 0 && filteredMachines.length === 0 && (
                         <div className="text-left text-slate-400 text-sm font-medium">Nem található a keresési feltételeknek megfelelő gép.</div>
                     )}
 
-                    {filteredMachines.length > 0 &&
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                            {filteredMachines.map((machine) => (
-                                <MachineCard
-                                    key={machine.id}
-                                    machine={machine}
-                                    workOrders={workOrders}
-                                    users={users}
-                                    onEdit={() => setSelectedMachine(machine)}
-                                    onDelete={() => setMachineToDelete(machine)}
-                                    onStatusChange={handleStatusChange}
-                                    onAssignUser={handleAssingUser}
-                                    onStartWorkOrder={handleStartWorkOrder}
-                                    onEmergencyStop={() => setMachineToEmergencyStop(machine)}
-                                />
-                            ))}
-                        </div>
-                    }
+                    {filteredMachines.length > 0 && (
+                        <Pagination
+                            pageNumber={pagedMachines.pageNumber}
+                            pageSize={pagedMachines.pageSize}
+                            totalElements={pagedMachines.totalElements}
+                            totalPages={pagedMachines.totalPages}
+                            first={pagedMachines.first}
+                            last={pagedMachines.last}
+                            onPageChange={(newPageNumber) => {
+                                setPagedMachines(prev => ({ ...prev, pageNumber: newPageNumber }))
+                            }}
+                            onPageSizeChange={(newPageSize) => {
+                                setPagedMachines(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 0 }))
+                            }}
+                        >
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                {filteredMachines.map((machine) => (
+                                    <MachineCard
+                                        key={machine.id}
+                                        machine={machine}
+                                        workOrders={workOrders}
+                                        users={users}
+                                        onEdit={() => setSelectedMachine(machine)}
+                                        onDelete={() => setMachineToDelete(machine)}
+                                        onStatusChange={handleStatusChange}
+                                        onAssignUser={handleAssingUser}
+                                        onStartWorkOrder={handleStartWorkOrder}
+                                        onEmergencyStop={() => setMachineToEmergencyStop(machine)}
+                                    />
+                                ))}
+                            </div>
+                        </Pagination>
+                    )}
                 </div>
             }
         </div>

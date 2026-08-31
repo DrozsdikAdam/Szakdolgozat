@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import { Background } from "../../components/common/Background"
 import { useLocation, useNavigate } from "react-router-dom"
 import { Title } from "../../components/common/Title"
@@ -11,7 +11,7 @@ import { SelectField } from "../../components/common/form/SelectField"
 import { MACHINE_STATUS_OPTIONS } from "../../constants/machineStatus"
 import { MACHINE_TYPE_OPTIONS } from "../../constants/machineType"
 import type { UserResponse } from "../../types/user/User"
-import { getUsers } from "../../services/userService"
+import { getAssignableUsers } from "../../services/userService"
 import { ArrowLeft, Plus } from "lucide-react"
 import { SubmitButton } from "../../components/common/form/SubmitButton"
 
@@ -25,7 +25,7 @@ export const MachineCreateView = () => {
     const [name, setName] = useState<string>("");
     const [code, setCode] = useState<string>("");
     const [type, setType] = useState<MachineType>("CNC");
-    const [status, setStatus] = useState<MachineStatus>("OFFLINE");
+    const [status, setStatus] = useState<MachineStatus>("STOPPED");
     const [idealCycleTimeSeconds, setIdealCycleTimeSeconds] = useState<number>(0);
     const [targetPcsPerHour, setTargetPcsPerHour] = useState<number>(0);
     const [manufacturer, setManufacturer] = useState<string>("");
@@ -35,21 +35,31 @@ export const MachineCreateView = () => {
     const [warrantyEndDate, setWarrantyEndDate] = useState<string>("");
     const [location, setLocation] = useState<string>("");
     const [assignedUserId, setAssignedUserId] = useState<string>("");
-
     const [users, setUsers] = useState<UserResponse[]>([])
 
-    const isValid = (): boolean => {
-        const err = validateRequired(code, "gyári azonosító")
-            || validateRequired(name, "megnevezés")
-            || validateRequired(type, "gép típusa")
-            || validateRequired(status, "gép állapota")
-            || validatePositiveNumber(idealCycleTimeSeconds, "ideális ciklusidő")
-            || validatePositiveNumber(targetPcsPerHour, "cél darabszám / óra");
-        if (err) {
-            setError(err)
-            return false
+    const [nameError, setNameError] = useState<string | null>(null)
+    const [codeError, setCodeError] = useState<string | null>(null)
+    const [idealCycleTimeSecondsError, setIdealCycleTimeSecondsError] = useState<string | null>(null)
+    const [targetPcsPerHourError, setTargetPcsPerHourError] = useState<string | null>(null)
+
+    const validate = () => {
+        let isValid = true
+
+        const nameValidation = validateRequired(name, "Gép neve")
+        const codeValidation = validateRequired(code, "Gép kódja")
+        const cycleTimeValidation = validatePositiveNumber(idealCycleTimeSeconds, "Ideális ciklusidő")
+        const pcsValidation = validatePositiveNumber(targetPcsPerHour, "Cél darabszám")
+
+        setNameError(nameValidation)
+        setCodeError(codeValidation)
+        setIdealCycleTimeSecondsError(cycleTimeValidation)
+        setTargetPcsPerHourError(pcsValidation)
+
+        if (nameValidation || codeValidation || cycleTimeValidation || pcsValidation) {
+            isValid = false
         }
-        return true
+
+        return isValid
     }
 
     const handleBack = () => {
@@ -57,44 +67,46 @@ export const MachineCreateView = () => {
         navigate(from)
     }
 
-    const handleSubmit = async () => {
-        if (!isValid()) return
-        setIsLoading(true);
-        setError(null);
+    const handleSubmit = async (e?: FormEvent) => {
+        if (e) e.preventDefault()
+
+        if (!validate()) return
+
+        setIsLoading(true)
+        setError(null)
 
         const request: MachineCreateRequest = {
             name,
             code,
             type,
             status,
-            idealCycleTimeSeconds,
-            targetPcsPerHour,
-            manufacturer,
-            model,
-            serialNumber,
-            warrantyNumber,
-            warrantyEndDate,
-            location,
-            assignedUserId: assignedUserId || undefined
+            idealCycleTimeSeconds: Number(idealCycleTimeSeconds) || 0,
+            targetPcsPerHour: Number(targetPcsPerHour) || 0,
+            manufacturer: manufacturer || undefined,
+            model: model || undefined,
+            serialNumber: serialNumber || undefined,
+            warrantyNumber: warrantyNumber || undefined,
+            warrantyEndDate: warrantyEndDate ? new Date(warrantyEndDate).toISOString() : undefined,
+            location: location || undefined,
+            assignedUserId: assignedUserId || undefined,
         }
 
         try {
             await createMachine(request);
             resetForm();
-            navigate(from)
-        } catch (error) {
-            setError(error instanceof Error ? error.message : "Hozzáadás sikertelen")
+            navigate(from, { replace: true })
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Hozzáadás sikertelen")
         } finally {
             setIsLoading(false)
         }
-
     }
 
     const resetForm = () => {
         setName("");
         setCode("");
         setType("CNC");
-        setStatus("OFFLINE");
+        setStatus("STOPPED");
         setIdealCycleTimeSeconds(0);
         setTargetPcsPerHour(0);
         setManufacturer("");
@@ -104,6 +116,10 @@ export const MachineCreateView = () => {
         setWarrantyEndDate("");
         setLocation("");
         setAssignedUserId("");
+        setNameError(null);
+        setCodeError(null);
+        setIdealCycleTimeSecondsError(null);
+        setTargetPcsPerHourError(null);
         setIsLoading(false)
         setError(null)
     }
@@ -111,14 +127,14 @@ export const MachineCreateView = () => {
     const loadData = async () => {
         setIsLoading(true)
         try {
-            const users = await getUsers()
-            const operators = users.filter(
+            const usersList = await getAssignableUsers()
+            const operators = usersList.filter(
                 u => u.roles.includes("OPERATOR")
                     || u.roles.includes("TECHNICIAN")
                     || u.roles.includes("MANAGER"));
             setUsers(operators)
-        } catch (error) {
-            setError(error instanceof Error ? error.message : "Hozzáadás sikertelen")
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Betöltés sikertelen")
         } finally {
             setIsLoading(false)
         }
@@ -136,7 +152,7 @@ export const MachineCreateView = () => {
             <div className="w-full max-w-7xl backdrop-blur-xl bg-slate-900/60 border border-slate-800 shadow-2xl rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-5 relative z-10">
                 <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
                     <button
-                        onClick={() => handleBack()}
+                        onClick={handleBack}
                         className="p-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
                         <ArrowLeft className="h-5 w-5" />
                     </button>
@@ -144,14 +160,15 @@ export const MachineCreateView = () => {
                     <Title page="machineCreate" />
                 </div>
 
-
-                <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-3.5">
-                    <div className="grid grid-cols-1 md:grid-cols-2  gap-6">
+                <form onSubmit={handleSubmit} className="space-y-3.5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <InputField
                             label="Gyári azonosító"
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
                             placeholder={"pl. DMG60"}
+                            error={codeError}
+                            required
                         />
 
                         <InputField
@@ -159,6 +176,8 @@ export const MachineCreateView = () => {
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder={"pl. maró gép"}
+                            error={nameError}
+                            required
                         />
 
                         <SelectField
@@ -184,6 +203,8 @@ export const MachineCreateView = () => {
                             placeholder={"pl. 10"}
                             type="number"
                             min={0}
+                            error={idealCycleTimeSecondsError}
+                            required
                         />
 
                         <InputField
@@ -193,6 +214,8 @@ export const MachineCreateView = () => {
                             placeholder={"pl. 10"}
                             type="number"
                             min={0}
+                            error={targetPcsPerHourError}
+                            required
                         />
 
                         <InputField
@@ -200,6 +223,13 @@ export const MachineCreateView = () => {
                             value={manufacturer}
                             onChange={(e) => setManufacturer(e.target.value)}
                             placeholder={"pl. DMG"}
+                        />
+
+                        <InputField
+                            label="Modell"
+                            value={model}
+                            onChange={(e) => setModel(e.target.value)}
+                            placeholder={"pl. DMU 50"}
                         />
 
                         <InputField
@@ -244,7 +274,6 @@ export const MachineCreateView = () => {
                         <div className="text-left text-red-400 text-sm font-medium">{error}</div>
                     }
 
-
                     <div className="flex items-center justify-end gap-3 pt-2">
                         <SubmitButton
                             type="button"
@@ -261,12 +290,8 @@ export const MachineCreateView = () => {
                             className="px-5 py-2 rounded-xl"
                         />
                     </div>
-
                 </form>
-
             </div>
-
-
         </div>
     )
 }

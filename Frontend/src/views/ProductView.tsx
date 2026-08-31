@@ -4,6 +4,7 @@ import {
     getActiveProducts,
     getDeletedProducts,
     getInactiveProducts,
+    getProducts,
 } from "../services/productService"
 import { Background } from "../components/common/Background"
 import { CreateModal } from "../components/product/modal/Create"
@@ -15,10 +16,20 @@ import { Stats } from "../components/product/Stats"
 import { FilterBar } from "../components/product/FilterBar"
 import type { FilterBarProps, StatsProps, TableProps } from "../types/product/ProductProps"
 import { Table } from "../components/product/Table"
+import type { PagedResponse } from "../types/common/PagedResponse"
+import { Pagination } from "../components/common/Pagination"
 
 export const ProductView = () => {
 
-    const [products, setProducts] = useState<ProductResponse[]>([])
+    const [pagedProducts, setPagedProducts] = useState<PagedResponse<ProductResponse>>({
+        content: [],
+        pageNumber: 0,
+        pageSize: 10,
+        totalPages: 0,
+        totalElements: 0,
+        first: true,
+        last: true
+    })
     const [activeTab, setActiveTab] = useState<'active' | 'inactive' | 'deleted'>('active')
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [error, setError] = useState<string | null>(null)
@@ -71,15 +82,36 @@ export const ProductView = () => {
         setIsLoading(true)
         setError(null)
 
-        let response: ProductResponse[] = []
         try {
-            if (activeTab === "active") response = await getActiveProducts();
-            else if (activeTab === "inactive") response = await getInactiveProducts();
-            else response = await getDeletedProducts();
+            if (activeTab === "active") {
+                const response = await getProducts(pagedProducts.pageNumber, pagedProducts.pageSize)
+                setPagedProducts(response)
+            } else if (activeTab === "inactive") {
+                const response = await getInactiveProducts()
+                setPagedProducts({
+                    content: response,
+                    pageNumber: 0,
+                    pageSize: response.length || 10,
+                    totalElements: response.length,
+                    totalPages: 1,
+                    first: true,
+                    last: true
+                })
+            } else {
+                const response = await getDeletedProducts()
+                setPagedProducts({
+                    content: response,
+                    pageNumber: 0,
+                    pageSize: response.length || 10,
+                    totalElements: response.length,
+                    totalPages: 1,
+                    first: true,
+                    last: true
+                })
+            }
         } catch (error) {
             setError(error instanceof Error ? error.message : String(error))
         } finally {
-            setProducts(response)
             setIsLoading(false)
         }
     }
@@ -91,9 +123,13 @@ export const ProductView = () => {
     useEffect(() => {
         loadProducts()
         loadStats()
-    }, [activeTab])
+    }, [activeTab, pagedProducts.pageNumber, pagedProducts.pageSize])
 
-    const filteredProducts = products.filter(product =>
+    useEffect(() => {
+        setPagedProducts(prev => ({ ...prev, pageNumber: 0 }))
+    }, [searchTerm, activeTab])
+
+    const filteredProducts = pagedProducts.content.filter(product =>
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.sku.toLowerCase().includes(searchTerm.toLowerCase())
     )
@@ -138,15 +174,32 @@ export const ProductView = () => {
                         <div className="text-left text-red-400 text-sm font-medium">{error}</div>
                     }
 
-                    {products.length === 0 &&
+                    {pagedProducts.totalElements === 0 &&
                         <div className="text-left text-slate-400 text-sm font-medium">Nincs termék</div>
                     }
 
-                    {products.length > 0 && filteredProducts.length === 0 && (
+                    {pagedProducts.totalElements > 0 && filteredProducts.length === 0 && (
                         <div className="text-left text-slate-400 text-sm font-medium">Nincs a keresésnek megfelelő termék</div>
                     )}
 
-                    {filteredProducts.length > 0 && <Table {...TableProps} />}
+                    {filteredProducts.length > 0 && (
+                        <Pagination
+                            pageNumber={pagedProducts.pageNumber}
+                            pageSize={pagedProducts.pageSize}
+                            totalElements={pagedProducts.totalElements}
+                            totalPages={pagedProducts.totalPages}
+                            first={pagedProducts.first}
+                            last={pagedProducts.last}
+                            onPageChange={(newPageNumber) => {
+                                setPagedProducts(prev => ({ ...prev, pageNumber: newPageNumber }))
+                            }}
+                            onPageSizeChange={(newPageSize) => {
+                                setPagedProducts(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 0 }))
+                            }}
+                        >
+                            <Table {...TableProps} />
+                        </Pagination>
+                    )}
                 </div>
             }
         </div>

@@ -1,8 +1,12 @@
 import type { UserCreateRequest, UserResponse, UserUpdateRequest } from "../types/user/User";
 import { apiFetch } from "../utils/apiFetch";
+import type { PagedResponse } from "../types/common/PagedResponse";
 
-export const getUsers = async (): Promise<UserResponse[]> => {
-    return apiFetch<UserResponse[]>("api/users");
+export const getUsers = async (page: number = 0, size: number = 10): Promise<PagedResponse<UserResponse>> => {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("size", size.toString());
+    return apiFetch<PagedResponse<UserResponse>>(`api/users?${params.toString()}`);
 };
 
 export const getUserById = async (id: string): Promise<UserResponse> => {

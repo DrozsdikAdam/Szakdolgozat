@@ -4,7 +4,7 @@ import type { WorkOrderPriority, WorkOrderResponse, WorkOrderStatus, WorkOrderSt
 import type { ProductResponse } from "../types/product/Product"
 import type { UserResponse } from "../types/user/User"
 import { LoadingSpinner } from "../components/common/LoadingSpinner"
-import { getProducts } from "../services/productService"
+import { getActiveProducts } from "../services/productService"
 import { getWorkOrders, updateWorkOrderStatus, updateWorkOrderUser } from "../services/workOrderService"
 import { EditWorkOrder } from "../components/workorder/modal/Edit"
 import { CreateWorkOrder } from "../components/workorder/modal/Create"
@@ -13,11 +13,21 @@ import { Title } from "../components/common/Title"
 import { WorkOrderStatsCard } from "../components/workorder/StatsCard"
 import { WorkOrderFilterBar } from "../components/workorder/FilterBar"
 import { WorkOrderCard } from "../components/workorder/Card"
+import type { PagedResponse } from "../types/common/PagedResponse"
+import { Pagination } from "../components/common/Pagination"
 
 export const WorkOrderView = () => {
 
     const [products, setProducts] = useState<ProductResponse[]>([])
-    const [orders, setOrders] = useState<WorkOrderResponse[]>([])
+    const [pagedOrders, setPagedOrders] = useState<PagedResponse<WorkOrderResponse>>({
+        content: [],
+        pageNumber: 0,
+        pageSize: 10,
+        totalPages: 0,
+        totalElements: 0,
+        first: true,
+        last: true
+    })
     const [users, setUsers] = useState<UserResponse[]>([])
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
@@ -64,12 +74,12 @@ export const WorkOrderView = () => {
 
         try {
             let [productsData, ordersData, usersData] = await Promise.all([
-                getProducts(),
-                getWorkOrders(),
+                getActiveProducts(),
+                getWorkOrders(pagedOrders.pageNumber, pagedOrders.pageSize, statusFilter),
                 getAssignableUsers()
             ])
             setProducts(productsData)
-            setOrders(ordersData)
+            setPagedOrders(ordersData)
             setUsers(usersData)
 
         } catch (error) {
@@ -80,7 +90,7 @@ export const WorkOrderView = () => {
     }
 
     const filteredOrders = useMemo(() => {
-        let filtered = [...orders]
+        let filtered = [...pagedOrders.content]
         if (statusFilter !== "ALL")
             filtered = filtered.filter(order => order.status === statusFilter)
 
@@ -103,17 +113,17 @@ export const WorkOrderView = () => {
             )
         }
         return filtered
-    }, [orders, statusFilter, priorityFilter, workOrderUserFilter, searchTerm])
+    }, [pagedOrders.content, statusFilter, priorityFilter, workOrderUserFilter, searchTerm])
 
     const activeWorkers = useMemo(() => {
         const workerMap = new Map<string, string>()
-        orders.forEach(order => {
+        pagedOrders.content.forEach(order => {
             if (order.assignedUserId && order.assignedUserName) {
                 workerMap.set(order.assignedUserId, order.assignedUserName)
             }
         })
         return Array.from(workerMap.entries()).map(([id, username]) => ({ id, username }))
-    }, [orders])
+    }, [pagedOrders.content])
 
     const handleAssignUser = async (orderId: string, userId: string): Promise<void> => {
         setError(null)
@@ -132,7 +142,11 @@ export const WorkOrderView = () => {
         loadData(true)
         const interval = setInterval(() => loadData(false), 5000)
         return () => clearInterval(interval)
-    }, [])
+    }, [pagedOrders.pageNumber, pagedOrders.pageSize, statusFilter])
+
+    useEffect(() => {
+        setPagedOrders(prev => ({ ...prev, pageNumber: 0 }))
+    }, [statusFilter, priorityFilter, workOrderUserFilter, searchTerm])
 
     return (
         <div className="relative flex-1 w-full flex flex-col items-center justify-start p-4 sm:p-6 font-sans">
@@ -148,7 +162,7 @@ export const WorkOrderView = () => {
 
                 <Title page="workorder" />
 
-                <WorkOrderStatsCard orders={orders} />
+                <WorkOrderStatsCard orders={pagedOrders.content} />
 
                 <WorkOrderFilterBar
                     searchTerm={searchTerm}
@@ -172,20 +186,36 @@ export const WorkOrderView = () => {
                 }
 
                 {filteredOrders.length > 0 && (
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                        {filteredOrders.map((order) => (
-                            <WorkOrderCard
-                                key={order.id}
-                                order={order}
-                                users={users}
-                                onUpdateStatus={handleUpdateStatus}
-                                onEditOrder={(ord) => setSelectedEditOrder(ord)}
-                                onAssignUser={handleAssignUser}
-                            />
-                        ))}
-                    </div>
+                    <Pagination
+                        pageNumber={pagedOrders.pageNumber}
+                        pageSize={pagedOrders.pageSize}
+                        totalElements={pagedOrders.totalElements}
+                        totalPages={pagedOrders.totalPages}
+                        first={pagedOrders.first}
+                        last={pagedOrders.last}
+                        onPageChange={(newPageNumber) => {
+                            const newPage = { ...pagedOrders, pageNumber: newPageNumber }
+                            setPagedOrders(newPage)
+                        }}
+                        onPageSizeChange={(newPageSize) => {
+                            const newPage = { ...pagedOrders, pageSize: newPageSize }
+                            setPagedOrders(newPage)
+                        }}
+                    >
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                            {filteredOrders.map((order) => (
+                                <WorkOrderCard
+                                    key={order.id}
+                                    order={order}
+                                    users={users}
+                                    onUpdateStatus={handleUpdateStatus}
+                                    onEditOrder={(ord) => setSelectedEditOrder(ord)}
+                                    onAssignUser={handleAssignUser}
+                                />
+                            ))}
+                        </div>
+                    </Pagination>
                 )}
-
             </div>
         </div>
     )

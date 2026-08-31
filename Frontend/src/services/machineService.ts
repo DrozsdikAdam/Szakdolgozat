@@ -1,11 +1,15 @@
 import type { EmergencyStopRequest, MachineCreateRequest, MachineResponse, MachineStatusUpdateRequest, MachineUpdateRequest } from "../types/machine/Machine"
 import type { MachineStatus, MachineType } from "../types/machine/MachineStatus"
 import { apiFetch } from "../utils/apiFetch"
+import type { PagedResponse } from "../types/common/PagedResponse"
 
 const baseUrl = "/api/machines"
 
-export const getMachines = async () => {
-    return apiFetch<MachineResponse[]>(baseUrl)
+export const getMachines = async (page: number = 0, size: number = 10): Promise<PagedResponse<MachineResponse>> => {
+    const params = new URLSearchParams()
+    params.append("page", page.toString())
+    params.append("size", size.toString())
+    return apiFetch<PagedResponse<MachineResponse>>(`${baseUrl}?${params.toString()}`)
 }
 
 export const getInactiveMachines = async () => {

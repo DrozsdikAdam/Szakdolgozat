@@ -14,7 +14,7 @@ import { getMaintenance, updateMaintenance } from "../../services/maintenanceSer
 import { SubmitButton } from "../../components/common/form/SubmitButton";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { UserResponse } from "../../types/user/User";
-import { getUsers } from "../../services/userService";
+import { getAssignableUsers } from "../../services/userService";
 
 export const MaintenanceEditView = () => {
 
@@ -97,7 +97,7 @@ export const MaintenanceEditView = () => {
     const loadData = async () => {
         setIsLoading(true)
         try {
-            const users = await getUsers()
+            const users = await getAssignableUsers()
             const technicians = users.filter(
                 u => u.roles.includes("TECHNICIAN")
                     || u.roles.includes("MANAGER"));
@@ -225,13 +225,11 @@ export const MaintenanceEditView = () => {
                             required
                         />
 
-
                     </div>
 
                     {error &&
                         <div className="text-left text-red-400 text-sm font-medium">{error}</div>
                     }
-
 
                     <div className="flex items-center justify-end gap-3 pt-2">
                         <SubmitButton
@@ -249,12 +247,8 @@ export const MaintenanceEditView = () => {
                             className="px-5 py-2 rounded-xl"
                         />
                     </div>
-
                 </form>
-
             </div>
-
-
         </div>
     )
 }

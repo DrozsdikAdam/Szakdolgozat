@@ -1,11 +1,15 @@
 import type { MachineMaintenanceCreateRequest, MachineMaintenanceResponse, MachineMaintenanceUpdateRequest, MachineMaintenanceUpdateStatusRequest } from "../types/maintenance/MachineMaintenance";
 import type { MaintenanceStatus } from "../types/maintenance/MaintenanceStatus";
 import { apiFetch } from "../utils/apiFetch";
+import type { PagedResponse } from "../types/common/PagedResponse";
 
 const baseUrl = "/api/maintenance";
 
-export const getMaintenances = async (): Promise<MachineMaintenanceResponse[]> => {
-    const response: MachineMaintenanceResponse[] = await apiFetch(baseUrl);
+export const getMaintenances = async (page: number = 0, size: number = 10): Promise<PagedResponse<MachineMaintenanceResponse>> => {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("size", size.toString());
+    const response: PagedResponse<MachineMaintenanceResponse> = await apiFetch(`${baseUrl}?${params.toString()}`);
     return response;
 }
 

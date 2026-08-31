@@ -8,7 +8,7 @@ import type { MachineMaintenanceResponse } from "../../types/maintenance/Machine
 import type { UserResponse } from "../../types/user/User"
 import type { MachineResponse } from "../../types/machine/Machine"
 import type { MaintenanceStatus, MaintenanceType } from "../../types/maintenance/MaintenanceStatus"
-import { getUsers } from "../../services/userService"
+import { getAssignableUsers } from "../../services/userService"
 import { deleteMaintenance, getMaintenances } from "../../services/maintenanceService"
 import { MaintenanceCard } from "../../components/maintenance/Card"
 import { CreateMaintenanceModal } from "../../components/maintenance/modal/Create"
@@ -16,10 +16,20 @@ import { EditMaintenanceStatusModal } from "../../components/maintenance/modal/E
 import { getMachines } from "../../services/machineService"
 import { useNavigate } from "react-router-dom"
 import { DeleteConfirmModal } from "../../components/common/DeleteConfirmModal"
+import type { PagedResponse } from "../../types/common/PagedResponse"
+import { Pagination } from "../../components/common/Pagination"
 
 export const MaintenanceView = () => {
 
-    const [maintenances, setMaintenances] = useState<MachineMaintenanceResponse[]>([])
+    const [pagedMaintenances, setPagedMaintenances] = useState<PagedResponse<MachineMaintenanceResponse>>({
+        content: [],
+        pageNumber: 0,
+        pageSize: 10,
+        totalPages: 0,
+        totalElements: 0,
+        first: true,
+        last: true
+    })
     const [technicians, setTechnicians] = useState<UserResponse[]>([])
     const [machines, setMachines] = useState<MachineResponse[]>([])
     const [isLoading, setIsLoading] = useState<boolean>(true)
@@ -41,13 +51,13 @@ export const MaintenanceView = () => {
 
         try {
             const [users, machines, maintenances] = await Promise.all([
-                getUsers(),
-                getMachines(),
-                getMaintenances()
+                getAssignableUsers(),
+                getMachines(0, 100),
+                getMaintenances(pagedMaintenances.pageNumber, pagedMaintenances.pageSize)
             ])
             setTechnicians(users.filter(u => u.roles.includes("TECHNICIAN")))
-            setMachines(machines)
-            setMaintenances(maintenances)
+            setMachines(machines.content)
+            setPagedMaintenances(maintenances)
         } catch (error) {
             setError("Hiba történt a betöltés során!")
             console.error(error)
@@ -62,7 +72,7 @@ export const MaintenanceView = () => {
 
         try {
             await deleteMaintenance(id)
-            setMaintenances(maintenances.filter((maintenance) => maintenance.id !== id))
+            loadData()
         } catch (error) {
             setError("Hiba történt a törlés során!")
             console.error(error)
@@ -77,17 +87,21 @@ export const MaintenanceView = () => {
     }
 
     const filteredMaintenancies = useMemo(() => {
-        return maintenances.filter((maintenance) => {
+        return pagedMaintenances.content.filter((maintenance) => {
             const matchesSearch = maintenance.title.toLowerCase().includes(searchTerm.toLowerCase())
             const matchesStatus = statusFilter === "ALL" || maintenance.status === statusFilter
             const matchesType = typeFilter === "ALL" || maintenance.type === typeFilter
             return matchesSearch && matchesStatus && matchesType
         })
-    }, [maintenances, searchTerm, statusFilter, typeFilter])
+    }, [pagedMaintenances.content, searchTerm, statusFilter, typeFilter])
 
     useEffect(() => {
         loadData()
-    }, [])
+    }, [pagedMaintenances.pageNumber, pagedMaintenances.pageSize])
+
+    useEffect(() => {
+        setPagedMaintenances(prev => ({ ...prev, pageNumber: 0 }))
+    }, [searchTerm, statusFilter, typeFilter])
 
     return (
         <div className="relative flex-1 w-full flex flex-col items-center justify-start p-4 sm:p-6 font-sans">
@@ -141,24 +155,42 @@ export const MaintenanceView = () => {
                     <div className="text-left text-red-400 text-sm font-medium">{error}</div>
                 }
 
-                {filteredMaintenancies.length === 0 &&
-                    <div className="text-left text-slate-400 text-sm font-medium">Nem található a keresési feltételeknek megfelelő karbantartás.</div>
+                {pagedMaintenances.totalElements === 0 &&
+                    <div className="text-left text-slate-400 text-sm font-medium">Nem található karbantartás.</div>
                 }
 
-                {filteredMaintenancies.length > 0 && (
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                        {filteredMaintenancies.map((maintenance) => (
-                            <MaintenanceCard
-                                key={maintenance.id}
-                                maintenance={maintenance}
-                                onEdit={() => navigate(`/maintenance/${maintenance.id}/edit`)}
-                                onStatusUpdate={() => handleStatusUpdate(maintenance)}
-                                onDelete={() => setMaintenanceToDelete(maintenance)}
-                            />
-                        ))}
-                    </div>
+                {pagedMaintenances.totalElements > 0 && filteredMaintenancies.length === 0 && (
+                    <div className="text-left text-slate-400 text-sm font-medium">Nem található a keresési feltételeknek megfelelő karbantartás.</div>
                 )}
 
+                {filteredMaintenancies.length > 0 && (
+                    <Pagination
+                        pageNumber={pagedMaintenances.pageNumber}
+                        pageSize={pagedMaintenances.pageSize}
+                        totalElements={pagedMaintenances.totalElements}
+                        totalPages={pagedMaintenances.totalPages}
+                        first={pagedMaintenances.first}
+                        last={pagedMaintenances.last}
+                        onPageChange={(newPageNumber) => {
+                            setPagedMaintenances(prev => ({ ...prev, pageNumber: newPageNumber }))
+                        }}
+                        onPageSizeChange={(newPageSize) => {
+                            setPagedMaintenances(prev => ({ ...prev, pageSize: newPageSize, pageNumber: 0 }))
+                        }}
+                    >
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                            {filteredMaintenancies.map((maintenance) => (
+                                <MaintenanceCard
+                                    key={maintenance.id}
+                                    maintenance={maintenance}
+                                    onEdit={() => navigate(`/maintenance/${maintenance.id}/edit`)}
+                                    onStatusUpdate={() => handleStatusUpdate(maintenance)}
+                                    onDelete={() => setMaintenanceToDelete(maintenance)}
+                                />
+                            ))}
+                        </div>
+                    </Pagination>
+                )}
             </div>
         </div>
     )

@@ -30,9 +30,9 @@ export const AnalyticsView = () => {
         setIsLoading(true)
         setError(null)
         try {
-            const machinesData = await getMachines()
-            setMachines(machinesData)
-            machinesData.length > 0 && setSelectedMachineId(machinesData[0].id)
+            const machinesData = await getMachines(0, 100)
+            setMachines(machinesData.content)
+            machinesData.content.length > 0 && setSelectedMachineId(machinesData.content[0].id)
         } catch (err) {
             setError(err instanceof Error ? err.message : "Hiba a gépek betöltésekor")
         } finally {

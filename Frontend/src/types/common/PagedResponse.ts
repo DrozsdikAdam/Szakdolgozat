@@ -4,6 +4,6 @@ export interface PagedResponse<T> {
     pageSize: number,
     totalElements: number,
     totalPages: number,
-    first?: boolean,
-    last?: boolean,
+    first: boolean,
+    last: boolean,
 }
