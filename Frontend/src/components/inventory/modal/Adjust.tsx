@@ -1,20 +1,24 @@
-﻿import { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import type { AdjustModalProps } from "../../../types/inventory/inventoryProps"
 import { Pencil } from "lucide-react"
 import { adjustStock } from "../../../services/inventoryService"
-import type { InventoryUpdateRequest } from "../../../types/inventory/inventory"
+import type { InventoryResponse, InventoryUpdateRequest } from "../../../types/inventory/inventory"
 import { Modal } from "../../common/Modal"
 import { validateNonNegativeNumber, validateRequired } from "../../../utils/validators"
 import { InputField } from "../../common/form/InputField"
+import { SelectField } from "../../common/form/SelectField"
 
-export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: AdjustModalProps) => {
+export const AdjustInventory = ({ inventories, inventory, isOpen, closeModal, onUpdate }: AdjustModalProps) => {
     const [quantity, setQuantity] = useState<number>(0)
     const [location, setLocation] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
+    const [selectedInventory, setSelectedInventory] = useState<InventoryResponse | null>(null)
+
+    const activeInventory = inventory || selectedInventory;
 
     const isValid = (): boolean => {
-        if (!inventory) return false
+        if (!activeInventory) return false
 
         const err = validateRequired(quantity.toString(), "készlet")
             || validateRequired(location, "raktárhely")
@@ -25,7 +29,7 @@ export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: Adj
             return false
         }
 
-        if (quantity === inventory.quantity && location === inventory.location) {
+        if (quantity === activeInventory.quantity && location === activeInventory.location) {
             setError("A készlet és a raktárhely nem változott.")
             return false
         }
@@ -34,14 +38,14 @@ export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: Adj
     }
 
     const handleSubmit = async () => {
-        if (!inventory || !inventory.productId || !isValid()) return
+        if (!activeInventory || !activeInventory.productId || !isValid()) return
         setIsLoading(true)
         setError(null)
 
-        const newQuantity = quantity - inventory.quantity
+        const newQuantity = quantity - activeInventory.quantity
 
         const req: InventoryUpdateRequest = {
-            productId: inventory.productId,
+            productId: activeInventory.productId,
             amount: newQuantity,
             location: location || undefined
         }
@@ -59,19 +63,30 @@ export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: Adj
 
     useEffect(() => {
         if (inventory) {
+            setSelectedInventory(inventory)
             setQuantity(inventory.quantity)
             setLocation(inventory.location)
             setError(null)
+            return;
         }
-    }, [inventory, isOpen])
 
-    if (!isOpen || !inventory) return null
+        if (isOpen && inventories && inventories.length > 0) {
+            const first = inventories[0]
+            setSelectedInventory(first)
+            setQuantity(first.quantity)
+            setLocation(first.location)
+            setError(null)
+            return;
+        }
+    }, [inventory, isOpen, inventories])
+
+    if (!isOpen) return null
 
     return (
         <Modal
             isOpen={isOpen}
             onClose={closeModal}
-            title={`Készlet módosítása - ${inventory.productName || ""}`}
+            title={activeInventory?.productName ? `Készlet módosítása - ${activeInventory.productName}` : "Készlet módosítása"}
             submitIcon={<Pencil size={16} />}
             onSubmit={handleSubmit}
             isLoading={isLoading}
@@ -79,6 +94,23 @@ export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: Adj
             submitText="Mentés"
             cancelText="Mégse"
         >
+            {!inventory &&
+                <SelectField
+                    label="Termék"
+                    value={selectedInventory?.id}
+                    onChange={(e) => {
+                        const item = inventories?.find(inv => inv.id === e.target.value) || null
+                        setSelectedInventory(item)
+                        if (item) {
+                            setQuantity(item.quantity)
+                            setLocation(item.location)
+                            setError(null)
+                        }
+                    }}
+                    options={inventories?.map(inv => ({ key: inv.id, label: `${inv.productName} (${inv.productSku})` })) || []}
+                />
+            }
+
             <InputField
                 label="Készlet"
                 type="number"
@@ -92,6 +124,6 @@ export const AdjustInventory = ({ inventory, isOpen, closeModal, onUpdate }: Adj
                 value={location ?? ""}
                 onChange={(e) => setLocation(e.target.value || null)}
             />
-        </Modal>
+        </Modal >
     )
 }

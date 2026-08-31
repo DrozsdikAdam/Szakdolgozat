@@ -18,5 +18,6 @@ export interface FilterSearchProps {
     value: string,
     onChange: (value: string) => void,
     placeholder?: string,
-    className?: string
+    className?: string,
+    icon?: React.ReactNode
 }

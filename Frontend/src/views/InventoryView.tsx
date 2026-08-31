@@ -44,10 +44,10 @@ export const InventoryView = () => {
     }
 
     const openModal = (inventoryId?: string) => {
-        if (inventoryId) {
+        if (inventoryId && typeof inventoryId === "string") {
             const inventory = pagedInventories.content.find(inv => inv.id === inventoryId) || null
             setSelectedInventory(inventory)
-        } else setSelectedInventory(pagedInventories.content[0] || null)
+        } else setSelectedInventory(null)
 
         setIsModalOpen(true)
     }
@@ -98,6 +98,7 @@ export const InventoryView = () => {
             <Background />
 
             <AdjustInventory
+                inventories={pagedInventories.content}
                 isOpen={isModalOpen}
                 closeModal={closeModal}
                 inventory={selectedInventory}

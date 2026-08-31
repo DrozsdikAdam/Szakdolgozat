@@ -1,10 +1,12 @@
 import type { FilterSearchProps } from "../../../types/filter/FilterProps"
 import { Search, X } from "lucide-react"
 
-export const FilterSearch = ({ value, onChange, placeholder, className }: FilterSearchProps) => {
+export const FilterSearch = ({ value, onChange, placeholder, className, icon }: FilterSearchProps) => {
     return (
         <div className={`relative lg:w-72 flex items-center gap-2 w-full sm:w-auto ${className}`}>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                {icon || <Search className=" h-4 w-4 text-slate-400" />}
+            </div>
             <input
                 type="text"
                 value={value}
