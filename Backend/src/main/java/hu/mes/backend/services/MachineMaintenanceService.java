@@ -187,12 +187,19 @@ public class MachineMaintenanceService {
         maintenance.setDowntimeMinutes(request.getDowntimeMinutes());
         maintenance.setCost(request.getCost());
 
-        return maintenanceMapper.convertToResponse(machineMaintenanceRepository.save(maintenance));
+        MachineMaintenance saved = machineMaintenanceRepository.save(maintenance);
+        auditLogService.log(AuditAction.STATUS_CHANGE, AuditEntityType.MAINTENANCE, machine.getCode(),
+                "Karbantartás státusza módosítva: " + maintenance.getTitle() + " -> " + request.getStatus());
+
+        return maintenanceMapper.convertToResponse(saved);
     }
 
     public void deleteMaintenance(UUID id) {
         MachineMaintenance maintenance = getMaintenanceEntityById(id);
         machineMaintenanceRepository.delete(maintenance);
+
+        auditLogService.log(AuditAction.DELETE, AuditEntityType.MAINTENANCE, maintenance.getMachine().getCode(),
+                "Karbantartás törölve: " + maintenance.getTitle());
     }
 
     private MachineMaintenance getMaintenanceEntityById(UUID id) {

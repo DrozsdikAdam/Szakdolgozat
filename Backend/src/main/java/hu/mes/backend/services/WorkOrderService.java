@@ -198,6 +198,8 @@ public class WorkOrderService {
 		workOrder.setCustomerName(request.getCustomerName());
 
 		workOrderRepository.save(workOrder);
+		auditLogService.log(AuditAction.UPDATE, AuditEntityType.WORKORDER, workOrder.getOrderNumber(),
+				"Gyártási rendelés módosítva: " + workOrder.getOrderNumber());
 		return workOrderMapper.convertToResponse(workOrder);
 	}
 
@@ -210,6 +212,10 @@ public class WorkOrderService {
 
 		workOrder.setAssignedUser(user);
 		workOrderRepository.save(workOrder);
+
+		auditLogService.log(AuditAction.UPDATE, AuditEntityType.WORKORDER, workOrder.getOrderNumber(),
+				"Felelős operátor hozzárendelve (" + user.getName() + ") a rendeléshez: " + workOrder.getOrderNumber());
+
 		return workOrderMapper.convertToResponse(workOrder);
 	}
 

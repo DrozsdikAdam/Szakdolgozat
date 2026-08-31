@@ -16,6 +16,7 @@ import hu.mes.backend.models.AuditLog;
 import hu.mes.backend.models.enums.AuditAction;
 import hu.mes.backend.models.enums.AuditEntityType;
 import hu.mes.backend.repositories.AuditLogRepository;
+import hu.mes.backend.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -42,16 +43,22 @@ public class AuditLogService {
         return PagedResponse.of(pageResult, auditLogMapper.convertToResponses(pageResult.getContent()));
     }
 
+    public void log(AuditAction action, AuditEntityType entityType, String entityId, String details) {
+        log(null, null, action, entityType, entityId, details);
+    }
+
     public void log(String username, UUID userId, AuditAction action, AuditEntityType entityType, String entityId,
             String details) {
         String actualUsername = username;
+        UUID actualUserId = userId;
 
-        if (actualUsername == null || actualUsername.equals("USER") || actualUsername.equals("OPERATOR")
-                || actualUsername.equals("PLANNER") || actualUsername.equals("TECHNICIAN")
-                || actualUsername.equals("WAREHOUSE") || actualUsername.equals("MANAGER")) {
+        if (actualUsername == null) {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser")) {
                 actualUsername = auth.getName();
+                if (auth.getPrincipal() instanceof CustomUserDetails customUserDetails) {
+                    actualUserId = customUserDetails.getId();
+                }
             } else {
                 actualUsername = "SYSTEM";
             }
@@ -59,7 +66,7 @@ public class AuditLogService {
 
         AuditLog auditLog = AuditLog.builder()
                 .username(actualUsername)
-                .userId(userId)
+                .userId(actualUserId)
                 .action(action)
                 .entityType(entityType)
                 .entityId(entityId)

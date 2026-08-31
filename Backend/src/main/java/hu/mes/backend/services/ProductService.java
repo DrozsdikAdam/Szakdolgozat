@@ -13,6 +13,8 @@ import hu.mes.backend.dtos.product.ProductResponse;
 import hu.mes.backend.dtos.product.ProductUpdateRequest;
 import hu.mes.backend.mappers.ProductMapper;
 import hu.mes.backend.models.Product;
+import hu.mes.backend.models.enums.AuditAction;
+import hu.mes.backend.models.enums.AuditEntityType;
 import hu.mes.backend.repositories.ProductRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final InventoryService inventoryService;
+    private final AuditLogService auditLogService;
 
     public ProductResponse createProduct(ProductCreateRequest request) {
         if (request == null || productRepository.existsBySku(request.getSku()))
@@ -42,6 +45,9 @@ public class ProductService {
 
         Product savedProduct = productRepository.save(product);
         inventoryService.initializeInventory(savedProduct);
+
+        auditLogService.log(AuditAction.CREATE, AuditEntityType.PRODUCT, savedProduct.getSku(),
+                "Új termék létrehozva: " + savedProduct.getName() + " (" + savedProduct.getSku() + ")");
 
         return productMapper.convertToResponse(savedProduct);
     }
@@ -73,6 +79,9 @@ public class ProductService {
         product.setDeleted(true);
         product.setActive(false);
         productRepository.save(product);
+
+        auditLogService.log(AuditAction.DELETE, AuditEntityType.PRODUCT, product.getSku(),
+                "Termék törölve (lomtárba helyezve): " + product.getName());
     }
 
     public ProductResponse updateProduct(UUID id, ProductUpdateRequest request) {
@@ -87,7 +96,11 @@ public class ProductService {
         existingProduct.setSku(request.getSku());
         existingProduct.setUnit(request.getUnit());
 
-        return productMapper.convertToResponse(productRepository.save(existingProduct));
+        Product updated = productRepository.save(existingProduct);
+        auditLogService.log(AuditAction.UPDATE, AuditEntityType.PRODUCT, updated.getSku(),
+                "Termék módosítva: " + updated.getName() + " (" + updated.getSku() + ")");
+
+        return productMapper.convertToResponse(updated);
     }
 
     public List<ProductResponse> getDeletedProducts() {
@@ -102,12 +115,18 @@ public class ProductService {
         Product product = getProductEntityById(id);
         product.setActive(false);
         productRepository.save(product);
+
+        auditLogService.log(AuditAction.STATUS_CHANGE, AuditEntityType.PRODUCT, product.getSku(),
+                "Termék inaktiválva: " + product.getName());
     }
 
     public void activateProduct(UUID id) {
         Product product = getProductEntityById(id);
         product.setActive(true);
         productRepository.save(product);
+
+        auditLogService.log(AuditAction.STATUS_CHANGE, AuditEntityType.PRODUCT, product.getSku(),
+                "Termék aktiválva: " + product.getName());
     }
 
     public void restoreProduct(UUID id) {
@@ -116,5 +135,8 @@ public class ProductService {
         product.setDeleted(false);
         product.setActive(true);
         productRepository.save(product);
+
+        auditLogService.log(AuditAction.UPDATE, AuditEntityType.PRODUCT, product.getSku(),
+                "Termék visszaállítva a lomtárból: " + product.getName());
     }
 }

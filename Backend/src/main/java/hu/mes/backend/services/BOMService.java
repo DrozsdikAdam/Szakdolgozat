@@ -16,6 +16,8 @@ import hu.mes.backend.dtos.bom.BOMTreeNode;
 import hu.mes.backend.mappers.BOMMapper;
 import hu.mes.backend.models.BOMItem;
 import hu.mes.backend.models.Product;
+import hu.mes.backend.models.enums.AuditAction;
+import hu.mes.backend.models.enums.AuditEntityType;
 import hu.mes.backend.repositories.BOMItemRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class BOMService {
     private final BOMItemRepository bomRepository;
     private final ProductService productService;
     private final BOMMapper bomMapper;
+    private final AuditLogService auditLogService;
 
     public BOMResponse addComponentToBOM(BOMItemRequest request) {
         Product parent = productService.getProductEntityById(request.getParentProductId());
@@ -51,9 +54,12 @@ public class BOMService {
                 .quantity(request.getQuantity())
                 .active(true)
                 .build();
-        bomRepository.save(bomItem);
+        BOMItem savedItem = bomRepository.save(bomItem);
 
-        return bomMapper.convertToResponse(bomItem);
+        auditLogService.log(AuditAction.CREATE, AuditEntityType.BOM, parent.getSku(),
+                "Alkatrész hozzáadva a darabjegyzékhez: " + component.getName() + " (" + request.getQuantity() + " " + component.getUnit() + ") -> " + parent.getName());
+
+        return bomMapper.convertToResponse(savedItem);
     }
 
     public BOMTreeNode getBOMTree(UUID parentProductId, BigDecimal multiplier) {
