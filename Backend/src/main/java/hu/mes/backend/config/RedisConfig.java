@@ -68,7 +68,8 @@ public class RedisConfig implements CachingConfigurer {
                         "machines", cacheConfiguration.entryTtl(Duration.ofMinutes(15)),
                         "users", cacheConfiguration.entryTtl(Duration.ofMinutes(15)),
                         "telemetry", cacheConfiguration.entryTtl(Duration.ofMinutes(1)),
-                        "logs", cacheConfiguration.entryTtl(Duration.ofMinutes(5))))
+                        "logs", cacheConfiguration.entryTtl(Duration.ofMinutes(5)),
+                        "api-rate-limit-filter", cacheConfiguration.entryTtl(Duration.ofMinutes(5))))
                 .cacheDefaults(cacheConfiguration)
                 .build();
     }
