@@ -26,7 +26,7 @@ public class OeeService {
 	private final MachineRepository machineRepository;
 	private final MachineTelemetryRepository telemetryRepository;
 
-	@Cacheable(key = "#machineId.toString() + '_' + #start.toString() + '_' + #end.toString()")
+	@Cacheable
 	public OeeResponse calculateMachineOee(UUID machineId, LocalDateTime start, LocalDateTime end) {
 		List<MachineTelemetry> telemetries = telemetryRepository.findByMachineIdAndTimestampBetween(machineId,
 				start,
