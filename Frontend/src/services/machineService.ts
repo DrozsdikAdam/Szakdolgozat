@@ -64,8 +64,8 @@ export const assignUserToMachine = async (id: string, userId: string) => {
 }
 
 export const unassignUserFromMachine = async (id: string) => {
-    return apiFetch<MachineResponse>(`${baseUrl}/${id}/user`, {
-        method: "DELETE",
+    return apiFetch<MachineResponse>(`${baseUrl}/${id}/unassign`, {
+        method: "PATCH",
     })
 }
 

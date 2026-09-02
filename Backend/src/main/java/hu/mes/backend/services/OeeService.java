@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,10 +20,13 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@CacheConfig(cacheNames = "telemetry")
 public class OeeService {
+
 	private final MachineRepository machineRepository;
 	private final MachineTelemetryRepository telemetryRepository;
 
+	@Cacheable(key = "#machineId.toString() + '_' + #start.toString() + '_' + #end.toString()")
 	public OeeResponse calculateMachineOee(UUID machineId, LocalDateTime start, LocalDateTime end) {
 		List<MachineTelemetry> telemetries = telemetryRepository.findByMachineIdAndTimestampBetween(machineId,
 				start,
