@@ -2,6 +2,7 @@ import type { EmergencyStopRequest, MachineCreateRequest, MachineResponse, Machi
 import type { MachineStatus, MachineType } from "../types/machine/MachineStatus"
 import { apiFetch } from "../utils/apiFetch"
 import type { PagedResponse } from "../types/common/PagedResponse"
+import { offlineDb } from "./offlineDb"
 
 const baseUrl = "/api/machines"
 
@@ -51,10 +52,19 @@ export const updateMachine = async (id: string, request: MachineUpdateRequest) =
 }
 
 export const updateMachineStatus = async (id: string, request: MachineStatusUpdateRequest) => {
-    return apiFetch<MachineResponse>(`${baseUrl}/${id}/status`, {
-        method: "PATCH",
-        body: JSON.stringify(request),
-    })
+    try {
+        if (!navigator.onLine) {
+            await offlineDb.saveOfflineAction(`${baseUrl}/${id}/status`, "PATCH", request, "STATUS_UPDATE");
+            return { id, status: request.status } as unknown as MachineResponse;
+        }
+        return apiFetch<MachineResponse>(`${baseUrl}/${id}/status`, {
+            method: "PATCH",
+            body: JSON.stringify(request),
+        })
+    } catch (error) {
+        await offlineDb.saveOfflineAction(`${baseUrl}/${id}/status`, "PATCH", request, "STATUS_UPDATE");
+        return { id, status: request.status } as unknown as MachineResponse;
+    }
 }
 
 export const assignUserToMachine = async (id: string, userId: string) => {
@@ -94,8 +104,17 @@ export const restoreMachine = async (id: string) => {
 }
 
 export const emergencyStop = async (id: string, request: EmergencyStopRequest) => {
-    return apiFetch<MachineResponse>(`${baseUrl}/${id}/emergency-stop`, {
-        method: "POST",
-        body: JSON.stringify(request),
-    })
+    try {
+        if (!navigator.onLine) {
+            await offlineDb.saveOfflineAction(`${baseUrl}/${id}/emergency-stop`, "POST", request, "EMERGENCY_STOP");
+            return { id, status: "EMERGENCY_STOP" } as unknown as MachineResponse;
+        }
+        return apiFetch<MachineResponse>(`${baseUrl}/${id}/emergency-stop`, {
+            method: "POST",
+            body: JSON.stringify(request),
+        })
+    } catch (error) {
+        await offlineDb.saveOfflineAction(`${baseUrl}/${id}/emergency-stop`, "POST", request, "EMERGENCY_STOP");
+        return { id, status: "EMERGENCY_STOP" } as unknown as MachineResponse;
+    }
 }
