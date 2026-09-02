@@ -1,16 +1,18 @@
 import { NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "../hooks/UseAuth"
-import { Activity, Boxes, Factory, FileText, Layers, LogOut, Menu, Package, Square, User, Wrench, X } from "lucide-react"
+import { Activity, Boxes, Factory, FileText, Layers, LogOut, Menu, Package, Square, User, Wifi, WifiOff, Wrench, X } from "lucide-react"
 import { NotificationBell } from "./notification/NotificationBell"
 import { useState, type ComponentType } from "react"
 import { hasAnyRole } from "../utils/rbac"
 import type { UserRole } from "../types/user/User"
+import { useNetworkStatus } from "../hooks/UseNetworkStatus"
 
 export const Navbar = () => {
 
     const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false)
     const { user, logout } = useAuth()
     const navigate = useNavigate()
+    const { isOnline, pendingCount, refreshPendingCount } = useNetworkStatus()
 
     const handleLogout = async () => {
         await logout()
@@ -150,6 +152,16 @@ export const Navbar = () => {
                     </button>
                     <NotificationBell />
 
+                    <div className="p-2 rounded-xl bg-slate-800 /80 border border-slate-700/60 hover:bg-slate-700/80 transition-all">
+                        <button onClick={refreshPendingCount} className="relative">
+                            {isOnline ? <Wifi size={20} className="text-green-400" /> : <WifiOff size={20} className="text-rose-400" />}
+                            {pendingCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-4.5 h-4.5 flex items-center justify-center animate-pulse border-2 border-slate-900 px-1">
+                                    {pendingCount}
+                                </span>
+                            )}</button>
+                    </div>
+
                     <button
                         onClick={() => setIsMobileOpen(!isMobileOpen)}
                         className="xl:hidden p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-all border border-slate-700/60"
@@ -157,7 +169,8 @@ export const Navbar = () => {
                         {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
                     </button>
                 </div>
+
             </div>
-        </header>
+        </header >
     )
 }
