@@ -5,6 +5,11 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet id="005-create-workorders" author="mes-admin">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="work_orders" />
+            </not>
+        </preConditions>
 
         <createTable tableName="work_orders">
             <column name="id" type="UUID">
