@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,15 +15,22 @@ import hu.mes.backend.models.MachineTelemetry;
 import hu.mes.backend.models.enums.MachineStatus;
 import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.MachineTelemetryRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@CacheConfig(cacheNames = "telemetry")
+@Slf4j
 public class OeeService {
+
 	private final MachineRepository machineRepository;
 	private final MachineTelemetryRepository telemetryRepository;
 
+	@Cacheable
+	@CircuitBreaker(name = "oeeService", fallbackMethod = "calculateOeeFallback")
 	public OeeResponse calculateMachineOee(UUID machineId, LocalDateTime start, LocalDateTime end) {
 		List<MachineTelemetry> telemetries = telemetryRepository.findByMachineIdAndTimestampBetween(machineId,
 				start,
@@ -85,6 +94,21 @@ public class OeeService {
 				.totalScrapCount(totalScrap.intValue())
 				.uptimeMinutes(uptimeMinutes)
 				.downtimeMinutes(downtimeMinutes)
+				.build();
+	}
+
+	public OeeResponse calculateOeeFallback(UUID id, LocalDateTime start, LocalDateTime end, Throwable throwable) {
+		log.warn("Hiba a {} gépi OEE számításakor: {}", id, throwable.getMessage());
+
+		return OeeResponse.builder()
+				.availabilityPercentage(0.0)
+				.performancePercentage(0.0)
+				.qualityPercentage(0.0)
+				.oeePercentage(0.0)
+				.totalProducedCount(0)
+				.totalScrapCount(0)
+				.uptimeMinutes(0L)
+				.downtimeMinutes(0L)
 				.build();
 	}
 }

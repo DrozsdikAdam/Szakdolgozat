@@ -79,13 +79,13 @@ public class ProductController {
 
     @PutMapping("/{id}/deactivate")
     public ResponseEntity<Void> deactivateProduct(@PathVariable UUID id) {
-        productService.deactivateProduct(id);
+        productService.updateProductActiveStatus(id, false, "inaktiválva");
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}/activate")
     public ResponseEntity<Void> activateProduct(@PathVariable UUID id) {
-        productService.activateProduct(id);
+        productService.updateProductActiveStatus(id, true, "aktiválva");
         return ResponseEntity.noContent().build();
     }
 

@@ -4,9 +4,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import hu.mes.backend.dtos.common.PagedResponse;
 import hu.mes.backend.dtos.machine.EmergencyStopRequest;
@@ -27,12 +31,13 @@ import hu.mes.backend.models.enums.NotificationType;
 import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
+@CacheConfig(cacheNames = "machines")
 public class MachineService {
 
     private final MachineMaintenanceService machineMaintenanceService;
@@ -42,17 +47,13 @@ public class MachineService {
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
 
+    @Cacheable(key = "'all'")
     public PagedResponse<MachineResponse> getAllMachines(Pageable pageable) {
         Page<Machine> page = machineRepository.findByActiveTrue(pageable);
         return PagedResponse.of(page, machineMapper.convertToResponses(page.getContent()));
     }
 
-    public List<MachineResponse> getAllMachines() {
-        List<Machine> machines = machineRepository.findByActiveTrue();
-        List<MachineResponse> responses = machineMapper.convertToResponses(machines);
-        return responses;
-    }
-
+    @Cacheable(key = "#id")
     public MachineResponse getMachineById(UUID id) {
         Machine machine = getMachineEntityById(id);
         return machineMapper.convertToResponse(machine);
@@ -82,6 +83,8 @@ public class MachineService {
         return responses;
     }
 
+    @CacheEvict(allEntries = true)
+    @Transactional
     public MachineResponse createMachine(MachineCreateRequest request) {
         if (request == null)
             throw new IllegalArgumentException("A gép adatai nem lehetnek üresek!");
@@ -116,6 +119,8 @@ public class MachineService {
         return machineMapper.convertToResponse(machine);
     }
 
+    @CacheEvict(allEntries = true)
+    @Transactional
     public MachineResponse updateMachine(UUID id, MachineUpdateRequest request) {
         if (request == null)
             throw new IllegalArgumentException("A gép adatai nem lehetnek üresek!");
@@ -153,6 +158,8 @@ public class MachineService {
         return machineMapper.convertToResponse(machine);
     }
 
+    @CacheEvict(allEntries = true)
+    @Transactional
     public MachineResponse updateMachineStatus(UUID id, MachineStatus status) {
 
         Machine machine = getMachineEntityById(id);
@@ -164,29 +171,23 @@ public class MachineService {
         return machineMapper.convertToResponse(machine);
     }
 
+    @CacheEvict(allEntries = true)
+    @Transactional
     public MachineResponse updateMachineUser(UUID id, UUID userId) {
 
-        if (!userRepository.existsById(userId))
-            throw new EntityNotFoundException("A keresett felhasználó nem található!");
-
+        User user = null;
         Machine machine = getMachineEntityById(id);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("A keresett felhasználó nem található!"));
+        if (userId != null)
+            user = userRepository.findById(userId)
+                    .orElseThrow(() -> new EntityNotFoundException("A keresett felhasználó nem található!"));
 
         machine.setAssignedUser(user);
         machineRepository.save(machine);
         return machineMapper.convertToResponse(machine);
     }
 
-    public MachineResponse unassignMachine(UUID id) {
-
-        Machine machine = getMachineEntityById(id);
-
-        machine.setAssignedUser(null);
-        machineRepository.save(machine);
-        return machineMapper.convertToResponse(machine);
-    }
-
+    @Transactional
+    @CacheEvict(allEntries = true)
     public void deleteMachine(UUID id) {
 
         Machine machine = getMachineEntityById(id);
@@ -196,6 +197,8 @@ public class MachineService {
         machineRepository.save(machine);
     }
 
+    @Transactional
+    @CacheEvict(allEntries = true)
     public void restoreMachine(UUID id) {
 
         Machine machine = machineRepository.findByIdAndDeletedAtNotNull(id)
@@ -206,15 +209,11 @@ public class MachineService {
         machineRepository.save(machine);
     }
 
-    public void deactivateMachine(UUID id) {
+    @Transactional
+    @CacheEvict(allEntries = true)
+    public void updateMachineActiveStatus(UUID id, boolean active) {
         Machine machine = getMachineEntityById(id);
-        machine.setActive(false);
-        machineRepository.save(machine);
-    }
-
-    public void activateMachine(UUID id) {
-        Machine machine = getMachineEntityById(id);
-        machine.setActive(true);
+        machine.setActive(active);
         machineRepository.save(machine);
     }
 
@@ -228,6 +227,7 @@ public class MachineService {
         return machineMapper.convertToResponses(machines);
     }
 
+    @CacheEvict(allEntries = true)
     public MachineResponse emergencyStop(UUID id, EmergencyStopRequest request) {
         Machine machine = getMachineEntityById(id);
         machine.setStatus(MachineStatus.ERROR);

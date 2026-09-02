@@ -7,6 +7,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,7 +34,8 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
+@CacheConfig(cacheNames = "users")
 public class UserService {
 
     private final UserRepository userRepository;
@@ -40,29 +44,26 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuditLogService auditLogService;
 
+    @Cacheable(key = "'all'")
     public PagedResponse<UserResponse> getAllUsers(Pageable pageable) {
         Page<User> page = userRepository.findAll(pageable);
         return PagedResponse.of(page, userMapper.convertToResponses(page.getContent()));
     }
 
-    public List<UserResponse> getAllUsers() {
-        return userMapper.convertToResponses(userRepository.findAll());
-    }
-
+    @Cacheable(key = "#id")
     public UserResponse getUserById(UUID id) {
-        Optional<User> user = userRepository.findById(id);
-        if (user.isEmpty()) {
-            throw new EntityNotFoundException("Felhasználó nem található azonosítóval: " + id);
-        }
-        return userMapper.convertToResponse(user.get());
+        return userMapper.convertToResponse(getUserEntityById(id));
     }
 
+    @Cacheable(key = "'assignable'")
     public List<UserResponse> getAssignableUsers() {
         Set<User> usersSet = new HashSet<>(userRepository.findByActiveTrueAndRoles_Name(RolesEnum.OPERATOR));
         usersSet.addAll(userRepository.findByActiveTrueAndRoles_Name(RolesEnum.MANAGER));
         return userMapper.convertToResponses(new ArrayList<>(usersSet));
     }
 
+    @Transactional
+    @CacheEvict(allEntries = true)
     public UserResponse createUser(UserCreateRequest request) {
         if (request == null)
             throw new IllegalArgumentException("A felhasználó létrehozásához szükséges adatok nem érvényesek.");
@@ -73,11 +74,7 @@ public class UserService {
         if (userRepository.findByNameAndActiveTrue(request.getUsername()).isPresent())
             throw new IllegalArgumentException("A felhasználó neve már létezik.");
 
-        Set<Role> roles = new HashSet<>();
-        for (RolesEnum role : request.getRoles()) {
-            roles.add(roleRepository.findByName(role)
-                    .orElseThrow(() -> new EntityNotFoundException("Szerepkör nem található: " + role)));
-        }
+        Set<Role> roles = resolveRoles(request.getRoles());
 
         User user = User.builder()
                 .name(request.getUsername())
@@ -95,41 +92,22 @@ public class UserService {
         return userMapper.convertToResponse(savedUser);
     }
 
+    @Transactional
+    @CacheEvict(allEntries = true)
     public UserResponse updateUser(UUID id, UserUpdateRequest request) {
         if (request == null)
             throw new IllegalArgumentException("A felhasználó frissítéséhez szükséges adatok nem érvényesek.");
 
-        Optional<User> userOptional = userRepository.findById(id);
-
-        if (userOptional.isEmpty())
-            throw new EntityNotFoundException("Felhasználó nem található azonosítóval: " + id);
-
-        if (request.getPhoneNumber() == null)
-            throw new IllegalArgumentException("A felhasználó telefonszáma nem lehet üres!");
-        else if (request.getPhoneNumber().length() > 20)
-            throw new IllegalArgumentException("A felhasználó telefonszáma maximum 20 karakteres lehet!");
-
-        if (request.getEmail() == null)
-            throw new IllegalArgumentException("A felhasználó e-mail címe nem lehet üres!");
-        else if (userRepository.findByEmailAndActiveTrue(request.getEmail()).isPresent()
-                && !userOptional.get().getId().equals(id))
+        Optional<User> existingWithEmail = userRepository.findByEmailAndActiveTrue(request.getEmail());
+        if (existingWithEmail.isPresent() && !existingWithEmail.get().getId().equals(id))
             throw new IllegalArgumentException("A felhasználó e-mail címe már létezik.");
 
-        if (request.getRoles() == null)
-            throw new IllegalArgumentException("A felhasználó szerepkörének megadása kötelező!");
-
-        if (request.getActive() == null)
-            throw new IllegalArgumentException("A felhasználó státuszának megadása kötelező!");
-
-        User user = userOptional.get();
+        User user = getUserEntityById(id);
         user.setName(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPhoneNumber(request.getPhoneNumber());
         user.setActive(request.getActive());
-        Set<Role> roles = new HashSet<>();
-        for (RolesEnum role : request.getRoles())
-            roles.add(roleRepository.findByName(role)
-                    .orElseThrow(() -> new EntityNotFoundException("Szerepkör nem található: " + role)));
+        Set<Role> roles = resolveRoles(request.getRoles());
         user.setRoles(roles);
 
         User updatedUser = userRepository.save(user);
@@ -139,17 +117,14 @@ public class UserService {
         return userMapper.convertToResponse(updatedUser);
     }
 
+    @Transactional
+    @CacheEvict(allEntries = true)
     public UserResponse promoteUser(UUID id, UserPromoteRequest request) {
-        Optional<User> user = userRepository.findById(id);
-        if (user.isEmpty())
-            throw new EntityNotFoundException("A megadott azonosítójú felhasználó nem létezik.");
+        User user = getUserEntityById(id);
 
-        Set<Role> roles = new HashSet<>();
-        for (RolesEnum role : request.getRoles())
-            roles.add(roleRepository.findByName(role)
-                    .orElseThrow(() -> new EntityNotFoundException("Szerepkör nem található: " + role)));
-        user.get().setRoles(roles);
-        User savedUser = userRepository.save(user.get());
+        Set<Role> roles = resolveRoles(request.getRoles());
+        user.setRoles(roles);
+        User savedUser = userRepository.save(user);
 
         auditLogService.log(AuditAction.UPDATE, AuditEntityType.USER, savedUser.getName(),
                 "Felhasználó szerepkörei frissítve: " + savedUser.getName());
@@ -157,11 +132,10 @@ public class UserService {
         return userMapper.convertToResponse(savedUser);
     }
 
+    @Transactional
+    @CacheEvict(allEntries = true)
     public UserResponse toggleUserStatus(UUID id) {
-        Optional<User> userOptional = userRepository.findById(id);
-        if (userOptional.isEmpty())
-            throw new EntityNotFoundException("A megadott azonosítójú felhasználó nem létezik.");
-        User user = userOptional.get();
+        User user = getUserEntityById(id);
         user.setActive(!user.isActive());
         User savedUser = userRepository.save(user);
 
@@ -169,6 +143,22 @@ public class UserService {
                 "Felhasználó státusza megváltoztatva: " + (savedUser.isActive() ? "Aktív" : "Inaktív"));
 
         return userMapper.convertToResponse(savedUser);
+    }
+
+    private Set<Role> resolveRoles(Set<RolesEnum> roleNames) {
+        if (roleNames == null || roleNames.isEmpty())
+            return new HashSet<>();
+
+        Set<Role> roles = new HashSet<>();
+        for (RolesEnum role : roleNames)
+            roles.add(roleRepository.findByName(role)
+                    .orElseThrow(() -> new EntityNotFoundException("Szerepkör nem található: " + role)));
+        return roles;
+    }
+
+    private User getUserEntityById(UUID id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Felhasználó nem található azonosítóval: " + id));
     }
 
 }

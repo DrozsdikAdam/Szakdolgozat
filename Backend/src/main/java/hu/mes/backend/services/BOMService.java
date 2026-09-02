@@ -8,6 +8,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import hu.mes.backend.dtos.bom.BOMItemRequest;
@@ -24,13 +27,16 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
+@CacheConfig(cacheNames = "bom")
 public class BOMService {
     private final BOMItemRepository bomRepository;
     private final ProductService productService;
     private final BOMMapper bomMapper;
     private final AuditLogService auditLogService;
 
+    @Transactional
+    @CacheEvict(allEntries = true)
     public BOMResponse addComponentToBOM(BOMItemRequest request) {
         Product parent = productService.getProductEntityById(request.getParentProductId());
         Product component = productService.getProductEntityById(request.getComponentProductId());
@@ -57,11 +63,13 @@ public class BOMService {
         BOMItem savedItem = bomRepository.save(bomItem);
 
         auditLogService.log(AuditAction.CREATE, AuditEntityType.BOM, parent.getSku(),
-                "Alkatrész hozzáadva a darabjegyzékhez: " + component.getName() + " (" + request.getQuantity() + " " + component.getUnit() + ") -> " + parent.getName());
+                "Alkatrész hozzáadva a darabjegyzékhez: " + component.getName() + " (" + request.getQuantity() + " "
+                        + component.getUnit() + ") -> " + parent.getName());
 
         return bomMapper.convertToResponse(savedItem);
     }
 
+    @Cacheable(key = "#parentProductId.toString() + '_' + #multiplier")
     public BOMTreeNode getBOMTree(UUID parentProductId, BigDecimal multiplier) {
         if (multiplier == null)
             multiplier = BigDecimal.ONE;

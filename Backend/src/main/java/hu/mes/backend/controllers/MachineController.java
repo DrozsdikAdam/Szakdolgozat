@@ -115,13 +115,13 @@ public class MachineController {
 
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<Void> deactivateMachine(@PathVariable UUID id) {
-        machineService.deactivateMachine(id);
+        machineService.updateMachineActiveStatus(id, false);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
     @PatchMapping("/{id}/activate")
     public ResponseEntity<Void> activateMachine(@PathVariable UUID id) {
-        machineService.activateMachine(id);
+        machineService.updateMachineActiveStatus(id, true);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
@@ -131,9 +131,9 @@ public class MachineController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
-    @DeleteMapping("/{id}/user")
+    @PatchMapping("/{id}/unassign")
     public ResponseEntity<MachineResponse> unassignMachine(@PathVariable UUID id) {
-        MachineResponse updatedMachine = machineService.unassignMachine(id);
+        MachineResponse updatedMachine = machineService.updateMachineUser(id, null);
         return ResponseEntity.status(HttpStatus.OK).body(updatedMachine);
     }
 

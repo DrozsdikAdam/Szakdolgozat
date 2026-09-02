@@ -18,12 +18,16 @@ import hu.mes.backend.models.enums.WorkOrderStatus;
 import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.MachineTelemetryRepository;
 import hu.mes.backend.repositories.WorkOrderRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class PlcSimulatorService {
 
     private final MachineRepository machineRepository;
@@ -33,6 +37,7 @@ public class PlcSimulatorService {
     private final AuditLogService auditLogService;
 
     @Scheduled(fixedRate = 5000)
+    @CircuitBreaker(name = "plcSimulator", fallbackMethod = "generateTelemetryFallback")
     public void generateTelemetryData() {
 
         List<Machine> machines = machineRepository.findByActiveTrue();
@@ -220,6 +225,10 @@ public class PlcSimulatorService {
                 break;
         }
         return scrap;
+    }
+
+    public void generateTelemetryFallback(Throwable throwable) {
+        log.error("Telemetria adatok generálása sikertelen: " + throwable.getMessage());
     }
 
 }
