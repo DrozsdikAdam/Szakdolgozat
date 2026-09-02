@@ -3,6 +3,9 @@ package hu.mes.backend.services;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,7 +25,8 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
+@CacheConfig(cacheNames = "products")
 public class ProductService {
 
     private final ProductRepository productRepository;
@@ -30,6 +34,7 @@ public class ProductService {
     private final InventoryService inventoryService;
     private final AuditLogService auditLogService;
 
+    @CacheEvict(allEntries = true)
     public ProductResponse createProduct(ProductCreateRequest request) {
         if (request == null || productRepository.existsBySku(request.getSku()))
             throw new IllegalArgumentException("A termék nem létezik vagy a SKU már létezik.");
@@ -61,6 +66,7 @@ public class ProductService {
         return productMapper.convertToResponses(productRepository.findAll());
     }
 
+    @Cacheable(key = "'active'")
     public List<ProductResponse> getActiveProducts() {
         return productMapper.convertToResponses(productRepository.findByActiveTrue());
     }
@@ -70,10 +76,12 @@ public class ProductService {
                 .orElseThrow(() -> new EntityNotFoundException("A keresett termék nem található!"));
     }
 
+    @Cacheable(key = "#id")
     public ProductResponse getProductById(UUID id) {
         return productMapper.convertToResponse(getProductEntityById(id));
     }
 
+    @CacheEvict(allEntries = true)
     public void deleteProduct(UUID id) {
         Product product = getProductEntityById(id);
         product.setDeleted(true);
@@ -84,6 +92,7 @@ public class ProductService {
                 "Termék törölve (lomtárba helyezve): " + product.getName());
     }
 
+    @CacheEvict(allEntries = true)
     public ProductResponse updateProduct(UUID id, ProductUpdateRequest request) {
         Product existingProduct = getProductEntityById(id);
 
@@ -111,6 +120,7 @@ public class ProductService {
         return productMapper.convertToResponses(productRepository.findByActiveFalse());
     }
 
+    @CacheEvict(allEntries = true)
     public void deactivateProduct(UUID id) {
         Product product = getProductEntityById(id);
         product.setActive(false);
@@ -120,6 +130,7 @@ public class ProductService {
                 "Termék inaktiválva: " + product.getName());
     }
 
+    @CacheEvict(allEntries = true)
     public void activateProduct(UUID id) {
         Product product = getProductEntityById(id);
         product.setActive(true);
@@ -129,6 +140,7 @@ public class ProductService {
                 "Termék aktiválva: " + product.getName());
     }
 
+    @CacheEvict(allEntries = true)
     public void restoreProduct(UUID id) {
         Product product = productRepository.findDeletedById(id)
                 .orElseThrow(() -> new EntityNotFoundException("A keresett termék nem található!"));
