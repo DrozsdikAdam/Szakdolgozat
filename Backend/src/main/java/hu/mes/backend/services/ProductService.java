@@ -35,6 +35,7 @@ public class ProductService {
     private final AuditLogService auditLogService;
 
     @CacheEvict(allEntries = true)
+    @Transactional
     public ProductResponse createProduct(ProductCreateRequest request) {
         if (request == null || productRepository.existsBySku(request.getSku()))
             throw new IllegalArgumentException("A termék nem létezik vagy a SKU már létezik.");
@@ -62,10 +63,6 @@ public class ProductService {
         return PagedResponse.of(page, productMapper.convertToResponses(page.getContent()));
     }
 
-    public List<ProductResponse> getAllProducts() {
-        return productMapper.convertToResponses(productRepository.findAll());
-    }
-
     @Cacheable(key = "'active'")
     public List<ProductResponse> getActiveProducts() {
         return productMapper.convertToResponses(productRepository.findByActiveTrue());
@@ -82,6 +79,7 @@ public class ProductService {
     }
 
     @CacheEvict(allEntries = true)
+    @Transactional
     public void deleteProduct(UUID id) {
         Product product = getProductEntityById(id);
         product.setDeleted(true);
@@ -93,6 +91,7 @@ public class ProductService {
     }
 
     @CacheEvict(allEntries = true)
+    @Transactional
     public ProductResponse updateProduct(UUID id, ProductUpdateRequest request) {
         Product existingProduct = getProductEntityById(id);
 
@@ -121,26 +120,18 @@ public class ProductService {
     }
 
     @CacheEvict(allEntries = true)
-    public void deactivateProduct(UUID id) {
+    @Transactional
+    public void updateProductActiveStatus(UUID id, Boolean active, String actionName) {
         Product product = getProductEntityById(id);
-        product.setActive(false);
+        product.setActive(active);
         productRepository.save(product);
 
         auditLogService.log(AuditAction.STATUS_CHANGE, AuditEntityType.PRODUCT, product.getSku(),
-                "Termék inaktiválva: " + product.getName());
+                product.getName() + " " + actionName);
     }
 
     @CacheEvict(allEntries = true)
-    public void activateProduct(UUID id) {
-        Product product = getProductEntityById(id);
-        product.setActive(true);
-        productRepository.save(product);
-
-        auditLogService.log(AuditAction.STATUS_CHANGE, AuditEntityType.PRODUCT, product.getSku(),
-                "Termék aktiválva: " + product.getName());
-    }
-
-    @CacheEvict(allEntries = true)
+    @Transactional
     public void restoreProduct(UUID id) {
         Product product = productRepository.findDeletedById(id)
                 .orElseThrow(() -> new EntityNotFoundException("A keresett termék nem található!"));
