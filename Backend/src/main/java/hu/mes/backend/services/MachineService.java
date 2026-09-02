@@ -4,8 +4,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import hu.mes.backend.dtos.common.PagedResponse;
 import hu.mes.backend.dtos.machine.EmergencyStopRequest;
 import hu.mes.backend.dtos.machine.MachineCreateRequest;
 import hu.mes.backend.dtos.machine.MachineResponse;
@@ -14,10 +17,13 @@ import hu.mes.backend.dtos.maintenance.MachineMaintenanceCreateRequest;
 import hu.mes.backend.mappers.MachineMapper;
 import hu.mes.backend.models.Machine;
 import hu.mes.backend.models.User;
+import hu.mes.backend.models.enums.AuditAction;
+import hu.mes.backend.models.enums.AuditEntityType;
 import hu.mes.backend.models.enums.MachineStatus;
 import hu.mes.backend.models.enums.MachineType;
 import hu.mes.backend.models.enums.MaintenanceStatus;
 import hu.mes.backend.models.enums.MaintenanceType;
+import hu.mes.backend.models.enums.NotificationType;
 import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -33,6 +39,13 @@ public class MachineService {
     private final MachineRepository machineRepository;
     private final MachineMapper machineMapper;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
+
+    public PagedResponse<MachineResponse> getAllMachines(Pageable pageable) {
+        Page<Machine> page = machineRepository.findByActiveTrue(pageable);
+        return PagedResponse.of(page, machineMapper.convertToResponses(page.getContent()));
+    }
 
     public List<MachineResponse> getAllMachines() {
         List<Machine> machines = machineRepository.findByActiveTrue();
@@ -98,6 +111,8 @@ public class MachineService {
                 .build();
 
         machineRepository.save(machine);
+        auditLogService.log("USER", null, AuditAction.CREATE, AuditEntityType.MACHINE, machine.getCode(),
+                "Új gép regisztrálva: " + machine.getName() + " (" + machine.getCode() + ")");
         return machineMapper.convertToResponse(machine);
     }
 
@@ -133,6 +148,8 @@ public class MachineService {
                 : null);
 
         machineRepository.save(machine);
+        auditLogService.log("USER", null, AuditAction.UPDATE, AuditEntityType.MACHINE, machine.getCode(),
+                "Gép adatai módosítva: " + machine.getName());
         return machineMapper.convertToResponse(machine);
     }
 
@@ -142,6 +159,8 @@ public class MachineService {
 
         machine.setStatus(status);
         machineRepository.save(machine);
+        auditLogService.log("USER", null, AuditAction.STATUS_CHANGE, AuditEntityType.MACHINE, machine.getCode(),
+                "Gép állapota módosítva: " + status.getDisplayValue());
         return machineMapper.convertToResponse(machine);
     }
 
@@ -227,6 +246,14 @@ public class MachineService {
                 .technicianId(request.getTechnicianId())
                 .start(LocalDateTime.now())
                 .build();
+
+        notificationService.send("Vészleállítás: " + machine.getCode(),
+                "Vészleállítás történt a(z) " + machine.getName() + " gépen. Ok: " + request.getReason(),
+                NotificationType.ERROR,
+                "/machine");
+
+        auditLogService.log("OPERATOR", null, AuditAction.EMERGENCY_STOP, AuditEntityType.MACHINE, machine.getCode(),
+                "🚨 Vészleállítás történt! Ok: " + request.getReason());
 
         machineMaintenanceService.createMaintenance(req);
         return machineMapper.convertToResponse(machine);

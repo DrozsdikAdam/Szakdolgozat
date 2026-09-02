@@ -1,8 +1,10 @@
 package hu.mes.backend.controllers;
 
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import hu.mes.backend.dtos.common.PagedResponse;
 import hu.mes.backend.dtos.user.UserCreateRequest;
 import hu.mes.backend.dtos.user.UserPromoteRequest;
 import hu.mes.backend.dtos.user.UserResponse;
@@ -30,8 +32,10 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    public ResponseEntity<PagedResponse<UserResponse>> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(userService.getAllUsers(org.springframework.data.domain.PageRequest.of(page, size)));
     }
 
     @GetMapping("/assignable")

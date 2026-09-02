@@ -1,8 +1,10 @@
 package hu.mes.backend.controllers;
 
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import hu.mes.backend.dtos.common.PagedResponse;
 import hu.mes.backend.dtos.machine.EmergencyStopRequest;
 import hu.mes.backend.dtos.machine.MachineCreateRequest;
 import hu.mes.backend.dtos.machine.MachineResponse;
@@ -34,9 +36,11 @@ public class MachineController {
     private final MachineService machineService;
 
     @GetMapping
-    public ResponseEntity<List<MachineResponse>> getAllMachines() {
-        List<MachineResponse> responses = machineService.getAllMachines();
-        return ResponseEntity.status(HttpStatus.OK).body(responses);
+    public ResponseEntity<PagedResponse<MachineResponse>> getAllMachines(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity
+                .ok(machineService.getAllMachines(org.springframework.data.domain.PageRequest.of(page, size)));
     }
 
     @GetMapping("/{id}")

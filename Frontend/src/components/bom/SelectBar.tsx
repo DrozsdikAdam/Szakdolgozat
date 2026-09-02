@@ -1,10 +1,13 @@
 import { Plus } from "lucide-react"
 import type { BOMSelectProps } from "../../types/bom/bomProps"
+import { Can } from "../common/Can"
+import { SubmitButton } from "../common/form/SubmitButton"
 
 export const BOMSelectBar = ({ products, selectedProductId, setSelectedProductId, quantity, openAddModal, setQuantity }: BOMSelectProps) => {
     return (
         <div className="flex flex-col lg:flex-row items-center justify-between gap-4 pt-1">
             <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <label className="text-white text-sm font-semibold whitespace-nowrap">Főtermék:</label>
                     <select
@@ -34,14 +37,15 @@ export const BOMSelectBar = ({ products, selectedProductId, setSelectedProductId
                 </div>
             </div>
 
-            <button
-                onClick={openAddModal}
-                disabled={!selectedProductId}
-                className="w-full lg:w-auto py-2 px-4 flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 outline-none focus:ring-2 focus:ring-indigo-500/50"
-            >
-                <Plus size={18} />
-                Összetevő hozzáadása
-            </button>
+            <Can roles={["SYSTEMADMIN", "MANAGER"]}>
+                <SubmitButton
+                    onClick={openAddModal}
+                    disabled={!selectedProductId}
+                    text="Összetevő hozzáadása"
+                    icon={<Plus size={18} />}
+                    className="px-5 py-2.5 rounded-xl cursor-pointer"
+                />
+            </Can>
         </div>
     )
 }

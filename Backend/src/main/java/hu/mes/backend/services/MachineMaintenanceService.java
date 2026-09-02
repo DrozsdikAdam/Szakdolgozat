@@ -3,8 +3,11 @@ package hu.mes.backend.services;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import hu.mes.backend.dtos.common.PagedResponse;
 import hu.mes.backend.dtos.maintenance.MachineMaintenanceCreateRequest;
 import hu.mes.backend.dtos.maintenance.MachineMaintenanceResponse;
 import hu.mes.backend.dtos.maintenance.MachineMaintenanceStatusUpdateRequest;
@@ -13,8 +16,11 @@ import hu.mes.backend.mappers.MaintenanceMapper;
 import hu.mes.backend.models.Machine;
 import hu.mes.backend.models.MachineMaintenance;
 import hu.mes.backend.models.User;
+import hu.mes.backend.models.enums.AuditAction;
+import hu.mes.backend.models.enums.AuditEntityType;
 import hu.mes.backend.models.enums.MachineStatus;
 import hu.mes.backend.models.enums.MaintenanceStatus;
+import hu.mes.backend.models.enums.NotificationType;
 import hu.mes.backend.repositories.MachineMaintenanceRepository;
 import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.UserRepository;
@@ -31,6 +37,13 @@ public class MachineMaintenanceService {
     private final MachineRepository machineRepository;
     private final UserRepository userRepository;
     private final MaintenanceMapper maintenanceMapper;
+    private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
+
+    public PagedResponse<MachineMaintenanceResponse> getAllMaintenances(Pageable pageable) {
+        Page<MachineMaintenance> page = machineMaintenanceRepository.findAll(pageable);
+        return PagedResponse.of(page, maintenanceMapper.convertToResponses(page.getContent()));
+    }
 
     public List<MachineMaintenanceResponse> getAllMaintenances() {
         List<MachineMaintenance> maintenances = machineMaintenanceRepository.findAll();
@@ -96,6 +109,14 @@ public class MachineMaintenanceService {
                 .end(request.getEnd())
                 .build();
 
+        notificationService.send("Új karbantartási feladat: " + machine.getName(),
+                "A karbantartási feladatot kijelölték!" + request.getTitle(),
+                NotificationType.INFO,
+                "/maintenance");
+
+        auditLogService.log("TECHNICIAN", null, AuditAction.MAINTENANCE_LOG, AuditEntityType.MAINTENANCE,
+                machine.getCode(), "Karbantartás rögzítve: " + request.getTitle() + " (" + machine.getName() + ")");
+
         return maintenanceMapper.convertToResponse(machineMaintenanceRepository.save(maintenance));
     }
 
@@ -127,6 +148,9 @@ public class MachineMaintenanceService {
         maintenance.setCost(request.getCost());
         maintenance.setStart(request.getStart());
         maintenance.setEnd(request.getEnd());
+
+        auditLogService.log("TECHNICIAN", null, AuditAction.UPDATE, AuditEntityType.MAINTENANCE, machine.getCode(),
+                "Karbantartás frissítve: " + maintenance.getTitle() + " (Státusz: " + request.getStatus() + ")");
 
         return maintenanceMapper.convertToResponse(machineMaintenanceRepository.save(maintenance));
     }
@@ -163,12 +187,19 @@ public class MachineMaintenanceService {
         maintenance.setDowntimeMinutes(request.getDowntimeMinutes());
         maintenance.setCost(request.getCost());
 
-        return maintenanceMapper.convertToResponse(machineMaintenanceRepository.save(maintenance));
+        MachineMaintenance saved = machineMaintenanceRepository.save(maintenance);
+        auditLogService.log(AuditAction.STATUS_CHANGE, AuditEntityType.MAINTENANCE, machine.getCode(),
+                "Karbantartás státusza módosítva: " + maintenance.getTitle() + " -> " + request.getStatus());
+
+        return maintenanceMapper.convertToResponse(saved);
     }
 
     public void deleteMaintenance(UUID id) {
         MachineMaintenance maintenance = getMaintenanceEntityById(id);
         machineMaintenanceRepository.delete(maintenance);
+
+        auditLogService.log(AuditAction.DELETE, AuditEntityType.MAINTENANCE, maintenance.getMachine().getCode(),
+                "Karbantartás törölve: " + maintenance.getTitle());
     }
 
     private MachineMaintenance getMaintenanceEntityById(UUID id) {

@@ -10,7 +10,10 @@ import org.springframework.stereotype.Service;
 import hu.mes.backend.models.Machine;
 import hu.mes.backend.models.MachineTelemetry;
 import hu.mes.backend.models.WorkOrder;
+import hu.mes.backend.models.enums.AuditAction;
+import hu.mes.backend.models.enums.AuditEntityType;
 import hu.mes.backend.models.enums.MachineStatus;
+import hu.mes.backend.models.enums.NotificationType;
 import hu.mes.backend.models.enums.WorkOrderStatus;
 import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.MachineTelemetryRepository;
@@ -26,6 +29,8 @@ public class PlcSimulatorService {
     private final MachineRepository machineRepository;
     private final MachineTelemetryRepository telemetryRepository;
     private final WorkOrderRepository workOrderRepository;
+    private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     @Scheduled(fixedRate = 5000)
     public void generateTelemetryData() {
@@ -42,15 +47,22 @@ public class PlcSimulatorService {
                         .orElse(null);
             }
 
-            int produced = generateRandomProducedQuantity(machine.getStatus());
-            int scrap = generateRandomScrapQuantity(machine.getStatus());
+            int produced = 0;
+            int scrap = 0;
 
-            if (activeWorkOrder != null && produced > 0) {
+            if (activeWorkOrder != null
+                    && machine.getStatus() == MachineStatus.RUNNING
+                    && machine.getAssignedUser() != null) {
 
-                BigDecimal currentProduced = activeWorkOrder.getProducedQuantity() != null
-                        ? activeWorkOrder.getProducedQuantity()
-                        : BigDecimal.ZERO;
-                activeWorkOrder.setProducedQuantity(currentProduced.add(BigDecimal.valueOf(produced)));
+                produced = generateRandomProducedQuantity(machine.getStatus());
+                scrap = generateRandomScrapQuantity(machine.getStatus());
+
+                if (produced > 0) {
+                    BigDecimal currentProduced = activeWorkOrder.getProducedQuantity() != null
+                            ? activeWorkOrder.getProducedQuantity()
+                            : BigDecimal.ZERO;
+                    activeWorkOrder.setProducedQuantity(currentProduced.add(BigDecimal.valueOf(produced)));
+                }
 
                 if (scrap > 0) {
                     BigDecimal currentScrap = activeWorkOrder.getScrapQuantity() != null
@@ -68,9 +80,31 @@ public class PlcSimulatorService {
                     machine.setStatus(MachineStatus.IDLE);
                     machineRepository.save(machine);
                     activeWorkOrder.setStatus(WorkOrderStatus.QUALITY_CHECK);
+
+                    notificationService.send("Gyártás kész: " + activeWorkOrder.getOrderNumber(),
+                            "A(z) " + activeWorkOrder.getProduct().getName() + " elérte a célmennyiséget ("
+                                    + activeWorkOrder.getTargetQuantity() + " db). Minőségellenőrzésre vár!",
+                            NotificationType.SUCCESS,
+                            "/workorder");
+
+                    auditLogService.log(AuditAction.STATUS_CHANGE, AuditEntityType.WORKORDER,
+                            activeWorkOrder.getOrderNumber(), "Gyártási rendelés kész, minőségellenőrzésre vár.");
                 }
 
                 workOrderRepository.save(activeWorkOrder);
+            } else if (machine.getStatus() == MachineStatus.RUNNING) {
+                machine.setStatus(MachineStatus.IDLE);
+                machineRepository.save(machine);
+
+                notificationService.send("Gép készenlétbe állítva: " + machine.getName(),
+                        "A(z) " + machine.getName()
+                                + " gép készenléti állapotba került, mert nincs hozzárendelt aktív rendelés.",
+                        NotificationType.WARNING,
+                        "/machine");
+
+                auditLogService.log("SYSTEM", null, AuditAction.STATUS_CHANGE, AuditEntityType.MACHINE,
+                        machine.getCode(),
+                        "Gép automatikusan készenléti állapotba állítva (nincs aktív rendelés vagy operátor).");
             }
 
             telemetryRepository.save(

@@ -14,7 +14,7 @@ import { getMaintenance, updateMaintenance } from "../../services/maintenanceSer
 import { SubmitButton } from "../../components/common/form/SubmitButton";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { UserResponse } from "../../types/user/User";
-import { getUsers } from "../../services/userService";
+import { getAssignableUsers } from "../../services/userService";
 
 export const MaintenanceEditView = () => {
 
@@ -97,7 +97,7 @@ export const MaintenanceEditView = () => {
     const loadData = async () => {
         setIsLoading(true)
         try {
-            const users = await getUsers()
+            const users = await getAssignableUsers()
             const technicians = users.filter(
                 u => u.roles.includes("TECHNICIAN")
                     || u.roles.includes("MANAGER"));
@@ -136,10 +136,10 @@ export const MaintenanceEditView = () => {
     }
 
     return (
-        <div className="relative flex-1 w-full flex flex-col items-center justify-start p-4 sm:p-6 font-sans">
+        <div className="page-container">
             <Background />
 
-            <div className="w-full max-w-7xl backdrop-blur-xl bg-slate-900/60 border border-slate-800 shadow-2xl rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-5 relative z-10">
+            <div className="page-card space-y-4 sm:space-y-5">
                 <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
                     <button
                         onClick={() => handleBack()}
@@ -225,13 +225,11 @@ export const MaintenanceEditView = () => {
                             required
                         />
 
-
                     </div>
 
                     {error &&
                         <div className="text-left text-red-400 text-sm font-medium">{error}</div>
                     }
-
 
                     <div className="flex items-center justify-end gap-3 pt-2">
                         <SubmitButton
@@ -249,12 +247,8 @@ export const MaintenanceEditView = () => {
                             className="px-5 py-2 rounded-xl"
                         />
                     </div>
-
                 </form>
-
             </div>
-
-
         </div>
     )
 }

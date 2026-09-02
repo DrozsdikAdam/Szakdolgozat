@@ -38,4 +38,12 @@ public class CustomUserDetails implements UserDetails {
         return user.isActive();
     }
 
+    public User getUser() {
+        return user;
+    }
+
+    public java.util.UUID getId() {
+        return user.getId();
+    }
+
 }

@@ -1,8 +1,14 @@
 import { NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "../hooks/UseAuth"
-import { Activity, Boxes, Factory, Layers, LogOut, Package, Square, User, Wrench } from "lucide-react"
+import { Activity, Boxes, Factory, FileText, Layers, LogOut, Menu, Package, Square, User, Wrench, X } from "lucide-react"
+import { NotificationBell } from "./notification/NotificationBell"
+import { useState, type ComponentType } from "react"
+import { hasAnyRole } from "../utils/rbac"
+import type { UserRole } from "../types/user/User"
 
 export const Navbar = () => {
+
+    const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false)
     const { user, logout } = useAuth()
     const navigate = useNavigate()
 
@@ -11,16 +17,53 @@ export const Navbar = () => {
         navigate("/login")
     }
 
-    const navItems = [
-        { path: "/product", label: "Termékek", icon: Package },
-        { path: "/inventory", label: "Raktárkészlet", icon: Boxes },
-        { path: "/bom", label: "Gyártási tervek", icon: Layers },
-        { path: "/workorder", label: "Gyártási rendelések", icon: Square },
-        { path: "/user", label: "Felhasználók", icon: User },
-        { path: "/machine", label: "Gépek", icon: Factory },
-        { path: "/maintenance", label: "Karbantartás", icon: Wrench },
-        { path: "/analytics", label: "Analitika", icon: Activity },
+    type NavItem = {
+        path: string
+        label: string
+        icon: ComponentType<{ size?: number }>
+        roles: UserRole[]
+    }
+
+    const navItems: NavItem[] = [
+        {
+            path: "/product", label: "Termékek", icon: Package,
+            roles: ["SYSTEMADMIN", "CEO", "MANAGER", "OPERATOR"]
+        },
+        {
+            path: "/inventory", label: "Raktárkészlet", icon: Boxes,
+            roles: ["SYSTEMADMIN", "CEO", "MANAGER", "OPERATOR", "TECHNICIAN"]
+        },
+        {
+            path: "/bom", label: "Gyártási tervek", icon: Layers,
+            roles: ["SYSTEMADMIN", "CEO", "MANAGER"]
+        },
+        {
+            path: "/workorder", label: "Gyártási rendelések", icon: Square,
+            roles: ["SYSTEMADMIN", "CEO", "MANAGER", "OPERATOR"]
+        },
+        {
+            path: "/user", label: "Felhasználók", icon: User,
+            roles: ["SYSTEMADMIN", "CEO"]
+        },
+        {
+            path: "/machine", label: "Gépek", icon: Factory,
+            roles: ["SYSTEMADMIN", "CEO", "MANAGER", "OPERATOR", "TECHNICIAN"]
+        },
+        {
+            path: "/maintenance", label: "Karbantartás", icon: Wrench,
+            roles: ["SYSTEMADMIN", "CEO", "MANAGER", "TECHNICIAN"]
+        },
+        {
+            path: "/analytics", label: "Analitika", icon: Activity,
+            roles: ["SYSTEMADMIN", "CEO", "MANAGER"]
+        },
+        {
+            path: "/logs", label: "Napló", icon: FileText,
+            roles: ["SYSTEMADMIN", "CEO"]
+        },
     ]
+
+    const filteredNavItems = navItems.filter((item) => hasAnyRole(user, item.roles))
 
     return (
         <header className="w-full bg-slate-900/80 border-b border-slate-800 backdrop-blur-xl sticky top-0 z-40">
@@ -41,8 +84,8 @@ export const Navbar = () => {
                 </div>
 
                 {/* Navigation Links */}
-                <nav className="flex items-center gap-1 sm:gap-2">
-                    {navItems.map((item) => {
+                <nav className="hidden xl:flex items-center gap-1 xl:gap-2">
+                    {filteredNavItems.map((item) => {
                         const Icon = item.icon
                         return (
                             <NavLink
@@ -62,6 +105,33 @@ export const Navbar = () => {
                     })}
                 </nav>
 
+                {/* Mobil Menü */}
+                {isMobileOpen && (
+                    <div className="absolute top-16 left-0 right-0 w-full bg-slate-900/95 border-b border-slate-800 backdrop-blur-2xl xl:hidden pb-4">
+                        <div className="px-4 py-2 space-y-1">
+                            {filteredNavItems.map((item) => {
+                                const Icon = item.icon
+                                return (
+                                    <NavLink
+                                        key={item.path}
+                                        to={item.path}
+                                        onClick={() => setIsMobileOpen(false)}
+                                        className={({ isActive }) =>
+                                            `flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200 ${isActive
+                                                ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/40"
+                                                : "text-slate-300 hover:text-white hover:bg-slate-800 border border-transparent"
+                                            }`
+                                        }
+                                    >
+                                        <Icon size={20} />
+                                        <span>{item.label}</span>
+                                    </NavLink>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex items-center gap-3">
                     {user && (
                         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs text-slate-300">
@@ -77,6 +147,14 @@ export const Navbar = () => {
                     >
                         <LogOut size={16} />
                         <span className="hidden sm:inline">Kijelentkezés</span>
+                    </button>
+                    <NotificationBell />
+
+                    <button
+                        onClick={() => setIsMobileOpen(!isMobileOpen)}
+                        className="xl:hidden p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-all border border-slate-700/60"
+                    >
+                        {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
                     </button>
                 </div>
             </div>

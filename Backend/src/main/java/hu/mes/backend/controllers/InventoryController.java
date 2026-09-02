@@ -1,6 +1,5 @@
 package hu.mes.backend.controllers;
 
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -26,9 +25,11 @@ public class InventoryController {
     private final InventoryService inventoryService;
 
     @GetMapping
-    public ResponseEntity<List<InventoryResponse>> getAllInventoryItems() {
-        List<InventoryResponse> response = inventoryService.getAllInventories();
-        return ResponseEntity.ok(response);
+    public ResponseEntity<hu.mes.backend.dtos.common.PagedResponse<InventoryResponse>> getAllInventoryItems(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity
+                .ok(inventoryService.getAllInventories(org.springframework.data.domain.PageRequest.of(page, size)));
     }
 
     @GetMapping("/product/{productId}")

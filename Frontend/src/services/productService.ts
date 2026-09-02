@@ -1,8 +1,12 @@
 import type { ProductResponse, ProductCreateRequest, ProductUpdateRequest } from '../types/product/Product';
 import { apiFetch } from '../utils/apiFetch';
+import type { PagedResponse } from '../types/common/PagedResponse';
 
-export const getProducts = async (): Promise<ProductResponse[]> => {
-    return apiFetch<ProductResponse[]>("api/products");
+export const getProducts = async (page: number = 0, size: number = 10): Promise<PagedResponse<ProductResponse>> => {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("size", size.toString());
+    return apiFetch<PagedResponse<ProductResponse>>(`api/products?${params.toString()}`);
 };
 
 export const getProductById = async (id: string): Promise<ProductResponse> => {

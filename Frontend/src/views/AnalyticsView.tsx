@@ -30,9 +30,9 @@ export const AnalyticsView = () => {
         setIsLoading(true)
         setError(null)
         try {
-            const machinesData = await getMachines()
-            setMachines(machinesData)
-            machinesData.length > 0 && setSelectedMachineId(machinesData[0].id)
+            const machinesData = await getMachines(0, 100)
+            setMachines(machinesData.content)
+            machinesData.content.length > 0 && setSelectedMachineId(machinesData.content[0].id)
         } catch (err) {
             setError(err instanceof Error ? err.message : "Hiba a gépek betöltésekor")
         } finally {
@@ -102,12 +102,12 @@ export const AnalyticsView = () => {
     }, [isLive, selectedMachineId, loadTelemetryData])
 
     return (
-        <div className="relative flex-1 w-full flex flex-col items-center justify-start p-4 sm:p-6 font-sans">
+        <div className="page-container">
             <Background />
 
             {isLoading && machines.length === 0 && <LoadingSpinner />}
 
-            <div className="w-full max-w-7xl backdrop-blur-xl bg-slate-900/60 border border-slate-800 shadow-2xl rounded-2xl p-4 sm:p-6 space-y-5 relative z-10">
+            <div className="page-card space-y-5">
                 <Title page="analytics" />
 
                 {error && (

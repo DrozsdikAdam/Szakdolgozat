@@ -7,8 +7,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import hu.mes.backend.dtos.common.PagedResponse;
 import hu.mes.backend.dtos.inventory.InventoryUpdateRequest;
 import hu.mes.backend.dtos.workorder.WorkOrderCreateRequest;
 import hu.mes.backend.dtos.workorder.WorkOrderResponse;
@@ -18,6 +21,9 @@ import hu.mes.backend.mappers.WorkOrderMapper;
 import hu.mes.backend.models.Product;
 import hu.mes.backend.models.User;
 import hu.mes.backend.models.WorkOrder;
+import hu.mes.backend.models.enums.AuditAction;
+import hu.mes.backend.models.enums.AuditEntityType;
+import hu.mes.backend.models.enums.NotificationType;
 import hu.mes.backend.models.enums.WorkOrderPriority;
 import hu.mes.backend.models.enums.WorkOrderStatus;
 import hu.mes.backend.repositories.ProductRepository;
@@ -39,6 +45,8 @@ public class WorkOrderService {
 	private final WorkOrderMapper workOrderMapper;
 	private final UserRepository userRepository;
 	private final BOMInventoryService bomInventoryService;
+	private final NotificationService notificationService;
+	private final AuditLogService auditLogService;
 
 	public WorkOrderResponse createWorkOrder(WorkOrderCreateRequest request) {
 		String orderNumber = generateOrderNumber();
@@ -71,6 +79,8 @@ public class WorkOrderService {
 				.build();
 
 		workOrderRepository.save(workOrder);
+		auditLogService.log("PLANNER", null, AuditAction.CREATE, AuditEntityType.WORKORDER, orderNumber,
+				"Új rendelés létrehozva: " + workOrder.getTargetQuantity() + " db " + product.getName());
 		return workOrderMapper.convertToResponse(workOrder);
 	}
 
@@ -106,6 +116,12 @@ public class WorkOrderService {
 					workOrder.getProduct().getId(),
 					goodProduced,
 					null);
+
+			notificationService.send("✅ Gyártási rendelés lezárva: " + workOrder.getOrderNumber(),
+					"A késztermékek (" + goodProduced + " db) bevételezve a raktárba.",
+					NotificationType.SUCCESS,
+					"/workorder");
+
 			inventoryService.adjustStock(stockUpdate);
 			workOrder.setEndDate(LocalDateTime.now());
 		}
@@ -124,12 +140,19 @@ public class WorkOrderService {
 		workOrder.setScrapQuantity(request.getScrapQuantity());
 
 		workOrderRepository.save(workOrder);
+		auditLogService.log("OPERATOR", null, AuditAction.STATUS_CHANGE, AuditEntityType.WORKORDER,
+				workOrder.getOrderNumber(), "Státuszváltás: " + oldStatus + " -> " + newStatus);
 		return workOrderMapper.convertToResponse(workOrder);
 	}
 
-	public List<WorkOrderResponse> getAllWorkOrders() {
-		return workOrderMapper.convertToResponses(
-				workOrderRepository.findAllByOrderByCreatedAtDesc());
+	public PagedResponse<WorkOrderResponse> getAllWorkOrders(WorkOrderStatus status, Pageable pageable) {
+		Page<WorkOrder> pageResult;
+		if (status != null) {
+			pageResult = workOrderRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
+		} else {
+			pageResult = workOrderRepository.findAllByOrderByCreatedAtDesc(pageable);
+		}
+		return PagedResponse.of(pageResult, workOrderMapper.convertToResponses(pageResult.getContent()));
 	}
 
 	public WorkOrderResponse getWorkOrderById(UUID id) {
@@ -138,9 +161,9 @@ public class WorkOrderService {
 		return workOrderMapper.convertToResponse(order);
 	}
 
-	public List<WorkOrderResponse> getWorkOrdersByStatus(WorkOrderStatus status) {
-		return workOrderMapper.convertToResponses(
-				workOrderRepository.findByStatus(status));
+	public PagedResponse<WorkOrderResponse> getWorkOrdersByStatus(WorkOrderStatus status, Pageable pageable) {
+		Page<WorkOrder> page = workOrderRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
+		return PagedResponse.of(page, workOrderMapper.convertToResponses(page.getContent()));
 	}
 
 	public List<WorkOrderResponse> getWorkOrdersByPriority(WorkOrderPriority priority) {
@@ -175,6 +198,8 @@ public class WorkOrderService {
 		workOrder.setCustomerName(request.getCustomerName());
 
 		workOrderRepository.save(workOrder);
+		auditLogService.log(AuditAction.UPDATE, AuditEntityType.WORKORDER, workOrder.getOrderNumber(),
+				"Gyártási rendelés módosítva: " + workOrder.getOrderNumber());
 		return workOrderMapper.convertToResponse(workOrder);
 	}
 
@@ -187,6 +212,10 @@ public class WorkOrderService {
 
 		workOrder.setAssignedUser(user);
 		workOrderRepository.save(workOrder);
+
+		auditLogService.log(AuditAction.UPDATE, AuditEntityType.WORKORDER, workOrder.getOrderNumber(),
+				"Felelős operátor hozzárendelve (" + user.getName() + ") a rendeléshez: " + workOrder.getOrderNumber());
+
 		return workOrderMapper.convertToResponse(workOrder);
 	}
 

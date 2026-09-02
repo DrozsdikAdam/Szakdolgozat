@@ -6,17 +6,23 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import hu.mes.backend.repositories.InventoryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import hu.mes.backend.dtos.common.PagedResponse;
 import hu.mes.backend.dtos.inventory.InventoryResponse;
 import hu.mes.backend.dtos.inventory.InventoryUpdateRequest;
 import hu.mes.backend.mappers.InventoryMapper;
 import hu.mes.backend.models.Inventory;
 import hu.mes.backend.models.Product;
+import hu.mes.backend.models.enums.AuditAction;
+import hu.mes.backend.models.enums.AuditEntityType;
+import hu.mes.backend.models.enums.NotificationType;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +31,8 @@ public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
     private final InventoryMapper inventoryMapper;
+    private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     public void initializeInventory(Product product) {
         if (product == null)
@@ -62,6 +70,10 @@ public class InventoryService {
 
         inventory.setQuantity(newQuantity);
         inventory.setUpdatedAt(LocalDateTime.now());
+        checkLowStockAndNotify(inventory);
+        auditLogService.log("WAREHOUSE", null, AuditAction.STOCK_ADJUSTMENT, AuditEntityType.INVENTORY,
+                inventory.getProduct().getSku(), "Készletkorrekció: " + request.getAmount() + " db. Új egyenleg: "
+                        + newQuantity + " db (" + inventory.getProduct().getName() + ")");
         return inventoryMapper.convertToResponse(inventoryRepository.save(inventory));
     }
 
@@ -81,7 +93,9 @@ public class InventoryService {
 
         inventory.setReservedQuantity(reserved.add(request.getAmount()));
         inventory.setUpdatedAt(LocalDateTime.now());
+        checkLowStockAndNotify(inventory);
         return inventoryMapper.convertToResponse(inventoryRepository.save(inventory));
+
     }
 
     public InventoryResponse consumeReservedStock(InventoryUpdateRequest request) {
@@ -99,6 +113,7 @@ public class InventoryService {
         inventory.setQuantity(quantity.subtract(request.getAmount()));
         inventory.setReservedQuantity(reserved.subtract(request.getAmount()));
         inventory.setUpdatedAt(LocalDateTime.now());
+        checkLowStockAndNotify(inventory);
         return inventoryMapper.convertToResponse(inventoryRepository.save(inventory));
     }
 
@@ -117,8 +132,27 @@ public class InventoryService {
         return inventoryMapper.convertToResponse(inventoryRepository.save(inventory));
     }
 
+    public PagedResponse<InventoryResponse> getAllInventories(Pageable pageable) {
+        Page<Inventory> page = inventoryRepository.findAll(pageable);
+        return PagedResponse.of(page, inventoryMapper.convertToResponses(page.getContent()));
+    }
+
     public List<InventoryResponse> getAllInventories() {
         return inventoryMapper.convertToResponses(inventoryRepository.findAll());
+    }
+
+    private void checkLowStockAndNotify(Inventory inventory) {
+        BigDecimal reserved = inventory.getReservedQuantity() != null ? inventory.getReservedQuantity()
+                : BigDecimal.ZERO;
+        BigDecimal quantity = inventory.getQuantity() != null ? inventory.getQuantity() : BigDecimal.ZERO;
+        BigDecimal available = quantity.subtract(reserved);
+        if (available.compareTo(BigDecimal.valueOf(10)) <= 0) {
+            notificationService.send(
+                    "⚠️ Alacsony készlet: " + inventory.getProduct().getName(),
+                    "A szabad raktárkészlet " + available + " db-ra csökkent!",
+                    NotificationType.WARNING,
+                    "/inventory");
+        }
     }
 
 }

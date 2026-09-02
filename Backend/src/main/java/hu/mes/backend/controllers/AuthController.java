@@ -9,7 +9,10 @@ import org.springframework.web.bind.annotation.*;
 
 import hu.mes.backend.dtos.auth.LoginRequest;
 import hu.mes.backend.dtos.auth.LoginResponse;
+import hu.mes.backend.models.enums.AuditAction;
+import hu.mes.backend.models.enums.AuditEntityType;
 import hu.mes.backend.security.CustomUserDetails;
+import hu.mes.backend.services.AuditLogService;
 import hu.mes.backend.services.AuthService;
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +26,7 @@ import java.util.stream.Collectors;
 public class AuthController {
 
     private final AuthService authService;
+    private final AuditLogService auditLogService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
@@ -37,6 +41,14 @@ public class AuthController {
                 .map(authority -> authority.getAuthority().replace("ROLE_", ""))
                 .collect(Collectors.toList());
 
+        auditLogService.log(
+                userDetails.getUsername(),
+                userDetails.getId(),
+                AuditAction.LOGIN,
+                AuditEntityType.USER,
+                userDetails.getUsername(),
+                "Sikeres bejelentkezés");
+
         LoginResponse responseBody = new LoginResponse(userDetails.getUsername(), roles);
 
         return ResponseEntity.ok()
@@ -46,7 +58,17 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout() {
+    public ResponseEntity<?> logout(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        if (userDetails != null) {
+            auditLogService.log(
+                    userDetails.getUsername(),
+                    userDetails.getId(),
+                    AuditAction.LOGOUT,
+                    AuditEntityType.USER,
+                    userDetails.getUsername(),
+                    "Sikeres kijelentkezés");
+        }
+
         ResponseCookie cleanAccess = authService.cleanAccessCookie();
         ResponseCookie cleanRefresh = authService.cleanRefreshCookie();
 

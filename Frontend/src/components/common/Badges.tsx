@@ -10,6 +10,9 @@ import { getMaintenanceTypeBadgeStyle, getMaintenanceTypeLabel } from "../../con
 import { getMachineTypeBadgeStyle, getMachineTypeLabel } from "../../constants/machineType";
 import { getMachineStatusBadgeStyle, getMachineStatusLabel } from "../../constants/machineStatus";
 import type { MachineStatusBadgeProps, MachineTypeBadgeProps } from "../../types/machine/MachineProps";
+import type { AuditActionBadgeProps, AuditEntityTypeBadgeProps } from "../../types/audit/AuditLogProps";
+import { getAuditEntityTypeBadgeStyle, getAuditEntityTypeLabel } from "../../constants/AuditEntityType";
+import { getAuditActionBadgeStyle, getAuditActionLabel } from "../../constants/AuditAction";
 
 export const WorkOrderStatusBadge = ({ status }: WorkOrderStatusBadgeProps) => {
     const props: BadgeProps = {
@@ -75,9 +78,25 @@ export const MachineStatusBadge = ({ status }: MachineStatusBadgeProps) => {
     return badge(props)
 }
 
+export const AuditEntityTypeBadge = ({ type }: AuditEntityTypeBadgeProps) => {
+    const props: BadgeProps = {
+        content: getAuditEntityTypeLabel(type),
+        style: getAuditEntityTypeBadgeStyle(type)
+    }
+    return badge(props)
+}
+
+export const AuditActionBadge = ({ action }: AuditActionBadgeProps) => {
+    const props: BadgeProps = {
+        content: getAuditActionLabel(action),
+        style: getAuditActionBadgeStyle(action)
+    }
+    return badge(props)
+}
+
 const badge = ({ content, style }: BadgeProps) => {
     return (
-        <div className={`flex items-center gap-2 px-3 py-1 rounded-xl border ${style}`}>
+        <div className={`flex items-center justify-center gap-2 px-3 py-1 rounded-xl border ${style}`}>
             <span className="text-xs font-semibold">{content}</span>
         </div>
     )

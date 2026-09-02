@@ -15,9 +15,9 @@ export const MachineStatsCard = ({ machines }: MachineStatsCardProps) => {
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-xl flex items-center justify-between shadow-xl">
+            <div className="stats-card shadow-xl">
                 <div className="space-y-1">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Összes Gép</span>
+                    <span className="text-xs font-semibold text-muted uppercase tracking-wider">Összes Gép</span>
                     <h3 className="text-2xl font-extrabold text-blue-400">{stats.total} db</h3>
                 </div>
                 <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
@@ -25,9 +25,9 @@ export const MachineStatsCard = ({ machines }: MachineStatsCardProps) => {
                 </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-xl flex items-center justify-between shadow-xl">
+            <div className="stats-card shadow-xl">
                 <div className="space-y-1">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Készenlétben</span>
+                    <span className="text-xs font-semibold text-muted uppercase tracking-wider">Készenlétben</span>
                     <h3 className="text-2xl font-extrabold text-amber-400">{stats.idle} db </h3>
                 </div>
                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
@@ -35,9 +35,9 @@ export const MachineStatsCard = ({ machines }: MachineStatsCardProps) => {
                 </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-xl flex items-center justify-between shadow-xl">
+            <div className="stats-card shadow-xl">
                 <div className="space-y-1">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Termelésben</span>
+                    <span className="text-xs font-semibold text-muted uppercase tracking-wider">Termelésben</span>
                     <h3 className="text-2xl font-extrabold text-emerald-400">{stats.running} db </h3>
                 </div>
                 <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
@@ -45,15 +45,15 @@ export const MachineStatsCard = ({ machines }: MachineStatsCardProps) => {
                 </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-xl flex items-center justify-between shadow-xl">
+            <div className="stats-card shadow-xl">
                 <div className="space-y-1">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Karbantartás / Hiba</span>
+                    <span className="text-xs font-semibold text-muted uppercase tracking-wider">Karbantartás / Hiba</span>
                     <h3 className="text-2xl font-extrabold text-rose-400">{stats.maintenanceOrError} db </h3>
                 </div>
                 <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
                     <AlertTriangle size={22} />
                 </div>
             </div>
-        </div >
+        </div>
     )
 }

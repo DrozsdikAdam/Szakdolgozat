@@ -4,6 +4,7 @@ import { MachineStatusBadge, MachineTypeBadge } from "../common/Badges"
 import { SelectField } from "../common/form/SelectField"
 import { MACHINE_STATUS_OPTIONS } from "../../constants/machineStatus"
 import type { MachineStatus } from "../../types/machine/MachineStatus"
+import { Can } from "../common/Can"
 
 export const MachineCard = ({ machine, onEdit, onDelete, workOrders, onStartWorkOrder, onStatusChange, users, onAssignUser, onEmergencyStop }: MachineCardProps) => {
 
@@ -79,7 +80,7 @@ export const MachineCard = ({ machine, onEdit, onDelete, workOrders, onStartWork
                             </div>
                             <div className="w-full bg-slate-950/80 rounded-full h-2 border border-slate-700/60 overflow-hidden p-0.5">
                                 <div
-                                    className="bg-gradient-to-r from-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-500 shadow-sm shadow-indigo-500/50"
+                                    className="bg-linear-to-r from-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-500 shadow-sm shadow-indigo-500/50"
                                     style={{ width: `${activeOrder.progressPercentage}%` }}
                                 ></div>
                             </div>
@@ -110,20 +111,22 @@ export const MachineCard = ({ machine, onEdit, onDelete, workOrders, onStartWork
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-3 pt-3 border-t border-slate-800/80">
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => onEdit(machine)}
-                        title="Gép szerkesztése"
-                        className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700"
-                    >
-                        <Pencil size={18} />
-                    </button>
-                    <button
-                        onClick={() => onDelete(machine.id)}
-                        title="Gép törlése"
-                        className="p-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all"
-                    >
-                        <Trash2 size={18} />
-                    </button>
+                    <Can roles={["SYSTEMADMIN", "MANAGER"]}>
+                        <button
+                            onClick={() => onEdit(machine)}
+                            title="Gép szerkesztése"
+                            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700"
+                        >
+                            <Pencil size={18} />
+                        </button>
+                        <button
+                            onClick={() => onDelete(machine.id)}
+                            title="Gép törlése"
+                            className="p-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all"
+                        >
+                            <Trash2 size={18} />
+                        </button>
+                    </Can>
                     <button
                         onClick={() => onEmergencyStop(machine.id)}
                         title="Leállt a gép"

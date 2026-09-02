@@ -124,6 +124,7 @@ export const EditMaintenanceStatusModal = ({ isOpen, onClose, onSuccess, mainten
                 <SelectField
                     label="Felelős technikus"
                     value={technicianId}
+                    placeholderOption=" -- válassz ki egy technikust --"
                     onChange={(e) => setTechnicianId(e.target.value)}
                     options={(technicians || []).map(t => ({ key: t.id, label: t.username }))}
                     required

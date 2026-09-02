@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter, Routes, Route } from "react-router-dom"
 import "./index.css"
 import { LoginView } from "./views/LoginView"
 import { AuthProvider } from "./context/AuthContext"
@@ -14,6 +14,10 @@ import { MaintenanceView } from "./views/maintenance/MaintenanceView"
 import { MachineCreateView } from "./views/machine/MachineCreateView"
 import { MaintenanceEditView } from "./views/maintenance/MaintenanceEditView"
 import { AnalyticsView } from "./views/AnalyticsView"
+import { AuditLogView } from "./views/AuditLogView"
+import { NotFoundView } from "./views/NotFoundView"
+import { UnauthorizedView } from "./views/UnauthorizedView"
+import { HomeRedirect } from "./components/HomeRedirect"
 
 function App() {
   return (
@@ -22,10 +26,9 @@ function App() {
         <Routes>
           <Route
             path="/"
-            element={<Navigate to="/product" replace />}
+            element={<HomeRedirect />}
           />
 
-          {/* Protected Routes wrapped in Layout */}
           <Route
             element={
               <ProtectedRoute>
@@ -33,25 +36,100 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/product" element={<ProductView />} />
-            <Route path="/bom" element={<BOMView />} />
-            <Route path="/inventory" element={<InventoryView />} />
-            <Route path="/workorder" element={<WorkOrderView />} />
-            <Route path="/user" element={<UserView />} />
-            <Route path="/machine" element={<MachineView />} />
-            <Route path="/machine/create" element={<MachineCreateView />} />
-            <Route path="/maintenance" element={<MaintenanceView />} />
-            <Route path="/maintenance/:id/edit" element={<MaintenanceEditView />} />
-            <Route path="/analytics" element={<AnalyticsView />} />
+
+            <Route
+              path="/product"
+              element={
+                <ProtectedRoute allowedRoles={["SYSTEMADMIN", "CEO", "MANAGER", "OPERATOR"]}>
+                  <ProductView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventory"
+              element={
+                <ProtectedRoute allowedRoles={["SYSTEMADMIN", "CEO", "MANAGER", "OPERATOR", "TECHNICIAN"]}>
+                  <InventoryView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bom"
+              element={
+                <ProtectedRoute allowedRoles={["SYSTEMADMIN", "CEO", "MANAGER"]}>
+                  <BOMView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workorder"
+              element={
+                <ProtectedRoute allowedRoles={["SYSTEMADMIN", "CEO", "MANAGER", "OPERATOR"]}>
+                  <WorkOrderView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/user"
+              element={
+                <ProtectedRoute allowedRoles={["SYSTEMADMIN", "CEO"]}>
+                  <UserView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/machine"
+              element={
+                <ProtectedRoute allowedRoles={["SYSTEMADMIN", "CEO", "MANAGER", "OPERATOR", "TECHNICIAN"]}>
+                  <MachineView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/machine/create"
+              element={
+                <ProtectedRoute allowedRoles={["SYSTEMADMIN", "CEO", "MANAGER"]}>
+                  <MachineCreateView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/maintenance"
+              element={
+                <ProtectedRoute allowedRoles={["SYSTEMADMIN", "CEO", "MANAGER", "TECHNICIAN"]}>
+                  <MaintenanceView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/maintenance/:id/edit"
+              element={
+                <ProtectedRoute allowedRoles={["SYSTEMADMIN", "TECHNICIAN"]}>
+                  <MaintenanceEditView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute allowedRoles={["SYSTEMADMIN", "CEO", "MANAGER"]}>
+                  <AnalyticsView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/logs"
+              element={
+                <ProtectedRoute allowedRoles={["SYSTEMADMIN", "CEO"]}>
+                  <AuditLogView />
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           <Route path="/login" element={<LoginView />} />
-          <Route path="/unauthorized" element={
-            <div className="min-h-screen w-full flex items-center justify-center bg-[#0f172a] text-slate-100 text-lg font-semibold">
-              Nincs jogosultsága az oldal megtekintéséhez.
-            </div>
-          } />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/unauthorized" element={<UnauthorizedView />} />
+          <Route path="*" element={<NotFoundView />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

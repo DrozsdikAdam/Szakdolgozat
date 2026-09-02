@@ -7,9 +7,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import hu.mes.backend.dtos.common.PagedResponse;
 import hu.mes.backend.dtos.user.UserCreateRequest;
 import hu.mes.backend.dtos.user.UserPromoteRequest;
 import hu.mes.backend.dtos.user.UserResponse;
@@ -17,6 +20,8 @@ import hu.mes.backend.dtos.user.UserUpdateRequest;
 import hu.mes.backend.mappers.UserMapper;
 import hu.mes.backend.models.Role;
 import hu.mes.backend.models.User;
+import hu.mes.backend.models.enums.AuditAction;
+import hu.mes.backend.models.enums.AuditEntityType;
 import hu.mes.backend.models.enums.RolesEnum;
 import hu.mes.backend.repositories.RoleRepository;
 import hu.mes.backend.repositories.UserRepository;
@@ -33,6 +38,12 @@ public class UserService {
     private final UserMapper userMapper;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
+
+    public PagedResponse<UserResponse> getAllUsers(Pageable pageable) {
+        Page<User> page = userRepository.findAll(pageable);
+        return PagedResponse.of(page, userMapper.convertToResponses(page.getContent()));
+    }
 
     public List<UserResponse> getAllUsers() {
         return userMapper.convertToResponses(userRepository.findAll());
@@ -77,7 +88,11 @@ public class UserService {
                 .active(true)
                 .build();
 
-        return userMapper.convertToResponse(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        auditLogService.log(AuditAction.CREATE, AuditEntityType.USER, savedUser.getName(),
+                "Új felhasználó létrehozva: " + savedUser.getName() + " (" + savedUser.getEmail() + ")");
+
+        return userMapper.convertToResponse(savedUser);
     }
 
     public UserResponse updateUser(UUID id, UserUpdateRequest request) {
@@ -117,7 +132,11 @@ public class UserService {
                     .orElseThrow(() -> new EntityNotFoundException("Szerepkör nem található: " + role)));
         user.setRoles(roles);
 
-        return userMapper.convertToResponse(userRepository.save(user));
+        User updatedUser = userRepository.save(user);
+        auditLogService.log(AuditAction.UPDATE, AuditEntityType.USER, updatedUser.getName(),
+                "Felhasználó módosítva: " + updatedUser.getName());
+
+        return userMapper.convertToResponse(updatedUser);
     }
 
     public UserResponse promoteUser(UUID id, UserPromoteRequest request) {
@@ -130,9 +149,12 @@ public class UserService {
             roles.add(roleRepository.findByName(role)
                     .orElseThrow(() -> new EntityNotFoundException("Szerepkör nem található: " + role)));
         user.get().setRoles(roles);
-        userRepository.save(user.get());
+        User savedUser = userRepository.save(user.get());
 
-        return userMapper.convertToResponse(user.get());
+        auditLogService.log(AuditAction.UPDATE, AuditEntityType.USER, savedUser.getName(),
+                "Felhasználó szerepkörei frissítve: " + savedUser.getName());
+
+        return userMapper.convertToResponse(savedUser);
     }
 
     public UserResponse toggleUserStatus(UUID id) {
@@ -141,8 +163,12 @@ public class UserService {
             throw new EntityNotFoundException("A megadott azonosítójú felhasználó nem létezik.");
         User user = userOptional.get();
         user.setActive(!user.isActive());
-        userRepository.save(user);
-        return userMapper.convertToResponse(user);
+        User savedUser = userRepository.save(user);
+
+        auditLogService.log(AuditAction.STATUS_CHANGE, AuditEntityType.USER, savedUser.getName(),
+                "Felhasználó státusza megváltoztatva: " + (savedUser.isActive() ? "Aktív" : "Inaktív"));
+
+        return userMapper.convertToResponse(savedUser);
     }
 
 }

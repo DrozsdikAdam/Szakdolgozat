@@ -17,8 +17,8 @@ export const LoginView = () => {
     const [error, setError] = useState<string | null>(null);
     const { user, login, loading } = useAuth();
     const location = useLocation();
-    const targetPath = location.state?.from?.pathname || (typeof location.state?.from === "string" ? location.state.from : "/product");
-    const from = (targetPath !== "/" && targetPath !== "/login" && targetPath !== "/unauthorized") ? targetPath : "/product";
+    const targetPath = location.state?.from?.pathname || (typeof location.state?.from === "string" ? location.state.from : "/");
+    const from = (targetPath !== "/login" && targetPath !== "/unauthorized") ? targetPath : "/";
 
     const handleLogin = async (e: FormEvent) => {
         e.preventDefault();
