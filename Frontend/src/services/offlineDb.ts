@@ -28,6 +28,36 @@ class MesOfflineDatabase extends Dexie {
         }
         await this.offlineQueue.add(action)
     }
+
+    public getPendingActions = async () => {
+        const actions = await this.offlineQueue.where("status").equals("PENDING").toArray();
+        actions.sort((a, b) => a.timestamp - b.timestamp);
+        return actions;
+    }
+
+    public getConflictedActions = async () => {
+        const actions = await this.offlineQueue.where("status").equals("CONFLICT").toArray();
+        actions.sort((a, b) => a.timestamp - b.timestamp);
+        return actions;
+    }
+
+    public markActionAsConflict = async (actionId: number, error: string = "Szerver ütközés", serverConflictData?: any) => {
+        await this.offlineQueue.update(actionId, { status: "CONFLICT", error: error, serverConflictData: serverConflictData || {} });
+    }
+
+    public removeAction = async (actionId: number) => {
+        await this.offlineQueue.delete(actionId);
+    }
+
+    public updateActionPayload = async (actionId: number, payload: any) => {
+        const status: OfflineAction["status"] = "PENDING";
+        await this.offlineQueue.update(actionId, {
+            payload,
+            status,
+            error: undefined,
+            serverConflictData: undefined
+        });
+    }
 }
 
 export const offlineDb = new MesOfflineDatabase();
