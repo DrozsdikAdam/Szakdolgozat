@@ -1,17 +1,29 @@
 import { Dexie } from "dexie"
 import type { Table } from "dexie"
-import type { OfflineAction, CachedWorkOrder } from '../types/offline/offline';
+import type { OfflineAction, CachedWorkOrder, CachedProduct, CachedInventory, CachedMachine, CachedMaintenance, CachedBom } from '../types/offline/offline';
 
 class MesOfflineDatabase extends Dexie {
     offlineQueue!: Table<OfflineAction, number>;
     cachedWorkOrders!: Table<CachedWorkOrder, string>;
+    cachedProducts!: Table<CachedProduct, string>;
+    cachedInventories!: Table<CachedInventory, string>;
+    cachedBoms!: Table<CachedBom, string>;
+    cachedMachines!: Table<CachedMachine, string>;
+    cachedMaintenances!: Table<CachedMaintenance, string>;
 
     constructor() {
         super("MesOfflineDatabase");
         this.version(1).stores({
             offlineQueue: '++id, uuid, type, status, timestamp',
             cachedWorkOrders: 'id, orderNumber, status, assignedUserId, lastUpdated'
-        })
+        });
+        this.version(2).stores({
+            cachedProducts: 'id, sku, name, active, lastUpdated',
+            cachedInventories: 'id, productId, location, lastUpdated',
+            cachedBoms: 'parentProductId, lastUpdated',
+            cachedMachines: 'id, name, code, status, lastUpdated',
+            cachedMaintenances: 'id, machineId, status, lastUpdated'
+        });
     }
 
     public saveOfflineAction = async (endpoint: string, method: string, body: any, type: OfflineAction['type'] = "STATUS_UPDATE", entityName: string = "Általános művelet") => {

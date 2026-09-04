@@ -23,5 +23,84 @@ export type CachedWorkOrder = {
     scrapQuantity: number,
     customerName: string,
     assignedUserId?: string,
+    assignedUserName?: string,
     lastUpdated: number
+}
+
+export type CachedProduct = {
+    id: string,
+    name: string,
+    sku: string,
+    description?: string,
+    unit: string,
+    active: boolean,
+    createdAt: string,
+    lastUpdated: number
+}
+
+export type CachedInventory = {
+    id: string,
+    productId: string | null,
+    productName: string | null,
+    productSku: string | null,
+    quantity: number,
+    reservedQuantity: number,
+    location: string | null,
+    updatedAt: string,
+    lastUpdated: number
+}
+
+export type CachedMachine = {
+    id: string,
+    name: string,
+    code: string,
+    type: string,
+    status: string,
+    idealCycleTimeSeconds: number,
+    targetPcsPerHour: number,
+    active: boolean,
+    manufacturer?: string,
+    model?: string,
+    serialNumber?: string,
+    warrantyNumber?: string,
+    warrantyEndDate?: string,
+    location?: string,
+    assignedUserId?: string,
+    assignedUserName?: string,
+    lastUpdated: number
+}
+
+export type CachedMaintenance = {
+    id: string,
+    machineId: string,
+    machineCode: string,
+    machineName: string,
+    title: string,
+    status: string,
+    type: string,
+    createdAt: string,
+    updatedAt: string,
+    technicianId?: string,
+    technicianName?: string,
+    description?: string,
+    rootCause?: string,
+    actionTaken?: string,
+    downtimeMinutes?: number,
+    cost?: number,
+    start?: string,
+    end?: string,
+    lastUpdated: number
+}
+
+export type CachedBom = {
+    parentProductId: string,
+    tree: any,
+    lastUpdated: number
+}
+
+export interface SyncStatus {
+    isSyncing: boolean;
+    total: number;
+    current: number;
+    conflictCount: number;
 }
