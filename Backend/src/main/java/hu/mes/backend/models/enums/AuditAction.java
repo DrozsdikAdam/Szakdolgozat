@@ -17,7 +17,8 @@ public enum AuditAction {
     STOCK_ADJUSTMENT("stock_adjustment"),
     STOCK_RESERVED("stock_reserved"),
     STOCK_CONSUMED("stock_consumed"),
-    MAINTENANCE_LOG("maintenance");
+    MAINTENANCE_LOG("maintenance"),
+    SECURITY_VIOLATION("security_violation");
 
     private final String action;
 }

@@ -13,7 +13,8 @@ public enum AuditEntityType {
     INVENTORY("inventory"),
     PRODUCT("product"),
     BOM("bom"),
-    AUTHENTICATION("authentication");
+    AUTHENTICATION("authentication"),
+    SECURITY("security");
 
     private final String entityType;
 }
