@@ -6,8 +6,11 @@ export type OfflineAction = {
     method: "POST" | "PUT" | "PATCH" | "DELETE",
     payload: unknown,
     timestamp: number,
-    status: 'PENDING' | 'SYNCING' | 'FAILED',
-    retryCount: number
+    status: 'PENDING' | 'SYNCING' | 'FAILED' | 'CONFLICT',
+    retryCount: number,
+    error?: string,
+    serverConflictData?: any,
+    entityName: string
 }
 
 export type CachedWorkOrder = {

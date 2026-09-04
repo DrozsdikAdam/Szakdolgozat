@@ -62,7 +62,7 @@ export const updateWorkOrderStatus = async (id: string, request: WorkOrderStatus
     const url = `${WORK_ORDER_BASE_URL}/${id}/status`;
 
     if (!navigator.onLine) {
-        await offlineDb.saveOfflineAction(url, "PATCH", request);
+        await offlineDb.saveOfflineAction(url, "PATCH", request, "STATUS_UPDATE", "Munkalap státusz módosítása");
         return { id, ...request } as unknown as WorkOrderResponse;
     }
 
@@ -73,7 +73,7 @@ export const updateWorkOrderStatus = async (id: string, request: WorkOrderStatus
         });
     } catch (error) {
         if (!navigator.onLine || (error instanceof TypeError && error.message.includes("fetch"))) {
-            await offlineDb.saveOfflineAction(url, "PATCH", request);
+            await offlineDb.saveOfflineAction(url, "PATCH", request, "STATUS_UPDATE", "Munkalap státusz módosítása");
             return { id, ...request } as unknown as WorkOrderResponse;
         }
         throw error;

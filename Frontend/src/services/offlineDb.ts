@@ -14,7 +14,7 @@ class MesOfflineDatabase extends Dexie {
         })
     }
 
-    public saveOfflineAction = async (endpoint: string, method: string, body: any, type: OfflineAction['type'] = "STATUS_UPDATE") => {
+    public saveOfflineAction = async (endpoint: string, method: string, body: any, type: OfflineAction['type'] = "STATUS_UPDATE", entityName: string = "Általános művelet") => {
         const action: OfflineAction = {
             endpoint,
             method: method as "POST" | "PUT" | "PATCH" | "DELETE",
@@ -23,7 +23,8 @@ class MesOfflineDatabase extends Dexie {
             retryCount: 0,
             timestamp: Date.now(),
             uuid: crypto.randomUUID(),
-            type
+            type,
+            entityName
         }
         await this.offlineQueue.add(action)
     }

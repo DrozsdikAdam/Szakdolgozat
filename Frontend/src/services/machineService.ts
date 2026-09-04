@@ -54,7 +54,7 @@ export const updateMachine = async (id: string, request: MachineUpdateRequest) =
 export const updateMachineStatus = async (id: string, request: MachineStatusUpdateRequest) => {
     try {
         if (!navigator.onLine) {
-            await offlineDb.saveOfflineAction(`${baseUrl}/${id}/status`, "PATCH", request, "STATUS_UPDATE");
+            await offlineDb.saveOfflineAction(`${baseUrl}/${id}/status`, "PATCH", request, "STATUS_UPDATE", "Gép állapot módosítása");
             return { id, status: request.status } as unknown as MachineResponse;
         }
         return apiFetch<MachineResponse>(`${baseUrl}/${id}/status`, {
@@ -62,7 +62,7 @@ export const updateMachineStatus = async (id: string, request: MachineStatusUpda
             body: JSON.stringify(request),
         })
     } catch (error) {
-        await offlineDb.saveOfflineAction(`${baseUrl}/${id}/status`, "PATCH", request, "STATUS_UPDATE");
+        await offlineDb.saveOfflineAction(`${baseUrl}/${id}/status`, "PATCH", request, "STATUS_UPDATE", "Gép állapot módosítása");
         return { id, status: request.status } as unknown as MachineResponse;
     }
 }
@@ -106,7 +106,7 @@ export const restoreMachine = async (id: string) => {
 export const emergencyStop = async (id: string, request: EmergencyStopRequest) => {
     try {
         if (!navigator.onLine) {
-            await offlineDb.saveOfflineAction(`${baseUrl}/${id}/emergency-stop`, "POST", request, "EMERGENCY_STOP");
+            await offlineDb.saveOfflineAction(`${baseUrl}/${id}/emergency-stop`, "POST", request, "EMERGENCY_STOP", "Áramtalanítás");
             return { id, status: "EMERGENCY_STOP" } as unknown as MachineResponse;
         }
         return apiFetch<MachineResponse>(`${baseUrl}/${id}/emergency-stop`, {
@@ -114,7 +114,7 @@ export const emergencyStop = async (id: string, request: EmergencyStopRequest) =
             body: JSON.stringify(request),
         })
     } catch (error) {
-        await offlineDb.saveOfflineAction(`${baseUrl}/${id}/emergency-stop`, "POST", request, "EMERGENCY_STOP");
+        await offlineDb.saveOfflineAction(`${baseUrl}/${id}/emergency-stop`, "POST", request, "EMERGENCY_STOP", "Áramtalanítás");
         return { id, status: "EMERGENCY_STOP" } as unknown as MachineResponse;
     }
 }

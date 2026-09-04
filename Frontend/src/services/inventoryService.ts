@@ -17,7 +17,7 @@ export const getInventoryByProductId = async (productId: string): Promise<Invent
 export const adjustStock = async (request: InventoryUpdateRequest): Promise<InventoryResponse> => {
     try {
         if (!navigator.onLine) {
-            await offlineDb.saveOfflineAction("api/inventory/adjust", "POST", request, "QUANTITY_REPORT");
+            await offlineDb.saveOfflineAction("api/inventory/adjust", "POST", request, "QUANTITY_REPORT", "Készletkorrekció");
             return { ...request } as unknown as InventoryResponse;
         }
         return apiFetch<InventoryResponse>("api/inventory/adjust", {
@@ -25,7 +25,7 @@ export const adjustStock = async (request: InventoryUpdateRequest): Promise<Inve
             body: JSON.stringify(request)
         });
     } catch (error) {
-        await offlineDb.saveOfflineAction("api/inventory/adjust", "POST", request, "QUANTITY_REPORT");
+        await offlineDb.saveOfflineAction("api/inventory/adjust", "POST", request, "QUANTITY_REPORT", "Készletkorrekció");
         return { ...request } as unknown as InventoryResponse;
     }
 };
@@ -40,7 +40,7 @@ export const reserveStock = async (request: InventoryUpdateRequest): Promise<Inv
 export const consumeStock = async (request: InventoryUpdateRequest): Promise<InventoryResponse> => {
     try {
         if (!navigator.onLine) {
-            await offlineDb.saveOfflineAction("api/inventory/consume", "POST", request, "QUANTITY_REPORT");
+            await offlineDb.saveOfflineAction("api/inventory/consume", "POST", request, "QUANTITY_REPORT", "Anyagfelhasználás");
             return { ...request } as unknown as InventoryResponse;
         }
         return apiFetch<InventoryResponse>("api/inventory/consume", {
@@ -48,7 +48,7 @@ export const consumeStock = async (request: InventoryUpdateRequest): Promise<Inv
             body: JSON.stringify(request)
         });
     } catch (error) {
-        await offlineDb.saveOfflineAction("api/inventory/consume", "POST", request, "QUANTITY_REPORT");
+        await offlineDb.saveOfflineAction("api/inventory/consume", "POST", request, "QUANTITY_REPORT", "Anyagfelhasználás");
         return { ...request } as unknown as InventoryResponse;
     }
 };
