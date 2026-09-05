@@ -1,4 +1,4 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import type { PasswordFieldProps } from "../../../types/input/InputFieldProps"
 import { Eye, EyeOff } from "lucide-react"
 
@@ -14,7 +14,7 @@ export const PasswordField = ({ label, error, ...props }: PasswordFieldProps) =>
                 <input
                     type={inputType}
                     {...props}
-                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-(--cud-skyblue) focus:ring-2 focus:ring-(--cud-skyblue)/20 text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
                     type="button"
@@ -24,7 +24,7 @@ export const PasswordField = ({ label, error, ...props }: PasswordFieldProps) =>
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
             </div>
-            {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
+            {error && <p className="text-cud-vermillon text-xs mt-1">{error}</p>}
         </div>
     )
 }

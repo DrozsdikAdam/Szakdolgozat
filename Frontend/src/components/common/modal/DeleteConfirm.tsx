@@ -19,7 +19,7 @@ export const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, title = "TÃ¶rlÃ
             maxWidth="max-w-lg"
             submitVariant="danger"
         >
-            <AlertTriangle size={48} className="text-red-500 mx-auto mb-4" />
+            <AlertTriangle size={48} className="text-cud-vermillon mx-auto mb-4" />
             <div className="text-left">
 
                 <div className="mb-4">

@@ -231,7 +231,7 @@ export const MachineView = () => {
                     )}
 
                     {error &&
-                        <div className="text-left text-red-400 text-sm font-medium">{error}</div>
+                        <div className="text-left text-cud-vermillon text-sm font-medium">{error}</div>
                     }
 
                     {pagedMachines.totalElements === 0 && (

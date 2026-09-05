@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, PlayCircle, ShieldCheck, Warehouse, XCircle, type LucideIcon } from "lucide-react"
+﻿import { CheckCircle2, Clock, PlayCircle, ShieldCheck, Warehouse, XCircle, type LucideIcon } from "lucide-react"
 import type { WorkOrderStatus } from "../../types/workorder/workOrder"
 
 interface WorkOrderActionButtonProps {
@@ -19,40 +19,40 @@ const buttonConfigs: Record<WorkOrderStatus, ButtonConfig> = {
     PLANNED: {
         text: "Előkészítés indítása",
         nextStatus: "PREPARED",
-        style: "bg-blue-600/20 border-blue-500/40 text-blue-400 hover:bg-blue-600/30",
+        style: "bg-(--cud-skyblue-bg) border-(--cud-skyblue-border) text-cud-skyblue hover:bg-(--cud-skyblue)/20",
         icon: Clock,
         isAction: true
     },
     PREPARED: {
         text: "Gyártás indítása",
         nextStatus: "IN_PROGRESS",
-        style: "bg-amber-600/20 border-amber-500/40 text-amber-400 hover:bg-amber-600/30",
+        style: "bg-(--cud-orange-bg) border-(--cud-orange-border) text-cud-orange hover:bg-(--cud-orange)/20",
         icon: PlayCircle,
         isAction: true
     },
     IN_PROGRESS: {
         text: "Minőségellenőrzés",
         nextStatus: "QUALITY_CHECK",
-        style: "bg-purple-600/20 border-purple-500/40 text-purple-400 hover:bg-purple-600/30",
+        style: "bg-(--cud-purple-bg) border-(--cud-purple-border) text-cud-purple hover:bg-(--cud-purple)/20",
         icon: ShieldCheck,
         isAction: true
     },
     QUALITY_CHECK: {
         text: "Befejezés & Raktárra tétel",
         nextStatus: "COMPLETED",
-        style: "bg-emerald-600/20 border-emerald-500/40 text-emerald-400 hover:bg-emerald-600/30",
+        style: "bg-(--cud-teal-bg) border-(--cud-teal-border) text-cud-teal hover:bg-(--cud-teal)/20",
         icon: Warehouse,
         isAction: true
     },
     COMPLETED: {
         text: "Gyártás befejezve",
-        style: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
+        style: "badge-success",
         icon: CheckCircle2,
         isAction: false
     },
     CANCELLED: {
         text: "Megszakítva",
-        style: "bg-slate-800 border-slate-700 text-slate-400",
+        style: "badge-neutral",
         icon: XCircle,
         isAction: false
     }

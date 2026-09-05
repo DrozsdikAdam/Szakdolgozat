@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/UseAuth";
 import type { ProfileModalProps } from "../../types/common/ModalProps";
@@ -146,12 +146,12 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
             title={
                 isEditing ? (
                     <span className="flex items-center gap-2">
-                        <Edit3 size={16} className="text-indigo-400" />
+                        <Edit3 size={16} className="text-cud-skyblue" />
                         <span>Profil szerkesztése</span>
                     </span>
                 ) : (
                     <span className="flex items-center gap-2">
-                        <User size={16} className="text-indigo-400" />
+                        <User size={16} className="text-cud-skyblue" />
                         <span>Felhasználói Profil</span>
                     </span>
                 )
@@ -175,7 +175,7 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
                     <span className="text-xs text-slate-400">Profil adatok betöltése...</span>
                 </div>
             ) : error ? (
-                <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs text-center">
+                <div className="p-4 rounded-xl bg-(--cud-vermillon-bg) border border-(--cud-vermillon-border) text-cud-vermillon text-xs text-center">
                     {error}
                 </div>
             ) : profile ? (
@@ -203,7 +203,7 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
                         />
 
                         {saveError && (
-                            <p className="text-rose-400 text-xs font-medium text-center pt-1 animate-in fade-in duration-200">
+                            <p className="text-cud-vermillon text-xs font-medium text-center pt-1 animate-in fade-in duration-200">
                                 {saveError}
                             </p>
                         )}
@@ -238,13 +238,13 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
                                 </span>
                                 <div className="mt-1">
                                     <span
-                                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold ${profile.active
-                                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                                            : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${profile.active
+                                            ? "badge-success"
+                                            : "badge-danger"
                                             }`}
                                     >
                                         <span
-                                            className={`w-1.5 h-1.5 rounded-full ${profile.active ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
+                                            className={`w-1.5 h-1.5 rounded-full ${profile.active ? "bg-(--cud-teal) animate-pulse" : "bg-(--cud-vermillon)"
                                                 }`}
                                         />
                                         {profile.active ? "Aktív fiók" : "Inaktív fiók"}
@@ -276,7 +276,7 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
 
                         <div className="space-y-2">
                             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                                <ShieldCheck size={14} className="text-indigo-400" />
+                                <ShieldCheck size={14} className="text-cud-purple" />
                                 <span>Hozzárendelt Szerepkörök</span>
                             </div>
                             <div className="flex flex-wrap gap-1.5">
@@ -298,7 +298,7 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
                         <div className="pt-2 border-t border-slate-800/80">
                             <button
                                 onClick={handleLogout}
-                                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/15 border border-rose-500/30 transition-all duration-200 cursor-pointer shadow-sm"
+                                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-cud-vermillon hover:opacity-90 hover:bg-(--cud-vermillon-bg) border border-(--cud-vermillon-border) transition-all duration-200 cursor-pointer shadow-sm"
                             >
                                 <LogOut size={16} />
                                 <span>Kijelentkezés</span>

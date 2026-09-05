@@ -18,9 +18,9 @@ export const StatsCard = ({ maintenances }: MaintenanceStatsCardProps) => {
             <div className="stats-card shadow-xl">
                 <div className="space-y-1">
                     <span className="text-xs font-semibold text-muted uppercase tracking-wider">Tervezett</span>
-                    <h3 className="text-2xl font-extrabold text-blue-400">{stats.scheduled} <span className="text-xs text-dim font-normal">db</span></h3>
+                    <h3 className="text-2xl font-extrabold text-cud-yellow">{stats.scheduled} <span className="text-xs text-dim font-normal">db</span></h3>
                 </div>
-                <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                <div className="p-3 rounded-xl bg-(--cud-yellow-bg) border border-(--cud-yellow-border) text-cud-yellow">
                     <Calendar size={22} />
                 </div>
             </div>
@@ -28,9 +28,9 @@ export const StatsCard = ({ maintenances }: MaintenanceStatsCardProps) => {
             <div className="stats-card shadow-xl">
                 <div className="space-y-1">
                     <span className="text-xs font-semibold text-muted uppercase tracking-wider">Folyamatban</span>
-                    <h3 className="text-2xl font-extrabold text-amber-400">{stats.inProgress} <span className="text-xs text-dim font-normal">db</span></h3>
+                    <h3 className="text-2xl font-extrabold text-cud-orange">{stats.inProgress} <span className="text-xs text-dim font-normal">db</span></h3>
                 </div>
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                <div className="p-3 rounded-xl bg-(--cud-orange-bg) border border-(--cud-orange-border) text-cud-orange">
                     <Hourglass size={22} />
                 </div>
             </div>
@@ -38,9 +38,9 @@ export const StatsCard = ({ maintenances }: MaintenanceStatsCardProps) => {
             <div className="stats-card shadow-xl">
                 <div className="space-y-1">
                     <span className="text-xs font-semibold text-muted uppercase tracking-wider">Teljesítve</span>
-                    <h3 className="text-2xl font-extrabold text-emerald-400">{stats.completed} <span className="text-xs text-dim font-normal">db</span></h3>
+                    <h3 className="text-2xl font-extrabold text-cud-teal">{stats.completed} <span className="text-xs text-dim font-normal">db</span></h3>
                 </div>
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <div className="p-3 rounded-xl bg-(--cud-teal-bg) border border-(--cud-teal-border) text-cud-teal">
                     <CheckCircle2 size={22} />
                 </div>
             </div>
@@ -48,9 +48,9 @@ export const StatsCard = ({ maintenances }: MaintenanceStatsCardProps) => {
             <div className="stats-card shadow-xl">
                 <div className="space-y-1">
                     <span className="text-xs font-semibold text-muted uppercase tracking-wider">Összesen</span>
-                    <h3 className="text-2xl font-extrabold text-rose-400">{stats.total} <span className="text-xs text-dim font-normal">db</span></h3>
+                    <h3 className="text-2xl font-extrabold text-cud-skyblue">{stats.total} <span className="text-xs text-dim font-normal">db</span></h3>
                 </div>
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
+                <div className="p-3 rounded-xl bg-(--cud-skyblue-bg) border border-(--cud-skyblue-border) text-cud-skyblue">
                     <Wrench size={22} />
                 </div>
             </div>

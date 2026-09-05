@@ -1,4 +1,4 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import type { UserCreateModalProps } from "../../../types/user/UserProps"
 import type { UserCreateRequest, UserRole } from "../../../types/user/User"
 import { Check, Plus } from "lucide-react"
@@ -120,12 +120,12 @@ export const CreateUser = ({ isOpen, closeModal, onSuccess }: UserCreateModalPro
                                 key={role.key}
                                 onClick={() => handleRoleChange(role.key as UserRole)}
                                 className={`flex items-center justify-between p-3 rounded-xl border transition-all text-left ${isSelected
-                                    ? "bg-indigo-600/20 border-indigo-500/50 text-white shadow-sm ring-1 ring-indigo-500/30"
+                                    ? "bg-(--cud-skyblue-bg) border-(--cud-skyblue-border) text-white shadow-sm ring-1 ring-(--cud-skyblue-border)"
                                     : "bg-slate-800/50 border-slate-700/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
                                     }`}
                             >
                                 <span className="text-sm font-medium">{role.label}</span>
-                                <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${isSelected ? "bg-indigo-600 border-indigo-500 text-white" : "border-slate-600 bg-slate-800"
+                                <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${isSelected ? "bg-(--cud-skyblue) border-(--cud-skyblue) text-slate-950 font-bold" : "border-slate-600 bg-slate-800"
                                     }`}>
                                     {isSelected && <Check size={13} strokeWidth={3} />}
                                 </div>

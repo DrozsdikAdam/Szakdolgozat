@@ -1,4 +1,4 @@
-import { Pencil, Trash2, ChevronDown, ChevronUp, Wrench } from "lucide-react";
+﻿import { Pencil, Trash2, ChevronDown, ChevronUp, Wrench } from "lucide-react";
 import type { MaintenanceCardProps } from "../../types/maintenance/MaintenanceProps";
 import { MaintenanceStatusBadge, MaintenanceTypeBadge } from "../common/Badges";
 import { useState } from "react";
@@ -59,17 +59,17 @@ export const MaintenanceCard = ({ maintenance, onEdit, onStatusUpdate, onDelete 
                     </>
                 )}
             </div>
-            <div className="flex items-center justify-around">
+            <div className="flex items-center justify-around gap-2">
                 <Can roles={["SYSTEMADMIN", "TECHNICIAN"]}>
                     <button
                         onClick={() => onEdit(maintenance)}
-                        className="px-4 flex items-center gap-2 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
+                        className="px-4 flex items-center gap-2 py-2 rounded-xl bg-(--cud-skyblue-bg) hover:opacity-90 text-cud-skyblue border border-(--cud-skyblue-border) font-semibold text-sm transition-all"
                     >
                         <Pencil size={18} /> Módosítás
                     </button>
                     <button
                         onClick={() => onStatusUpdate(maintenance)}
-                        className="px-4 flex items-center gap-2 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-sm transition-all shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40"
+                        className="px-4 flex items-center gap-2 py-2 rounded-xl bg-(--cud-purple) hover:opacity-90 text-white font-semibold text-sm transition-all shadow-md shadow-(--cud-purple)/20"
                     >
                         <Wrench size={18} /> Státusz
                     </button>
@@ -77,8 +77,7 @@ export const MaintenanceCard = ({ maintenance, onEdit, onStatusUpdate, onDelete 
                 <Can roles={["SYSTEMADMIN"]}>
                     <button
                         onClick={() => onDelete(maintenance.id)}
-                        className={`px-4 flex items-center gap-2 py-2 rounded-xl bg-rose-600 hover:bg-rose-500
-                         text-white font-semibold text-sm transition-all shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40`}
+                        className="px-4 flex items-center gap-2 py-2 rounded-xl bg-(--cud-vermillon) hover:opacity-90 text-white font-semibold text-sm transition-all shadow-md shadow-(--cud-vermillon)/20"
                     >
                         <Trash2 size={18} />
                         Törlés

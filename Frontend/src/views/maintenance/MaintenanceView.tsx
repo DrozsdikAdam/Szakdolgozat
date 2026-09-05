@@ -152,7 +152,7 @@ export const MaintenanceView = () => {
                 )}
 
                 {error &&
-                    <div className="text-left text-red-400 text-sm font-medium">{error}</div>
+                    <div className="text-left text-cud-vermillon text-sm font-medium">{error}</div>
                 }
 
                 {pagedMaintenances.totalElements === 0 &&

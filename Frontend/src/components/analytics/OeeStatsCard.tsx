@@ -1,4 +1,4 @@
-import { Activity, Clock, Zap, CheckCircle2, Package, AlertTriangle, Timer, AlertOctagon } from "lucide-react"
+﻿import { Activity, Clock, Zap, CheckCircle2, Package, AlertTriangle, Timer, AlertOctagon } from "lucide-react"
 import type { OeeResponse } from "../../types/telemetry/Telemetry"
 
 interface Definition {
@@ -16,18 +16,18 @@ export const OeeStatsCard = ({ oee }: { oee: OeeResponse | null }) => {
         if (value >= 85) {
             return {
                 text: "Kiváló (World-Class)",
-                color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
+                color: "text-cud-teal border-(--cud-teal-border) bg-(--cud-teal-bg)"
             }
         }
         if (value >= 65) {
             return {
                 text: "Elfogadható",
-                color: "text-amber-400 border-amber-500/30 bg-amber-500/10"
+                color: "text-cud-orange border-(--cud-orange-border) bg-(--cud-orange-bg)"
             }
         }
         return {
             text: "Beavatkozást igényel",
-            color: "text-rose-400 border-rose-500/30 bg-rose-500/10"
+            color: "text-cud-vermillon border-(--cud-vermillon-border) bg-(--cud-vermillon-bg)"
         }
     }
 
@@ -37,7 +37,7 @@ export const OeeStatsCard = ({ oee }: { oee: OeeResponse | null }) => {
         <div className="rounded-2xl bg-slate-900/60 border border-slate-800 p-5 shadow-xl space-y-5 backdrop-blur-xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
                 <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400">
+                    <div className="p-3 rounded-2xl bg-(--cud-skyblue-bg) border border-(--cud-skyblue-border) text-cud-skyblue">
                         <Activity className="w-6 h-6" />
                     </div>
                     <div>
@@ -61,7 +61,7 @@ export const OeeStatsCard = ({ oee }: { oee: OeeResponse | null }) => {
                 <div className="flex flex-col p-4 rounded-xl bg-slate-800/50 border border-slate-700/60 space-y-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-indigo-400" />
+                            <Clock className="w-4 h-4 text-cud-skyblue" />
                             <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Rendelkezésre állás</span>
                         </div>
                         <span className="text-base font-bold text-white font-mono">{availability.toFixed(1)}%</span>
@@ -70,7 +70,7 @@ export const OeeStatsCard = ({ oee }: { oee: OeeResponse | null }) => {
                     <div className="w-full bg-slate-700/60 h-2.5 rounded-full overflow-hidden">
                         <div
                             style={{ width: `${Math.min(100, Math.max(0, availability))}%` }}
-                            className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+                            className="h-full bg-(--cud-skyblue) rounded-full transition-all duration-500"
                         />
                     </div>
 
@@ -82,7 +82,7 @@ export const OeeStatsCard = ({ oee }: { oee: OeeResponse | null }) => {
                 <div className="flex flex-col p-4 rounded-xl bg-slate-800/50 border border-slate-700/60 space-y-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-amber-400" />
+                            <Zap className="w-4 h-4 text-cud-orange" />
                             <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Teljesítmény</span>
                         </div>
                         <span className="text-base font-bold text-white font-mono">{performance.toFixed(1)}%</span>
@@ -91,7 +91,7 @@ export const OeeStatsCard = ({ oee }: { oee: OeeResponse | null }) => {
                     <div className="w-full bg-slate-700/60 h-2.5 rounded-full overflow-hidden">
                         <div
                             style={{ width: `${Math.min(100, Math.max(0, performance))}%` }}
-                            className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                            className="h-full bg-(--cud-orange) rounded-full transition-all duration-500"
                         />
                     </div>
 
@@ -103,7 +103,7 @@ export const OeeStatsCard = ({ oee }: { oee: OeeResponse | null }) => {
                 <div className="flex flex-col p-4 rounded-xl bg-slate-800/50 border border-slate-700/60 space-y-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <CheckCircle2 className="w-4 h-4 text-cud-teal" />
                             <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Minőség</span>
                         </div>
                         <span className="text-base font-bold text-white font-mono">{quality.toFixed(1)}%</span>
@@ -112,19 +112,19 @@ export const OeeStatsCard = ({ oee }: { oee: OeeResponse | null }) => {
                     <div className="w-full bg-slate-700/60 h-2.5 rounded-full overflow-hidden">
                         <div
                             style={{ width: `${Math.min(100, Math.max(0, quality))}%` }}
-                            className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                            className="h-full bg-(--cud-teal) rounded-full transition-all duration-500"
                         />
                     </div>
 
                     <p className="text-xs text-slate-400">
-                        Jó: <span className="text-emerald-400 font-medium">{(oee?.totalProducedCount ?? 0) - (oee?.totalScrapCount ?? 0)} db</span> | Selejt: <span className="text-rose-400 font-medium">{oee?.totalScrapCount ?? 0} db</span>
+                        Jó: <span className="text-cud-teal font-medium">{(oee?.totalProducedCount ?? 0) - (oee?.totalScrapCount ?? 0)} db</span> | Selejt: <span className="text-cud-vermillon font-medium">{oee?.totalScrapCount ?? 0} db</span>
                     </p>
                 </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-800/80">
                 <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-800/30 border border-slate-800">
-                    <Package className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <Package className="w-4 h-4 text-cud-skyblue shrink-0" />
                     <div>
                         <div className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Összes Termelés</div>
                         <div className="text-sm font-bold text-white font-mono">{oee?.totalProducedCount ?? 0} db</div>
@@ -132,7 +132,7 @@ export const OeeStatsCard = ({ oee }: { oee: OeeResponse | null }) => {
                 </div>
 
                 <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-800/30 border border-slate-800">
-                    <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0" />
+                    <AlertOctagon className="w-4 h-4 text-cud-vermillon shrink-0" />
                     <div>
                         <div className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Selejt Szám</div>
                         <div className="text-sm font-bold text-white font-mono">{oee?.totalScrapCount ?? 0} db</div>
@@ -140,7 +140,7 @@ export const OeeStatsCard = ({ oee }: { oee: OeeResponse | null }) => {
                 </div>
 
                 <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-800/30 border border-slate-800">
-                    <Timer className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <Timer className="w-4 h-4 text-cud-teal shrink-0" />
                     <div>
                         <div className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Üzemidő</div>
                         <div className="text-sm font-bold text-white font-mono">{oee?.uptimeMinutes ?? 0} perc</div>
@@ -148,7 +148,7 @@ export const OeeStatsCard = ({ oee }: { oee: OeeResponse | null }) => {
                 </div>
 
                 <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-800/30 border border-slate-800">
-                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <AlertTriangle className="w-4 h-4 text-cud-orange shrink-0" />
                     <div>
                         <div className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Állásidő</div>
                         <div className="text-sm font-bold text-white font-mono">{oee?.downtimeMinutes ?? 0} perc</div>

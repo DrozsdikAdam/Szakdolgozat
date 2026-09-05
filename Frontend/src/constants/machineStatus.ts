@@ -10,37 +10,37 @@ export const MACHINE_STATUSES: Record<MachineStatus, StatusDefinition> = {
     RUNNING: {
         key: "RUNNING",
         label: "Termel",
-        badgeStyle: "bg-blue-500/10 border-blue-500/20 text-blue-400",
+        badgeStyle: "badge-success",
     },
     IDLE: {
         key: "IDLE",
         label: "Készenlétben",
-        badgeStyle: "bg-amber-500/10 border-amber-500/20 text-amber-400",
+        badgeStyle: "badge-yellow",
     },
     MAINTENANCE: {
         key: "MAINTENANCE",
         label: "Karbantartás alatt",
-        badgeStyle: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
+        badgeStyle: "badge-warning",
     },
     ERROR: {
         key: "ERROR",
         label: "Hiba",
-        badgeStyle: "bg-red-500/10 border-red-500/20 text-red-400",
+        badgeStyle: "badge-danger",
     },
     OFFLINE: {
         key: "OFFLINE",
         label: "Kikapcsolva",
-        badgeStyle: "bg-rose-500/10 border-rose-500/20 text-rose-400",
+        badgeStyle: "badge-neutral",
     },
     STOPPED: {
         key: "STOPPED",
         label: "Leállítva",
-        badgeStyle: "bg-yellow-500/10 border-yellow-500/20 text-yellow-400",
+        badgeStyle: "badge-danger",
     },
 }
 
 export const MACHINE_STATUS_OPTIONS: StatusDefinition[] = Object.values(MACHINE_STATUSES)
 
-export const getMachineStatusLabel = (status?: MachineStatus) => status ? MACHINE_STATUSES[status].label : "Ismeretlen";
+export const getMachineStatusLabel = (status?: MachineStatus) => status ? MACHINE_STATUSES[status]?.label ?? "Ismeretlen" : "Ismeretlen";
 
-export const getMachineStatusBadgeStyle = (status?: MachineStatus) => status ? MACHINE_STATUSES[status].badgeStyle : "bg-slate-800 border-slate-700 text-slate-300";
+export const getMachineStatusBadgeStyle = (status?: MachineStatus) => status ? MACHINE_STATUSES[status]?.badgeStyle ?? "badge-neutral" : "badge-neutral";

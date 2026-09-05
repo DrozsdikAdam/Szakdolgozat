@@ -13,7 +13,7 @@ export const LiveTelemetryCard = ({ telemetry }: { telemetry: TelemertyResponse 
         <div className="rounded-2xl bg-slate-900/60 border border-slate-800 p-5 shadow-xl space-y-4 backdrop-blur-xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
                 <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                    <div className="p-2.5 rounded-xl bg-(--cud-skyblue-bg) border border-(--cud-skyblue-border) text-cud-skyblue">
                         <Radio className="w-5 h-5 animate-pulse" />
                     </div>
                     <div>
@@ -29,12 +29,12 @@ export const LiveTelemetryCard = ({ telemetry }: { telemetry: TelemertyResponse 
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
                 <div className={`p-4 rounded-xl border space-y-2 transition-all ${temp > 80
-                    ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                    ? "bg-(--cud-vermillon-bg) border-(--cud-vermillon-border) text-cud-vermillon"
                     : "bg-slate-800/50 border-slate-700/60 text-slate-200"
                     }`}>
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Hőmérséklet</span>
-                        <Thermometer className={`w-4 h-4 ${temp > 80 ? "text-rose-400" : "text-amber-400"}`} />
+                        <Thermometer className={`w-4 h-4 ${temp > 80 ? "text-cud-vermillon" : "text-cud-orange"}`} />
                     </div>
                     <div className="text-2xl font-bold font-mono text-white">
                         {temp.toFixed(1)} <span className="text-sm font-sans text-slate-400">°C</span>
@@ -47,7 +47,7 @@ export const LiveTelemetryCard = ({ telemetry }: { telemetry: TelemertyResponse 
                 <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/60 space-y-2">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Teljesítmény</span>
-                        <Zap className="w-4 h-4 text-amber-400" />
+                        <Zap className="w-4 h-4 text-cud-orange" />
                     </div>
                     <div className="text-2xl font-bold font-mono text-white">
                         {power.toFixed(1)} <span className="text-sm font-sans text-slate-400">kW</span>
@@ -58,7 +58,7 @@ export const LiveTelemetryCard = ({ telemetry }: { telemetry: TelemertyResponse 
                 <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/60 space-y-2">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Nyomás</span>
-                        <Gauge className="w-4 h-4 text-cyan-400" />
+                        <Gauge className="w-4 h-4 text-cud-skyblue" />
                     </div>
                     <div className="text-2xl font-bold font-mono text-white">
                         {pressure.toFixed(1)} <span className="text-sm font-sans text-slate-400">bar</span>
@@ -68,12 +68,12 @@ export const LiveTelemetryCard = ({ telemetry }: { telemetry: TelemertyResponse 
 
 
                 <div className={`p-4 rounded-xl border space-y-2 transition-all ${vibration > 4.0
-                    ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                    ? "bg-(--cud-vermillon-bg) border-(--cud-vermillon-border) text-cud-vermillon"
                     : "bg-slate-800/50 border-slate-700/60 text-slate-200"
                     }`}>
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Rezgésszint</span>
-                        <Waves className={`w-4 h-4 ${vibration > 4.0 ? "text-rose-400" : "text-indigo-400"}`} />
+                        <Waves className={`w-4 h-4 ${vibration > 4.0 ? "text-cud-vermillon" : "text-cud-skyblue"}`} />
                     </div>
                     <div className="text-2xl font-bold font-mono text-white">
                         {vibration.toFixed(2)} <span className="text-sm font-sans text-slate-400">mm/s</span>

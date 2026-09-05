@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom"
+﻿import { useNavigate } from "react-router-dom"
 import { Background } from "../components/common/Background"
 import { ShieldAlert, Home, ArrowLeft, LogIn } from "lucide-react"
 import { useAuth } from "../hooks/UseAuth"
@@ -12,12 +12,12 @@ export const UnauthorizedView = () => {
             <Background />
 
             <div className="relative z-10 max-w-lg w-full p-8 sm:p-10 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-2xl backdrop-blur-xl text-center space-y-6">
-                <div className="mx-auto w-20 h-20 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shadow-lg shadow-rose-500/5">
+                <div className="mx-auto w-20 h-20 rounded-2xl bg-(--cud-vermillon-bg) border border-(--cud-vermillon-border) flex items-center justify-center text-cud-vermillon shadow-lg shadow-(--cud-vermillon)/5">
                     <ShieldAlert size={44} />
                 </div>
 
                 <div className="space-y-2">
-                    <span className="text-xs font-bold tracking-widest text-rose-400 uppercase bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20">
+                    <span className="text-xs font-bold tracking-widest text-cud-vermillon uppercase bg-(--cud-vermillon-bg) px-3 py-1 rounded-full border border-(--cud-vermillon-border)">
                         403 - Hozzáférés megtagadva
                     </span>
                     <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
@@ -38,7 +38,7 @@ export const UnauthorizedView = () => {
                     </button>
                     <button
                         onClick={() => navigate(user ? "/" : "/login")}
-                        className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-linear-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-(--cud-skyblue) hover:opacity-90 text-slate-950 font-bold text-sm shadow-md shadow-(--cud-skyblue)/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                         {user ? (
                             <>

@@ -1,10 +1,11 @@
-import { LoaderCircle } from "lucide-react"
+﻿import { LoaderCircle } from "lucide-react"
 import type { SubmitButtonProps } from "../../../types/input/SubmitButtonProps"
 
 const variantStyles: Record<string, string> = {
-    primary: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/25",
-    secondary: "border border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white",
-    danger: "bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/25"
+    primary: "bg-(--cud-skyblue) hover:opacity-90 text-slate-950 font-bold shadow-md shadow-(--cud-skyblue)/20 cursor-pointer",
+    secondary: "border border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white cursor-pointer",
+    danger: "bg-(--cud-vermillon) hover:opacity-90 text-white font-semibold shadow-md shadow-(--cud-vermillon)/20 cursor-pointer",
+    success: "bg-(--cud-teal) hover:opacity-90 text-white font-semibold shadow-md shadow-(--cud-teal)/20 cursor-pointer"
 }
 
 export const SubmitButton = ({ loading = false, icon, text, children, variant = "primary", className = "", ...props

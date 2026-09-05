@@ -1,4 +1,4 @@
-import type { FilterSearchProps } from "../../../types/filter/FilterProps"
+﻿import type { FilterSearchProps } from "../../../types/filter/FilterProps"
 import { Search, X } from "lucide-react"
 
 export const FilterSearch = ({ value, onChange, placeholder, className, icon }: FilterSearchProps) => {
@@ -12,7 +12,7 @@ export const FilterSearch = ({ value, onChange, placeholder, className, icon }: 
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
-                className="pl-10 pr-10 py-2 flex-1 min-w-0  bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-200 text-sm"
+                className="pl-10 pr-10 py-2 flex-1 min-w-0  bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-(--cud-skyblue-border) focus:border-(--cud-skyblue) transition-all duration-200 text-sm"
             />
             {value && (
                 <button onClick={() => onChange("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 cursor-pointer">

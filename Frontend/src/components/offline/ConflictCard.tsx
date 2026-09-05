@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { retryConflict, discardConflict } from "../../services/syncEngine";
 import { AlertTriangle, RefreshCw, Trash2 } from "lucide-react";
 import type { ConflictCardProps } from "../../types/offline/offlineProps";
@@ -39,7 +39,7 @@ export const ConflictCard = ({ conflict, onResolved }: ConflictCardProps) => {
         <div className="p-3 bg-slate-800/40 rounded-xl border border-slate-700/60 hover:border-slate-600/80 transition-all space-y-2.5">
             <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                    <div className="p-1.5 rounded-lg bg-(--cud-vermillon-bg) text-cud-vermillon border border-(--cud-vermillon-border)">
                         <AlertTriangle size={15} />
                     </div>
                     <div>
@@ -51,13 +51,13 @@ export const ConflictCard = ({ conflict, onResolved }: ConflictCardProps) => {
                         </span>
                     </div>
                 </div>
-                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-700/80 text-indigo-300 border border-slate-600/60">
+                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-700/80 text-cud-skyblue border border-slate-600/60">
                     {conflict.method}
                 </span>
             </div>
 
-            <div className="p-2 rounded-lg bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs">
-                <p className="font-semibold text-[11px] text-rose-400 mb-0.5">Szerver válasza:</p>
+            <div className="p-2 rounded-lg bg-(--cud-vermillon-bg) border border-(--cud-vermillon-border) text-cud-vermillon text-xs">
+                <p className="font-semibold text-[11px] mb-0.5">Szerver válasza:</p>
                 <p className="line-clamp-3 text-[11px]">{conflict.error || "Ismeretlen hiba vagy adatütközés"}</p>
             </div>
 
@@ -66,7 +66,7 @@ export const ConflictCard = ({ conflict, onResolved }: ConflictCardProps) => {
                     type="button"
                     disabled={isOperating}
                     onClick={handleDiscard}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20 transition-all disabled:opacity-50 whitespace-nowrap shrink-0"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-cud-vermillon hover:opacity-90 hover:bg-(--cud-vermillon-bg) border border-(--cud-vermillon-border) transition-all disabled:opacity-50 whitespace-nowrap shrink-0"
                 >
                     <Trash2 size={13} className="shrink-0" />
                     <span>Elvetés</span>
@@ -75,7 +75,7 @@ export const ConflictCard = ({ conflict, onResolved }: ConflictCardProps) => {
                     type="button"
                     disabled={isOperating}
                     onClick={handleRetry}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all disabled:opacity-50 whitespace-nowrap shrink-0"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-(--cud-skyblue) hover:opacity-90 text-slate-950 shadow-sm transition-all disabled:opacity-50 whitespace-nowrap shrink-0"
                 >
                     <RefreshCw size={13} className={`shrink-0 ${isOperating ? "animate-spin" : ""}`} />
                     <span>{isOperating ? "Próbálkozás..." : "Újrapróbálás"}</span>

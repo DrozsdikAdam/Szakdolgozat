@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom"
+﻿import { NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "../hooks/UseAuth"
 import { Activity, Boxes, Factory, FileText, Layers, LogOut, Menu, Package, RefreshCw, Square, User, Wifi, WifiOff, Wrench, X } from "lucide-react"
 import { NotificationBell } from "./notification/NotificationBell"
@@ -80,7 +80,7 @@ export const Navbar = () => {
         <header className="w-full bg-slate-900/80 border-b border-slate-800 backdrop-blur-xl sticky top-0 z-40">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400">
+                    <div className="p-2 rounded-xl bg-(--cud-skyblue-bg) border border-(--cud-skyblue-border) text-cud-skyblue">
                         <Factory size={22} />
                     </div>
                     <div className="flex flex-col">
@@ -102,7 +102,7 @@ export const Navbar = () => {
                                 to={item.path}
                                 className={({ isActive }) =>
                                     `flex items-center gap-1.5 px-2.5 2xl:px-3 py-1.5 2xl:py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${isActive
-                                        ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/40 shadow-sm"
+                                        ? "bg-(--cud-skyblue-bg) text-cud-skyblue border border-(--cud-skyblue-border) shadow-sm"
                                         : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent"
                                     }`
                                 }
@@ -126,7 +126,7 @@ export const Navbar = () => {
                                         onClick={() => setIsMobileOpen(false)}
                                         className={({ isActive }) =>
                                             `flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200 ${isActive
-                                                ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/40"
+                                                ? "bg-(--cud-skyblue-bg) text-cud-skyblue border border-(--cud-skyblue-border)"
                                                 : "text-slate-300 hover:text-white hover:bg-slate-800 border border-transparent"
                                             }`
                                         }
@@ -146,11 +146,11 @@ export const Navbar = () => {
                             onClick={() => toggleModal("profile")}
                             title="Profil megtekintése"
                             className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs transition-all cursor-pointer ${activeModal === "profile"
-                                ? "bg-indigo-600/30 border-indigo-500/50 text-white shadow-sm ring-2 ring-indigo-500/20"
+                                ? "bg-(--cud-skyblue-bg) border-(--cud-skyblue-border) text-white shadow-sm ring-2 ring-(--cud-skyblue-border)"
                                 : "bg-slate-800/50 border-slate-700/60 text-slate-300 hover:text-white hover:bg-slate-800 hover:border-slate-600"
                                 }`}
                         >
-                            <User size={14} className={activeModal === "profile" ? "text-indigo-300" : "text-indigo-400"} />
+                            <User size={14} className="text-cud-skyblue" />
                             <span className="font-semibold">{user.username}</span>
                         </button>
                     )}
@@ -163,7 +163,7 @@ export const Navbar = () => {
                     <button
                         onClick={handleLogout}
                         title="Kijelentkezés"
-                        className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20 transition-all duration-200 cursor-pointer flex items-center justify-center"
+                        className="p-2 rounded-xl text-cud-vermillon hover:opacity-90 hover:bg-(--cud-vermillon-bg) border border-(--cud-vermillon-border) transition-all duration-200 cursor-pointer flex items-center justify-center"
                     >
                         <LogOut size={18} />
                     </button>
@@ -177,9 +177,9 @@ export const Navbar = () => {
                     {isSyncing && (
                         <div
                             title={`Szinkronizálás folyamatban: ${current}/${total}`}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 font-semibold text-xs animate-pulse"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-(--cud-skyblue-bg) border border-(--cud-skyblue-border) text-cud-skyblue font-semibold text-xs animate-pulse"
                         >
-                            <RefreshCw size={16} className="animate-spin text-indigo-400" />
+                            <RefreshCw size={16} className="animate-spin text-cud-skyblue" />
                             <span>{current}/{total}</span>
                         </div>
                     )}
@@ -198,19 +198,19 @@ export const Navbar = () => {
                                         : `${pendingCount} várakozó offline kérés (Nincs internet)`
                             }
                             className={`relative p-2 rounded-xl border transition-all flex items-center cursor-pointer ${activeModal === "sync"
-                                ? "bg-slate-800 text-white border-indigo-500/50 shadow-sm"
+                                ? "bg-slate-800 text-white border-(--cud-skyblue-border) shadow-sm"
                                 : conflictCount > 0
-                                    ? "bg-rose-500/20 border-rose-500/40 hover:bg-rose-500/30 text-rose-400"
+                                    ? "bg-(--cud-vermillon-bg) border-(--cud-vermillon-border) hover:opacity-90 text-cud-vermillon"
                                     : "bg-slate-800/80 border-slate-700/60 hover:bg-slate-700/80"
                                 }`}
                         >
                             {isOnline ? (
-                                <Wifi size={20} className={conflictCount > 0 ? "text-rose-400" : "text-green-400"} />
+                                <Wifi size={20} className={conflictCount > 0 ? "text-cud-vermillon" : "text-cud-teal"} />
                             ) : (
-                                <WifiOff size={20} className="text-rose-400" />
+                                <WifiOff size={20} className="text-cud-vermillon" />
                             )}
                             {(pendingCount > 0 || conflictCount > 0) && (
-                                <span className={`absolute -top-1 -right-1 text-white text-[10px] font-bold rounded-full min-w-4.5 h-4.5 flex items-center justify-center animate-pulse border-2 border-slate-900 px-1 ${conflictCount > 0 ? "bg-rose-600" : "bg-amber-500"
+                                <span className={`absolute -top-1 -right-1 text-white text-[10px] font-bold rounded-full min-w-4.5 h-4.5 flex items-center justify-center animate-pulse border-2 border-slate-900 px-1 ${conflictCount > 0 ? "bg-(--cud-vermillon)" : "bg-(--cud-orange)"
                                     }`}>
                                     {conflictCount > 0 ? conflictCount : pendingCount}
                                 </span>

@@ -1,4 +1,4 @@
-import type { WorkOrderCardProps } from "../../types/workorder/workOrderProps"
+﻿import type { WorkOrderCardProps } from "../../types/workorder/workOrderProps"
 import { WorkOrderPriorityBadge, WorkOrderStatusBadge } from "../common/Badges"
 import { Can } from "../common/Can"
 import { SelectField } from "../common/form/SelectField"
@@ -83,7 +83,7 @@ export const WorkOrderCard = ({ order, onUpdateStatus, onEditOrder, users, onAss
                             </SelectField>
                         </Can>
                     )}
-                    <div className="text-slate-400">Selejt: <span className="text-rose-400 font-bold">{order.scrapQuantity} db</span></div>
+                    <div className="text-slate-400">Selejt: <span className="text-cud-vermillon font-bold">{order.scrapQuantity} db</span></div>
                 </div>
 
                 <div className="space-y-1.5 p-3 rounded-xl bg-slate-800/40 border border-slate-800">
@@ -102,11 +102,11 @@ export const WorkOrderCard = ({ order, onUpdateStatus, onEditOrder, users, onAss
             <div className="space-y-1.5 pt-1">
                 <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-400 font-medium">Gyártási folyamat</span>
-                    <span className="text-indigo-300 font-bold">{order.goodQuantity} / {order.targetQuantity} db ({order.progressPercentage?.toFixed(0)}%)</span>
+                    <span className="text-cud-skyblue font-bold">{order.goodQuantity} / {order.targetQuantity} db ({order.progressPercentage?.toFixed(0)}%)</span>
                 </div>
                 <div className="w-full bg-slate-800/90 h-2.5 rounded-full overflow-hidden border border-slate-700/60 p-0.5">
                     <div
-                        className="h-full bg-linear-to-r from-indigo-500 to-emerald-400 rounded-full transition-all duration-500 shadow-sm shadow-indigo-500/50"
+                        className="h-full bg-linear-to-r from-(--cud-skyblue) to-(--cud-teal) rounded-full transition-all duration-500 shadow-sm shadow-(--cud-skyblue)/50"
                         style={{ width: `${order.progressPercentage}%` }}
                     ></div>
                 </div>

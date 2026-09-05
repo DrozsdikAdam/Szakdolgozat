@@ -1,4 +1,4 @@
-import { Layers, Package } from "lucide-react"
+﻿import { Layers, Package } from "lucide-react"
 import type { TreeNodeCardProps } from "../../types/bom/bomProps"
 
 export const TreeNodeCard = ({ node, level }: TreeNodeCardProps) => {
@@ -8,17 +8,17 @@ export const TreeNodeCard = ({ node, level }: TreeNodeCardProps) => {
         <div className="flex flex-col items-center">
             <div
                 className={`flex flex-col items-center justify-center p-4 rounded-2xl border backdrop-blur-xl shadow-xl transition-all w-48 text-center space-y-1 ${isRoot
-                    ? "bg-indigo-600/20 border-indigo-500/50 text-white ring-2 ring-indigo-500/20"
+                    ? "bg-(--cud-skyblue-bg) border-(--cud-skyblue-border) text-white ring-2 ring-(--cud-skyblue-border)"
                     : "bg-slate-900/80 border-slate-700/80 text-slate-100 hover:border-slate-600"
                     }`}
             >
                 <div className="flex items-center gap-1.5 justify-center">
-                    {isRoot ? <Package size={16} className="text-indigo-400" /> : <Layers size={14} className="text-amber-400" />}
-                    <span className="text-xs font-mono text-indigo-400 font-semibold uppercase">{node.productSku || "Nincs SKU"}</span>
+                    {isRoot ? <Package size={16} className="text-cud-skyblue" /> : <Layers size={14} className="text-cud-orange" />}
+                    <span className="text-xs font-mono text-cud-skyblue font-semibold uppercase">{node.productSku || "Nincs SKU"}</span>
                 </div>
                 <h4 className="text-sm font-bold text-white line-clamp-2 leading-snug">{node.productName}</h4>
                 <div className="pt-1 border-t border-slate-800/80 w-full mt-1">
-                    <span className="text-xs font-semibold text-emerald-400">
+                    <span className="text-xs font-semibold text-cud-teal">
                         {node.quantity} {node.unit}
                     </span>
                 </div>

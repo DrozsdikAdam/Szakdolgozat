@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Background } from "../../components/common/Background"
 import { useSearchParams, useNavigate } from "react-router-dom";
 import type { ResetPasswordRequest } from "../../types/auth/auth";
@@ -65,14 +65,14 @@ export const ResetPasswordView = () => {
             <div className="relative min-h-screen w-screen flex items-center justify-center bg-[#0f172a] overflow-hidden font-sans">
                 <Background />
                 <div className="relative z-10 w-full max-w-md p-8 mx-4 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 shadow-2xl flex flex-col items-center gap-4 text-center">
-                    <XCircle className="w-16 h-16 text-red-500" />
+                    <XCircle className="w-16 h-16 text-cud-vermillon" />
                     <h2 className="text-2xl font-bold text-white">Érvénytelen hivatkozás</h2>
                     <p className="text-slate-400 text-sm">
                         A jelszó-visszaállító hivatkozás érvénytelen, vagy hiányzik belőle a biztonsági token.
                     </p>
                     <button
                         onClick={() => navigation("/forgot-password")}
-                        className="w-full py-3.5 px-4 mt-2 rounded-xl text-base bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors shadow-lg shadow-indigo-600/20"
+                        className="w-full py-3.5 px-4 mt-2 rounded-xl text-base bg-(--cud-skyblue) hover:opacity-90 text-slate-950 font-bold transition-all shadow-lg shadow-(--cud-skyblue-border)/20"
                     >
                         Új jelszó igénylése
                     </button>
@@ -95,11 +95,11 @@ export const ResetPasswordView = () => {
 
                 {success ? (
                     <div className="flex flex-col items-center space-y-4 text-center">
-                        <CheckCircle className="w-16 h-16 text-green-500" />
+                        <CheckCircle className="w-16 h-16 text-cud-teal" />
                         <h3 className="text-xl font-bold text-white">Sikeres módosítás!</h3>
                         <p className="text-slate-300 text-sm">{success}</p>
                         <button
-                            className="w-full py-3.5 px-4 rounded-xl text-base bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors shadow-lg shadow-indigo-600/20"
+                            className="w-full py-3.5 px-4 rounded-xl text-base bg-(--cud-skyblue) hover:opacity-90 text-slate-950 font-bold transition-all shadow-lg shadow-(--cud-skyblue-border)/20"
                             onClick={() => navigation("/login")}
                         >
                             Bejelentkezés az új jelszóval
@@ -135,8 +135,8 @@ export const ResetPasswordView = () => {
                         />
 
                         {error && (
-                            <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium">
-                                <XCircle className="w-4 h-4 shrink-0 text-red-400" />
+                            <div className="flex items-center gap-2 p-3 rounded-lg bg-(--cud-vermillon-bg) border border-(--cud-vermillon-border) text-cud-vermillon text-xs font-medium">
+                                <XCircle className="w-4 h-4 shrink-0 text-cud-vermillon" />
                                 <span>{error}</span>
                             </div>
                         )}
@@ -152,7 +152,7 @@ export const ResetPasswordView = () => {
                                 <button
                                     type="button"
                                     onClick={() => navigation("/login")}
-                                    className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+                                    className="text-sm text-cud-skyblue hover:underline transition-colors"
                                 >
                                     Vissza a bejelentkezéshez
                                 </button>

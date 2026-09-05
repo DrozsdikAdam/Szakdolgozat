@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useSyncStatus } from "../../../hooks/UseSyncStatus";
 import { getConflictedActions, getPendingActions, syncOfflineQueue } from "../../../services/syncEngine";
 import type { OfflineAction } from "../../../types/offline/offline";
@@ -58,7 +58,7 @@ export const SyncConflictModal = ({ isOpen, onClose }: SyncConflictModalProps) =
             onClose={onClose}
             title={
                 <span className="flex items-center gap-2">
-                    <RefreshCw size={16} className={`text-indigo-400 ${isSyncing ? "animate-spin" : ""}`} />
+                    <RefreshCw size={16} className={`text-cud-skyblue ${isSyncing ? "animate-spin" : ""}`} />
                     <span>Offline Szinkronizáció</span>
                 </span>
             }
@@ -67,7 +67,7 @@ export const SyncConflictModal = ({ isOpen, onClose }: SyncConflictModalProps) =
                     <button
                         disabled={isLoading || isSyncing}
                         onClick={handleRefresh}
-                        className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 font-medium disabled:opacity-50 cursor-pointer"
+                        className="flex items-center gap-1 text-xs text-cud-skyblue hover:opacity-80 font-medium disabled:opacity-50 cursor-pointer"
                         title="Szinkronizálás indítása"
                     >
                         <RefreshCw size={13} className={isSyncing ? "animate-spin" : ""} />
@@ -81,7 +81,7 @@ export const SyncConflictModal = ({ isOpen, onClose }: SyncConflictModalProps) =
                 <button
                     onClick={() => setActiveTab("pending")}
                     className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeTab === "pending"
-                            ? "bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 shadow-sm"
+                            ? "bg-(--cud-skyblue-bg) text-cud-skyblue border border-(--cud-skyblue-border) shadow-sm"
                             : "text-slate-400 hover:text-slate-200"
                         }`}
                 >
@@ -96,14 +96,14 @@ export const SyncConflictModal = ({ isOpen, onClose }: SyncConflictModalProps) =
                 <button
                     onClick={() => setActiveTab("conflicts")}
                     className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeTab === "conflicts"
-                            ? "bg-rose-500/20 text-rose-300 border border-rose-500/30 shadow-sm"
+                            ? "bg-(--cud-vermillon-bg) text-cud-vermillon border border-(--cud-vermillon-border) shadow-sm"
                             : "text-slate-400 hover:text-slate-200"
                         }`}
                 >
                     <AlertTriangle size={13} />
                     <span>Ütközések</span>
                     {conflicts.length > 0 && (
-                        <span className="text-[10px] bg-rose-600 text-white px-1.5 py-0.2 rounded-full animate-pulse">
+                        <span className="text-[10px] bg-(--cud-vermillon) text-white px-1.5 py-0.2 rounded-full animate-pulse">
                             {conflicts.length}
                         </span>
                     )}
@@ -111,7 +111,7 @@ export const SyncConflictModal = ({ isOpen, onClose }: SyncConflictModalProps) =
             </div>
 
             <div className="space-y-2">
-                {error && <div className="text-xs text-rose-400 p-2 bg-rose-500/10 rounded-lg">{error}</div>}
+                {error && <div className="text-xs text-cud-vermillon p-2 bg-(--cud-vermillon-bg) border border-(--cud-vermillon-border) rounded-lg">{error}</div>}
                 {isLoading && <LoadingSpinner />}
 
                 {!isLoading && !error && activeTab === "pending" && (
@@ -127,13 +127,13 @@ export const SyncConflictModal = ({ isOpen, onClose }: SyncConflictModalProps) =
                                     <span className="text-xs font-bold text-white">
                                         {action.entityName || "Offline művelet"}
                                     </span>
-                                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-700/80 text-indigo-300 border border-slate-600/60">
+                                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-700/80 text-cud-skyblue border border-slate-600/60">
                                         {action.method}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between text-[10px] text-slate-400">
                                     <span>{new Date(action.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
-                                    <span className="text-amber-400 font-medium">● Várakozik a netre</span>
+                                    <span className="text-cud-orange font-medium">● Várakozik a netre</span>
                                 </div>
                             </div>
                         ))

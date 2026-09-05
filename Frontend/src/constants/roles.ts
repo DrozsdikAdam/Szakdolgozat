@@ -11,37 +11,37 @@ export const ROLES: Record<UserRole, RoleDefinition> = {
     SYSTEMADMIN: {
         key: "SYSTEMADMIN",
         label: "Rendszergazda",
-        badgeStyle: "bg-red-500/10 border-red-500/20 text-red-400",
+        badgeStyle: "badge-danger",
         level: 4
     },
     CEO: {
         key: "CEO",
         label: "Vezérigazgató",
-        badgeStyle: "bg-purple-500/10 border-purple-500/20 text-purple-400",
+        badgeStyle: "badge-purple",
         level: 3
     },
     MANAGER: {
         key: "MANAGER",
         label: "Menedzser",
-        badgeStyle: "bg-orange-500/10 border-orange-500/20 text-orange-400",
+        badgeStyle: "badge-warning",
         level: 2
     },
     OPERATOR: {
         key: "OPERATOR",
         label: "Operátor",
-        badgeStyle: "bg-blue-500/10 border-blue-500/20 text-blue-400",
+        badgeStyle: "badge-blue",
         level: 1
     },
     TECHNICIAN: {
         key: "TECHNICIAN",
         label: "Technikus",
-        badgeStyle: "bg-cyan-500/10 border-cyan-500/20 text-cyan-400",
+        badgeStyle: "badge-info",
         level: 2
     }
 }
 
 export const ROLE_OPTIONS: RoleDefinition[] = Object.values(ROLES)
 
-export const getRoleLabel = (role?: UserRole) => role ? ROLES[role].label : "Ismeretlen";
+export const getRoleLabel = (role?: UserRole) => role ? ROLES[role]?.label ?? "Ismeretlen" : "Ismeretlen";
 
-export const getRoleBadgeStyle = (role?: UserRole) => role ? ROLES[role].badgeStyle : "bg-slate-800 border-slate-700 text-slate-300";
+export const getRoleBadgeStyle = (role?: UserRole) => role ? ROLES[role]?.badgeStyle ?? "badge-neutral" : "badge-neutral";

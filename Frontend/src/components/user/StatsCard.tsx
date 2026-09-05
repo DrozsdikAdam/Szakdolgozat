@@ -22,9 +22,9 @@ export const UserStatsCards = ({ users }: UserStatCardProps) => {
             <div className="stats-card shadow-xl">
                 <div className="space-y-1">
                     <span className="text-xs font-semibold text-muted uppercase tracking-wider">Összes</span>
-                    <h3 className="text-2xl font-extrabold text-blue-400">{stats.all}</h3>
+                    <h3 className="text-2xl font-extrabold text-cud-skyblue">{stats.all}</h3>
                 </div>
-                <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                <div className="p-3 rounded-xl bg-(--cud-skyblue-bg) border border-(--cud-skyblue-border) text-cud-skyblue">
                     <Users size={22} />
                 </div>
             </div>
@@ -32,9 +32,9 @@ export const UserStatsCards = ({ users }: UserStatCardProps) => {
             <div className="stats-card shadow-xl">
                 <div className="space-y-1">
                     <span className="text-xs font-semibold text-muted uppercase tracking-wider">Aktív</span>
-                    <h3 className="text-2xl font-extrabold text-amber-400">{stats.active}</h3>
+                    <h3 className="text-2xl font-extrabold text-cud-teal">{stats.active}</h3>
                 </div>
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                <div className="p-3 rounded-xl bg-(--cud-teal-bg) border border-(--cud-teal-border) text-cud-teal">
                     <UserCheck size={22} />
                 </div>
             </div>
@@ -42,9 +42,9 @@ export const UserStatsCards = ({ users }: UserStatCardProps) => {
             <div className="stats-card shadow-xl">
                 <div className="space-y-1">
                     <span className="text-xs font-semibold text-muted uppercase tracking-wider">Operátorok</span>
-                    <h3 className="text-2xl font-extrabold text-emerald-400">{stats.operator}</h3>
+                    <h3 className="text-2xl font-extrabold text-cud-blue">{stats.operator}</h3>
                 </div>
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <div className="p-3 rounded-xl bg-(--cud-blue-bg) border border-(--cud-blue-border) text-cud-blue">
                     <Wrench size={22} />
                 </div>
             </div>
@@ -52,9 +52,9 @@ export const UserStatsCards = ({ users }: UserStatCardProps) => {
             <div className="stats-card shadow-xl">
                 <div className="space-y-1">
                     <span className="text-xs font-semibold text-muted uppercase tracking-wider">Adminisztrátorok</span>
-                    <h3 className="text-2xl font-extrabold text-purple-400">{stats.admin}</h3>
+                    <h3 className="text-2xl font-extrabold text-cud-purple">{stats.admin}</h3>
                 </div>
-                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                <div className="p-3 rounded-xl bg-(--cud-purple-bg) border border-(--cud-purple-border) text-cud-purple">
                     <ShieldCheck size={22} />
                 </div>
             </div>
@@ -62,9 +62,9 @@ export const UserStatsCards = ({ users }: UserStatCardProps) => {
             <div className="stats-card shadow-xl">
                 <div className="space-y-1">
                     <span className="text-xs font-semibold text-muted uppercase tracking-wider">Inaktív</span>
-                    <h3 className="text-2xl font-extrabold text-rose-400">{stats.inactive}</h3>
+                    <h3 className="text-2xl font-extrabold text-cud-vermillon">{stats.inactive}</h3>
                 </div>
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
+                <div className="p-3 rounded-xl bg-(--cud-vermillon-bg) border border-(--cud-vermillon-border) text-cud-vermillon">
                     <UserX size={22} />
                 </div>
             </div>

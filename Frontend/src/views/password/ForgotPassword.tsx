@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom"
 import { Background } from "../../components/common/Background";
 import type { ForgotPasswordRequest } from "../../types/auth/auth";
@@ -67,7 +67,7 @@ export const ForgotPasswordView = () => {
                                 <button
                                     type="button"
                                     onClick={() => navigation("/login")}
-                                    className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+                                    className="text-sm text-cud-skyblue hover:opacity-80 transition-colors"
                                 >
                                     Vissza a bejelentkezéshez
                                 </button>
@@ -78,9 +78,9 @@ export const ForgotPasswordView = () => {
 
                 {success &&
                     <div className="flex flex-col items-center space-y-4">
-                        <CheckCircleIcon className="w-16 h-16 text-green-500" />
+                        <CheckCircleIcon className="w-16 h-16 text-cud-teal" />
                         <p className="text-white text-center">{success}</p>
-                        <button className="w-full py-3.5 px-4 rounded-xl text-base bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors shadow-lg shadow-indigo-600/20" onClick={() => navigation("/login")}>Vissza a bejelentkezéshez</button>
+                        <button className="w-full py-3.5 px-4 rounded-xl text-base bg-(--cud-skyblue) hover:opacity-90 text-slate-950 font-bold transition-all shadow-md shadow-(--cud-skyblue)/20 cursor-pointer" onClick={() => navigation("/login")}>Vissza a bejelentkezéshez</button>
                     </div>
                 }
             </div>

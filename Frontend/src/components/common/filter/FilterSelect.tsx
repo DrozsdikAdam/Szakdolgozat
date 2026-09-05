@@ -1,4 +1,4 @@
-import type { FilterSelectProps } from "../../../types/filter/FilterProps"
+﻿import type { FilterSelectProps } from "../../../types/filter/FilterProps"
 
 export const FilterSelect = ({ label, value, onChange, options, allOptionsLabel, placeholder, disabled, className }: FilterSelectProps) => {
     return (
@@ -7,7 +7,7 @@ export const FilterSelect = ({ label, value, onChange, options, allOptionsLabel,
             <select
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className="flex-1 min-w-0 px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-200 text-sm"
+                className="flex-1 min-w-0 px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-(--cud-skyblue-border) focus:border-(--cud-skyblue) transition-all duration-200 text-sm"
                 disabled={disabled}
             >
                 {placeholder && <option value="">{placeholder}</option>}

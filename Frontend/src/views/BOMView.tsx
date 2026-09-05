@@ -84,7 +84,7 @@ export const BOMView = () => {
                     />
 
                     {error &&
-                        <div className="text-left text-rose-400 text-sm font-medium">{error}</div>
+                        <div className="text-left text-cud-vermillon text-sm font-medium">{error}</div>
                     }
 
                     {products.length === 0 &&

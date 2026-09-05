@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+﻿import { useEffect, useState } from "react"
 import type { NotificationResponse } from "../../types/notification/Notification"
 import { getRecentNotifications, getUnreadCount, markAllAsRead, markNotificationAsRead } from "../../services/notificationService"
 import { Bell } from "lucide-react"
@@ -70,13 +70,13 @@ export const NotificationBell = ({ isOpen: controlledIsOpen, onToggle, onClose }
                 onClick={handleToggle}
                 title="Értesítések"
                 className={`relative p-2 rounded-xl transition-all border ${isOpen
-                    ? "bg-slate-800 text-white border-indigo-500/50 shadow-sm"
+                    ? "bg-slate-800 text-white border-(--cud-skyblue-border) shadow-sm"
                     : "text-slate-300 hover:text-white hover:bg-slate-800/80 border-slate-700/60"
                     }`}
             >
                 <Bell size={18} />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-4.5 h-4.5 flex items-center justify-center animate-pulse border-2 border-slate-900 px-1">
+                    <span className="absolute -top-1 -right-1 bg-(--cud-vermillon) text-white text-[10px] font-bold rounded-full min-w-4.5 h-4.5 flex items-center justify-center animate-pulse border-2 border-slate-900 px-1">
                         {unreadCount}
                     </span>
                 )}
@@ -89,7 +89,7 @@ export const NotificationBell = ({ isOpen: controlledIsOpen, onToggle, onClose }
                     <span className="flex items-center gap-2">
                         <span>Értesítések</span>
                         {unreadCount > 0 && (
-                            <span className="text-xs bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full border border-rose-500/20">
+                            <span className="badge-danger text-xs py-0.5 px-2">
                                 {unreadCount} új
                             </span>
                         )}
@@ -99,7 +99,7 @@ export const NotificationBell = ({ isOpen: controlledIsOpen, onToggle, onClose }
                     unreadCount > 0 ? (
                         <button
                             onClick={handleNotificationReadAll}
-                            className="text-xs text-indigo-400 hover:text-indigo-300 hover:underline font-medium cursor-pointer"
+                            className="text-xs text-cud-skyblue hover:opacity-80 hover:underline font-medium cursor-pointer"
                         >
                             Mind olvasott
                         </button>
