@@ -40,6 +40,7 @@ services:
       - SPRING_DATA_REDIS_PORT=6379
       - SPRING_MAIL_HOST=mailpit
       - SPRING_MAIL_PORT=1025
+      - FRONTEND_RESET_PASSWORD_URL=http://localhost/reset-password
     depends_on:
       db:
         condition: service_healthy

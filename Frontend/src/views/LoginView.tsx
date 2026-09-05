@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useAuth } from "../hooks/UseAuth";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, Link } from "react-router-dom";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Background } from "../components/common/Background";
 import { InputField } from "../components/common/form/InputField";
@@ -76,6 +76,15 @@ export const LoginView = () => {
                         onBlur={() => setPasswordError(validatePassword(password))}
                         error={passwordError}
                     />
+
+                    <div className="flex justify-end -mt-2">
+                        <Link
+                            to="/forgot-password"
+                            className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                        >
+                            Elfelejtette jelszavát?
+                        </Link>
+                    </div>
 
                     {error && (
                         <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium">
