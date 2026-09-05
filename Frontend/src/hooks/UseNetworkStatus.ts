@@ -12,14 +12,17 @@ export const useNetworkStatus = () => {
     }
 
     useEffect(() => {
+        refreshPendingCount()
+        const interval = setInterval(refreshPendingCount, 2000)
 
-        const handleOnline = () => setIsOnline(true)
-        const handleOffline = () => setIsOnline(false)
+        const handleOnline = () => { setIsOnline(true); refreshPendingCount(); }
+        const handleOffline = () => { setIsOnline(false); refreshPendingCount(); }
 
         window.addEventListener('online', handleOnline)
         window.addEventListener('offline', handleOffline)
 
         return () => {
+            clearInterval(interval)
             window.removeEventListener('online', handleOnline)
             window.removeEventListener('offline', handleOffline)
         }

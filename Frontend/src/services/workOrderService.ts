@@ -1,4 +1,3 @@
-import { apiFetch } from "../utils/apiFetch";
 import type { WorkOrderCreateRequest, WorkOrderResponse, WorkOrderStatus, WorkOrderStatusUpdateRequest, WorkOrderUpdateRequest } from "../types/workorder/workOrder";
 import type { PagedResponse } from "../types/common/PagedResponse";
 import { offlineDb } from "./offlineDb";
