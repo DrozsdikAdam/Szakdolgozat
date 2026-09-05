@@ -1,7 +1,7 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import type { FormEvent } from "react";
 import { useAuth } from "../hooks/UseAuth";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, Link } from "react-router-dom";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Background } from "../components/common/Background";
 import { InputField } from "../components/common/form/InputField";
@@ -77,8 +77,17 @@ export const LoginView = () => {
                         error={passwordError}
                     />
 
+                    <div className="flex justify-end -mt-2">
+                        <Link
+                            to="/forgot-password"
+                            className="text-xs font-medium text-cud-skyblue hover:opacity-80 transition-colors"
+                        >
+                            Elfelejtette jelszavát?
+                        </Link>
+                    </div>
+
                     {error && (
-                        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium">
+                        <div className="flex items-center gap-2 p-3 rounded-lg bg-(--cud-vermillon-bg) border border-(--cud-vermillon-border) text-cud-vermillon text-xs font-medium">
                             <span>{error}</span>
                         </div>
                     )}

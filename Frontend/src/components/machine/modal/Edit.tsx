@@ -4,7 +4,7 @@ import type { UpdateMachineModalProps } from "../../../types/machine/MachineProp
 import type { MachineStatus, MachineType } from "../../../types/machine/MachineStatus"
 import type { MachineUpdateRequest } from "../../../types/machine/Machine"
 import { updateMachine } from "../../../services/machineService"
-import { Modal } from "../../common/Modal"
+import { Modal } from "../../common/modal/Modal"
 import { SelectField } from "../../common/form/SelectField"
 import { InputField } from "../../common/form/InputField"
 import { Pencil } from "lucide-react"

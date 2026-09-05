@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react"
+﻿import { Plus } from "lucide-react"
 import type { BOMSelectProps } from "../../types/bom/bomProps"
 import { Can } from "../common/Can"
 import { SubmitButton } from "../common/form/SubmitButton"
@@ -13,7 +13,7 @@ export const BOMSelectBar = ({ products, selectedProductId, setSelectedProductId
                     <select
                         value={selectedProductId || ""}
                         onChange={(e) => setSelectedProductId(e.target.value)}
-                        className="w-full sm:w-64 px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all"
+                        className="w-full sm:w-64 px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-(--cud-skyblue) focus:ring-2 focus:ring-(--cud-skyblue-border) text-sm transition-all"
                     >
                         <option value="">Válasszon terméket...</option>
                         {products.map((product) => (
@@ -32,7 +32,7 @@ export const BOMSelectBar = ({ products, selectedProductId, setSelectedProductId
                         step={1}
                         value={quantity}
                         onChange={(e) => setQuantity(Number(e.target.value))}
-                        className="w-24 px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm transition-all"
+                        className="w-24 px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-(--cud-skyblue) focus:ring-2 focus:ring-(--cud-skyblue-border) text-sm transition-all"
                     />
                 </div>
             </div>

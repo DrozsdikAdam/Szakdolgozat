@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react"
+﻿import { Plus } from "lucide-react"
 import type { FilterBarProps } from "../../types/product/ProductProps";
 import { FilterSearch } from "../common/filter/FilterSearch";
 import { SubmitButton } from "../common/form/SubmitButton";
@@ -14,13 +14,13 @@ export const FilterBar = ({ activeTab, searchTerm, setSearchTerm, setActiveTab, 
             />
 
             <div className="flex items-center bg-slate-800/70 p-1 rounded-xl border border-slate-700/60 text-xs sm:text-sm font-medium w-full lg:w-auto justify-center">
-                <button onClick={() => setActiveTab("active")} className={`${activeTab === "active" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"} px-4 py-1.5 rounded-lg transition-all`}>
+                <button onClick={() => setActiveTab("active")} className={`${activeTab === "active" ? "bg-(--cud-skyblue) text-slate-950 font-bold shadow-sm" : "text-slate-400 hover:text-slate-200"} px-4 py-1.5 rounded-lg transition-all`}>
                     Aktív termékek
                 </button>
-                <button onClick={() => setActiveTab("inactive")} className={`${activeTab === "inactive" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"} px-4 py-1.5 rounded-lg transition-all`}>
+                <button onClick={() => setActiveTab("inactive")} className={`${activeTab === "inactive" ? "bg-(--cud-skyblue) text-slate-950 font-bold shadow-sm" : "text-slate-400 hover:text-slate-200"} px-4 py-1.5 rounded-lg transition-all`}>
                     Inaktív termékek
                 </button>
-                <button onClick={() => setActiveTab("deleted")} className={`${activeTab === "deleted" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"} px-4 py-1.5 rounded-lg transition-all`}>
+                <button onClick={() => setActiveTab("deleted")} className={`${activeTab === "deleted" ? "bg-(--cud-skyblue) text-slate-950 font-bold shadow-sm" : "text-slate-400 hover:text-slate-200"} px-4 py-1.5 rounded-lg transition-all`}>
                     Törölt termékek
                 </button>
             </div>

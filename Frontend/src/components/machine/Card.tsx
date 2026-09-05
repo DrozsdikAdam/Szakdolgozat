@@ -1,4 +1,4 @@
-import { Pencil, PowerOff, Trash2 } from "lucide-react"
+﻿import { Pencil, PowerOff, Trash2 } from "lucide-react"
 import type { MachineCardProps } from "../../types/machine/MachineProps"
 import { MachineStatusBadge, MachineTypeBadge } from "../common/Badges"
 import { SelectField } from "../common/form/SelectField"
@@ -47,12 +47,12 @@ export const MachineCard = ({ machine, onEdit, onDelete, workOrders, onStartWork
             </div>
             <div>
                 {activeOrder ?
-                    <div className="flex flex-col gap-1 p-3 bg-slate-800/60 backdrop-blur-xl rounded-lg mt-2 border-l-4 border-blue-500">
+                    <div className="flex flex-col gap-1 p-3 bg-slate-800/60 backdrop-blur-xl rounded-lg mt-2 border-l-4 border-(--cud-skyblue)">
                         <div className="flex items-center gap-2 mb-1">
                             <p className="text-sm font-bold text-slate-200">
                                 {activeOrder.orderNumber}
                             </p>
-                            <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 text-xs rounded border border-blue-500/20">
+                            <span className="badge-warning">
                                 Folyamatban
                             </span>
                         </div>
@@ -76,11 +76,11 @@ export const MachineCard = ({ machine, onEdit, onDelete, workOrders, onStartWork
                         <div className="space-y-1 mt-1">
                             <div className="flex justify-between text-xs text-slate-400">
                                 <span>Gyártási haladás</span>
-                                <span className="text-indigo-300 font-bold">{activeOrder.progressPercentage?.toFixed(0)}%</span>
+                                <span className="text-cud-skyblue font-bold">{activeOrder.progressPercentage?.toFixed(0)}%</span>
                             </div>
                             <div className="w-full bg-slate-950/80 rounded-full h-2 border border-slate-700/60 overflow-hidden p-0.5">
                                 <div
-                                    className="bg-linear-to-r from-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-500 shadow-sm shadow-indigo-500/50"
+                                    className="bg-linear-to-r from-(--cud-skyblue) to-(--cud-teal) h-full rounded-full transition-all duration-500 shadow-sm shadow-(--cud-skyblue)/50"
                                     style={{ width: `${activeOrder.progressPercentage}%` }}
                                 ></div>
                             </div>
@@ -122,7 +122,7 @@ export const MachineCard = ({ machine, onEdit, onDelete, workOrders, onStartWork
                         <button
                             onClick={() => onDelete(machine.id)}
                             title="Gép törlése"
-                            className="p-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all"
+                            className="p-2.5 rounded-xl bg-(--cud-vermillon-bg) hover:opacity-90 text-cud-vermillon border border-(--cud-vermillon-border) transition-all"
                         >
                             <Trash2 size={18} />
                         </button>
@@ -130,7 +130,7 @@ export const MachineCard = ({ machine, onEdit, onDelete, workOrders, onStartWork
                     <button
                         onClick={() => onEmergencyStop(machine.id)}
                         title="Leállt a gép"
-                        className="p-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all"
+                        className="p-2.5 rounded-xl bg-(--cud-vermillon-bg) hover:opacity-90 text-cud-vermillon border border-(--cud-vermillon-border) transition-all"
                     >
                         <PowerOff size={18} />
                     </button>

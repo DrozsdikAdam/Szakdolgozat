@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react"
+﻿import { useEffect, useState, useCallback, useRef } from "react"
 import { Background } from "../components/common/Background"
 import { Title } from "../components/common/Title"
 import { LoadingSpinner } from "../components/common/LoadingSpinner"
@@ -111,7 +111,7 @@ export const AnalyticsView = () => {
                 <Title page="analytics" />
 
                 {error && (
-                    <div className="text-left text-rose-400 text-sm font-medium p-3 rounded-xl bg-rose-500/10 border border-rose-500/20">
+                    <div className="text-left text-cud-vermillon text-sm font-medium p-3 rounded-xl bg-(--cud-vermillon-bg) border border-(--cud-vermillon-border)">
                         {error}
                     </div>
                 )}

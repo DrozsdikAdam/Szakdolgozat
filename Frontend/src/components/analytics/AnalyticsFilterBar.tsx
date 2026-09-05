@@ -1,4 +1,4 @@
-import { RefreshCw } from "lucide-react"
+﻿import { RefreshCw } from "lucide-react"
 import type { AnalyticsFilterBarProps } from "../../types/telemetry/TelemetryProps"
 import { SelectField } from "../common/form/SelectField"
 
@@ -14,7 +14,7 @@ export const AnalyticsFilterBar = ({ machines, selectedMachineId, onSelectMachin
                         key: m.id,
                         label: `${m.code} - ${m.name} (${m.status})`
                     }))}
-                    className="w-full sm:w-72 px-3.5 py-2 rounded-xl bg-slate-800/90 border border-slate-700 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium transition-all"
+                    className="w-full sm:w-72 px-3.5 py-2 rounded-xl bg-slate-800/90 border border-slate-700 text-white text-sm focus:outline-none focus:border-(--cud-skyblue) focus:ring-2 focus:ring-(--cud-skyblue-border) font-medium transition-all"
                 />
             </div>
 
@@ -23,7 +23,7 @@ export const AnalyticsFilterBar = ({ machines, selectedMachineId, onSelectMachin
                     <button
                         onClick={() => onChangeTimeRange("1h")}
                         className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${timeRange === "1h"
-                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                            ? "bg-(--cud-skyblue) text-slate-950 font-bold shadow-md shadow-(--cud-skyblue)/20"
                             : "text-slate-400 hover:text-white"
                             }`}
                     >
@@ -32,7 +32,7 @@ export const AnalyticsFilterBar = ({ machines, selectedMachineId, onSelectMachin
                     <button
                         onClick={() => onChangeTimeRange("24h")}
                         className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${timeRange === "24h"
-                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                            ? "bg-(--cud-skyblue) text-slate-950 font-bold shadow-md shadow-(--cud-skyblue)/20"
                             : "text-slate-400 hover:text-white"
                             }`}
                     >
@@ -41,7 +41,7 @@ export const AnalyticsFilterBar = ({ machines, selectedMachineId, onSelectMachin
                     <button
                         onClick={() => onChangeTimeRange("7d")}
                         className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${timeRange === "7d"
-                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                            ? "bg-(--cud-skyblue) text-slate-950 font-bold shadow-md shadow-(--cud-skyblue)/20"
                             : "text-slate-400 hover:text-white"
                             }`}
                     >
@@ -52,18 +52,18 @@ export const AnalyticsFilterBar = ({ machines, selectedMachineId, onSelectMachin
                 <button
                     onClick={onToggleLive}
                     className={`px-3.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-all ${isLive
-                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-lg shadow-emerald-500/10"
+                        ? "bg-(--cud-teal-bg) border-(--cud-teal-border) text-cud-teal shadow-md shadow-(--cud-teal)/10"
                         : "bg-slate-800/80 border-slate-700 text-slate-400 hover:text-slate-200"
                         }`}
                     title={isLive ? "Élő 5 másodpercenkénti frissítés bekapcsolva" : "Élő frissítés kikapcsolva"}
                 >
                     <span className="relative flex h-2 w-2">
                         {isLive && (
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-(--cud-teal) opacity-75"></span>
                         )}
-                        <span className={`relative inline-flex rounded-full h-2 w-2 ${isLive ? "bg-emerald-500" : "bg-slate-500"}`}></span>
+                        <span className={`relative inline-flex rounded-full h-2 w-2 ${isLive ? "bg-(--cud-teal)" : "bg-slate-500"}`}></span>
                     </span>
-                    {isLive ? "Élő adatok (5s)" : "Élő mód: Ki"}
+                    <span>{isLive ? "Élő adás" : "Szüneteltetve"}</span>
                 </button>
 
                 <button
@@ -72,7 +72,7 @@ export const AnalyticsFilterBar = ({ machines, selectedMachineId, onSelectMachin
                     className="p-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 transition-all disabled:opacity-50"
                     title="Frissítés most"
                 >
-                    <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-indigo-400" : ""}`} />
+                    <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-cud-skyblue" : ""}`} />
                 </button>
             </div>
         </div>

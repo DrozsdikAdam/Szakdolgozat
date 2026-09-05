@@ -4,7 +4,7 @@ import type { MaintenanceStatusModalProps } from "../../../types/maintenance/Mai
 import type { MaintenanceStatus } from "../../../types/maintenance/MaintenanceStatus"
 import { updateMaintenanceStatus } from "../../../services/maintenanceService"
 import { validateNonNegativeNumber, validateRequired } from "../../../utils/validators"
-import { Modal } from "../../common/Modal"
+import { Modal } from "../../common/modal/Modal"
 import { RefreshCw } from "lucide-react"
 import { InputField } from "../../common/form/InputField"
 import { STATUS_OPTIONS } from "../../../constants/maintenanceStatus"

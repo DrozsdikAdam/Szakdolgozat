@@ -2,7 +2,7 @@
 import type { ProductCreateRequest } from "../../../types/product/Product"
 import { useState } from "react"
 import { createProduct } from "../../../services/productService"
-import { Modal } from "../../common/Modal"
+import { Modal } from "../../common/modal/Modal"
 import { validateRequired, validateMinLength, validateMaxLength } from "../../../utils/validators"
 import type { CreateModalProps } from "../../../types/product/ProductProps"
 import { InputField } from "../../common/form/InputField"

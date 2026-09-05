@@ -16,32 +16,32 @@ export const WorkOrderStatuses: Record<WorkOrderStatus, WorkOrderStatusDefinitio
     PLANNED: {
         key: "PLANNED",
         label: "Tervezett",
-        badgeStyle: "bg-slate-800 border-slate-700 text-slate-300",
+        badgeStyle: "badge-neutral",
     },
     PREPARED: {
         key: "PREPARED",
         label: "Előkészítve",
-        badgeStyle: "bg-blue-500/10 border-blue-500/20 text-blue-400",
+        badgeStyle: "badge-info",
     },
     IN_PROGRESS: {
         key: "IN_PROGRESS",
         label: "Gyártásban",
-        badgeStyle: "bg-amber-500/10 border-amber-500/20 text-amber-400",
+        badgeStyle: "badge-warning",
     },
     QUALITY_CHECK: {
         key: "QUALITY_CHECK",
         label: "Minőségellenőrzés",
-        badgeStyle: "bg-purple-500/10 border-purple-500/20 text-purple-400",
+        badgeStyle: "badge-purple",
     },
     COMPLETED: {
         key: "COMPLETED",
         label: "Teljesítve",
-        badgeStyle: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
+        badgeStyle: "badge-success",
     },
     CANCELLED: {
         key: "CANCELLED",
         label: "Visszavont",
-        badgeStyle: "bg-rose-500/10 border-rose-500/20 text-rose-400",
+        badgeStyle: "badge-danger",
     }
 }
 
@@ -49,22 +49,22 @@ export const WorkOrderPriorities: Record<WorkOrderPriority, WorkOrderPriorityDef
     LOW: {
         key: "LOW",
         label: "Alacsony",
-        badgeStyle: "bg-slate-800 border-slate-700 text-slate-300",
+        badgeStyle: "badge-neutral",
     },
     MEDIUM: {
         key: "MEDIUM",
         label: "Közepes",
-        badgeStyle: "bg-blue-500/10 border-blue-500/20 text-blue-400",
+        badgeStyle: "badge-info",
     },
     HIGH: {
         key: "HIGH",
         label: "Magas",
-        badgeStyle: "bg-amber-500/10 border-amber-500/20 text-amber-400",
+        badgeStyle: "badge-warning",
     },
     URGENT: {
         key: "URGENT",
         label: "Sürgős",
-        badgeStyle: "bg-red-500/10 border-red-500/20 text-red-400",
+        badgeStyle: "badge-danger",
     }
 }
 
@@ -72,10 +72,10 @@ export const workOrderStatusOptions = Object.values(WorkOrderStatuses)
 
 export const workOrderPriorityOptions = Object.values(WorkOrderPriorities)
 
-export const getWorkOrderStatusLabel = (status: WorkOrderStatus) => WorkOrderStatuses[status].label
+export const getWorkOrderStatusLabel = (status: WorkOrderStatus) => WorkOrderStatuses[status]?.label ?? "Ismeretlen"
 
-export const getWorkOrderPriorityLabel = (priority: WorkOrderPriority) => WorkOrderPriorities[priority].label
+export const getWorkOrderPriorityLabel = (priority: WorkOrderPriority) => WorkOrderPriorities[priority]?.label ?? "Ismeretlen"
 
-export const getWorkOrderStatusBadgeStyle = (status: WorkOrderStatus) => WorkOrderStatuses[status].badgeStyle
+export const getWorkOrderStatusBadgeStyle = (status: WorkOrderStatus) => WorkOrderStatuses[status]?.badgeStyle ?? "badge-neutral"
 
-export const getWorkOrderPriorityBadgeStyle = (priority: WorkOrderPriority) => WorkOrderPriorities[priority].badgeStyle
+export const getWorkOrderPriorityBadgeStyle = (priority: WorkOrderPriority) => WorkOrderPriorities[priority]?.badgeStyle ?? "badge-neutral"

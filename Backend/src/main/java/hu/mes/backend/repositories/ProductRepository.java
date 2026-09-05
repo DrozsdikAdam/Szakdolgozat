@@ -6,11 +6,9 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import hu.mes.backend.models.Product;
-import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -21,18 +19,15 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     boolean existsBySku(String sku);
 
-    List<Product> findByActiveTrue();
+    List<Product> findByActiveTrueAndDeletedFalse();
 
-    Page<Product> findByActiveTrue(Pageable pageable);
+    Page<Product> findByActiveTrueAndDeletedFalse(Pageable pageable);
 
-    Page<Product> findAll(Pageable pageable);
+    List<Product> findByActiveFalseAndDeletedFalse();
 
-    @Query(value = "SELECT * FROM products p WHERE p.deleted = true", nativeQuery = true)
-    List<Product> findDeletedProducts();
+    List<Product> findByDeletedTrue();
 
-    @Query(value = "SELECT * FROM products p WHERE p.deleted = true AND p.id = :id", nativeQuery = true)
-    Optional<Product> findDeletedById(@Param("id") UUID id);
+    Optional<Product> findByIdAndDeletedTrue(UUID id);
 
-    List<Product> findByActiveFalse();
-
+    Optional<Product> findByIdAndDeletedFalse(UUID id);
 }

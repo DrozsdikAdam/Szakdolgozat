@@ -5,6 +5,11 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet id="001-create-roles-and-users" author="mes-admin">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="roles" />
+            </not>
+        </preConditions>
 
         <createTable tableName="roles">
             <column name="id" type="UUID">
@@ -32,7 +37,7 @@
                 <constraints nullable="false" unique="true" />
             </column>
             <column name="phone_number" type="VARCHAR(255)">
-                <constraints nullable="false" unique="true" />
+                <constraints nullable="false" />
             </column>
             <column name="active" type="BOOLEAN">
                 <constraints nullable="false" />

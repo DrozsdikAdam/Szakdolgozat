@@ -1,5 +1,5 @@
 import { AlertTriangle, Trash2 } from "lucide-react";
-import type { DeleteConfirmModalProps } from "../../types/Props";
+import type { DeleteConfirmModalProps } from "../../../types/common/ModalProps";
 import { Modal } from "./Modal";
 
 export const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, title = "Törlés megerősítése", itemName, message = "Biztosan törölni szeretnéd a kiválasztott elemet? Ez a művelet nem vonható vissza.", isLoading }: DeleteConfirmModalProps) => {
@@ -19,7 +19,7 @@ export const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, title = "Törl�
             maxWidth="max-w-lg"
             submitVariant="danger"
         >
-            <AlertTriangle size={48} className="text-red-500 mx-auto mb-4" />
+            <AlertTriangle size={48} className="text-cud-vermillon mx-auto mb-4" />
             <div className="text-left">
 
                 <div className="mb-4">

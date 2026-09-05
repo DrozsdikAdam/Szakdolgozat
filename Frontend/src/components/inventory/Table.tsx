@@ -1,4 +1,4 @@
-import { Pencil } from "lucide-react"
+﻿import { Pencil } from "lucide-react"
 import type { InventoryTableProps } from "../../types/inventory/inventoryProps"
 
 export const InventoryTable = ({ data, openModal }: InventoryTableProps) => {
@@ -6,19 +6,19 @@ export const InventoryTable = ({ data, openModal }: InventoryTableProps) => {
     const handleStatus = (quantity: number, reservedQuantity: number) => {
         if ((quantity - reservedQuantity) <= 0) {
             return (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                <span className="badge-danger">
                     Készlethiány
                 </span>
             )
         } else if (quantity - reservedQuantity <= 10) {
             return (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <span className="badge-warning">
                     Alacsony készlet
                 </span>
             )
         } else {
             return (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="badge-success">
                     Készleten
                 </span>
             )
@@ -50,18 +50,18 @@ export const InventoryTable = ({ data, openModal }: InventoryTableProps) => {
                     <tbody className="divide-y divide-slate-800/60 text-slate-200">
                         {data.map((inventory) => (
                             <tr className="hover:bg-slate-800/40 transition-colors duration-150" key={inventory.id}>
-                                <td className="px-4 py-2.5 font-mono text-indigo-400 font-medium">{inventory.productSku}</td>
+                                <td className="px-4 py-2.5 font-mono text-cud-skyblue font-medium">{inventory.productSku}</td>
                                 <td className="px-4 py-2.5 font-semibold text-white">{inventory.productName}</td>
                                 <td className="px-4 py-2.5 font-semibold text-white">{inventory.location ?? "Nincs megadva"}</td>
                                 <td className="px-4 py-2.5 font-semibold text-white text-center">{inventory.quantity}</td>
-                                <td className="px-4 py-2.5 text-amber-400 font-medium text-center">{inventory.reservedQuantity}</td>
-                                <td className="px-4 py-2.5 text-emerald-400 font-semibold text-center">{inventory.quantity - inventory.reservedQuantity}</td >
+                                <td className="px-4 py-2.5 text-cud-orange font-medium text-center">{inventory.reservedQuantity}</td>
+                                <td className="px-4 py-2.5 text-cud-teal font-semibold text-center">{inventory.quantity - inventory.reservedQuantity}</td>
                                 <td className="px-4 py-2.5 text-center">{handleStatus(inventory.quantity, inventory.reservedQuantity)}</td>
                                 <td className="px-4 py-2.5 text-center">
                                     <button
                                         onClick={() => openModal(inventory.id)}
                                         title="Készlet módosítása"
-                                        className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 border border-indigo-500/20 transition-all duration-200 outline-none focus:ring-2 focus:ring-indigo-500/40"
+                                        className="p-2 rounded-lg bg-(--cud-skyblue-bg) text-cud-skyblue hover:bg-(--cud-skyblue)/20 hover:text-white border border-(--cud-skyblue-border) transition-all duration-200 outline-none focus:ring-2 focus:ring-(--cud-skyblue-border) cursor-pointer"
                                     >
                                         <Pencil size={16} />
                                     </button>

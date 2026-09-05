@@ -88,26 +88,26 @@ export const ProductView = () => {
                 setPagedProducts(response)
             } else if (activeTab === "inactive") {
                 const response = await getInactiveProducts()
-                setPagedProducts({
+                setPagedProducts(prev => ({
                     content: response,
                     pageNumber: 0,
-                    pageSize: response.length || 10,
+                    pageSize: prev.pageSize || 10,
                     totalElements: response.length,
                     totalPages: 1,
                     first: true,
                     last: true
-                })
+                }))
             } else {
                 const response = await getDeletedProducts()
-                setPagedProducts({
+                setPagedProducts(prev => ({
                     content: response,
                     pageNumber: 0,
-                    pageSize: response.length || 10,
+                    pageSize: prev.pageSize || 10,
                     totalElements: response.length,
                     totalPages: 1,
                     first: true,
                     last: true
-                })
+                }))
             }
         } catch (error) {
             setError(error instanceof Error ? error.message : String(error))
@@ -171,7 +171,7 @@ export const ProductView = () => {
                     <FilterBar {...FilterBarProps} />
 
                     {error &&
-                        <div className="text-left text-red-400 text-sm font-medium">{error}</div>
+                        <div className="text-left text-cud-vermillon text-sm font-medium">{error}</div>
                     }
 
                     {pagedProducts.totalElements === 0 &&

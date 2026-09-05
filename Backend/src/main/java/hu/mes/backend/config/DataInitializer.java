@@ -77,37 +77,37 @@ public class DataInitializer implements CommandLineRunner {
 	private void initUser() {
 		User[] users = {
 				User.builder().name("admin").password("Jelszo123!").email("admin@email.hu")
-						.phoneNumber("+36301234567")
+						.phoneNumber("+36301234560")
 						.roles(new HashSet<>(Set.of(roleRepository
 								.findByName(RolesEnum.SYSTEMADMIN).get())))
 						.build(),
 				User.builder().name("Béla").password("Jelszo123!").email("bela@email.hu")
-						.phoneNumber("+36301234567")
+						.phoneNumber("+36301234561")
 						.roles(new HashSet<>(Set.of(
 								roleRepository.findByName(RolesEnum.OPERATOR).get())))
 						.build(),
 				User.builder().name("Pista").password("Jelszo123!").email("pista@email.hu")
-						.phoneNumber("+36301234567")
+						.phoneNumber("+36301234562")
 						.roles(new HashSet<>(Set.of(
 								roleRepository.findByName(RolesEnum.MANAGER).get())))
 						.build(),
 				User.builder().name("Jani").password("Jelszo123!").email("jani@email.hu")
-						.phoneNumber("+36301234567")
+						.phoneNumber("+36301234563")
 						.roles(new HashSet<>(
 								Set.of(roleRepository.findByName(RolesEnum.CEO).get())))
 						.build(),
 				User.builder().name("Feri").password("Jelszo123!").email("feri@email.hu")
-						.phoneNumber("+36301234567")
+						.phoneNumber("+36301234564")
 						.roles(new HashSet<>(Set.of(roleRepository
 								.findByName(RolesEnum.TECHNICIAN).get())))
 						.build(),
 				User.builder().name("Tomi").password("Jelszo123!").email("tomi@email.hu")
-						.phoneNumber("+36301234567")
+						.phoneNumber("+36301234565")
 						.roles(new HashSet<>(Set.of(
 								roleRepository.findByName(RolesEnum.OPERATOR).get())))
 						.build(),
 				User.builder().name("Tibor").password("Jelszo123!").email("tibor@email.hu")
-						.phoneNumber("+36301234567")
+						.phoneNumber("+36301234566")
 						.roles(new HashSet<>(Set.of(
 								roleRepository.findByName(RolesEnum.MANAGER).get(),
 								roleRepository.findByName(RolesEnum.OPERATOR).get())))
@@ -115,8 +115,9 @@ public class DataInitializer implements CommandLineRunner {
 		};
 
 		for (User user : users) {
-			Optional<User> userOpt = userRepository.findByName(user.getName());
-			if (userOpt.isEmpty()) {
+			boolean exists = userRepository.findByName(user.getName()).isPresent()
+					|| userRepository.findByEmail(user.getEmail()).isPresent();
+			if (!exists) {
 				user.setPassword(passwordEncoder.encode(user.getPassword()));
 				user.setActive(true);
 				userRepository.save(user);

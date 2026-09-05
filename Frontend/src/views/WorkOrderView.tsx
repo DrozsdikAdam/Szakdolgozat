@@ -69,10 +69,15 @@ export const WorkOrderView = () => {
 
     const loadData = async (showSpinner: boolean = true) => {
         if (showSpinner) setIsLoading(true)
-
         setError(null)
 
         try {
+            if (!navigator.onLine) {
+                const ordersData = await getWorkOrders(pagedOrders.pageNumber, pagedOrders.pageSize, statusFilter)
+                setPagedOrders(ordersData)
+                return
+            }
+
             let [productsData, ordersData, usersData] = await Promise.all([
                 getActiveProducts(),
                 getWorkOrders(pagedOrders.pageNumber, pagedOrders.pageSize, statusFilter),
@@ -83,6 +88,15 @@ export const WorkOrderView = () => {
             setUsers(usersData)
 
         } catch (error) {
+            if (!navigator.onLine || (error instanceof TypeError && error.message.includes("fetch"))) {
+                try {
+                    const ordersData = await getWorkOrders(pagedOrders.pageNumber, pagedOrders.pageSize, statusFilter)
+                    setPagedOrders(ordersData)
+                    return
+                } catch {
+
+                }
+            }
             setError(error instanceof Error ? error.message : "Ismeretlen hiba történt")
         } finally {
             setIsLoading(false)
@@ -178,7 +192,7 @@ export const WorkOrderView = () => {
                 />
 
                 {error &&
-                    <div className="text-left text-red-400 text-sm font-medium">{error}</div>
+                    <div className="text-left text-cud-vermillon text-sm font-medium">{error}</div>
                 }
 
                 {filteredOrders.length === 0 &&

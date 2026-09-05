@@ -271,7 +271,7 @@ export const MachineCreateView = () => {
                     </div>
 
                     {error &&
-                        <div className="text-left text-red-400 text-sm font-medium">{error}</div>
+                        <div className="text-left text-cud-vermillon text-sm font-medium">{error}</div>
                     }
 
                     <div className="flex items-center justify-end gap-3 pt-2">

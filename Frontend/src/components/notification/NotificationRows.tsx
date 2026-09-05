@@ -1,4 +1,4 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import type { NotificationRowProps } from "../../types/notification/NotificationProps"
 import { AlertOctagon, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Clock, Info } from "lucide-react"
 import { useNavigate } from "react-router-dom"
@@ -11,27 +11,27 @@ export const NotificationRows = ({ notification, onNotificationClick }: Notifica
         switch (type) {
             case "ERROR":
                 return {
-                    border: "border-rose-500/30 hover:border-rose-500/60 bg-rose-500/5",
-                    icon: <AlertOctagon size={16} className="text-rose-400 shrink-0" />,
-                    badge: "bg-rose-500/10 text-rose-300 border-rose-500/20"
+                    border: "border-(--cud-vermillon-border) hover:border-(--cud-vermillon)/60 bg-(--cud-vermillon-bg)",
+                    icon: <AlertOctagon size={16} className="text-cud-vermillon shrink-0" />,
+                    badge: "badge-danger"
                 }
             case "WARNING":
                 return {
-                    border: "border-amber-500/30 hover:border-amber-500/60 bg-amber-500/5",
-                    icon: <AlertTriangle size={16} className="text-amber-400 shrink-0" />,
-                    badge: "bg-amber-500/10 text-amber-300 border-amber-500/20"
+                    border: "border-(--cud-orange-border) hover:border-(--cud-orange)/60 bg-(--cud-orange-bg)",
+                    icon: <AlertTriangle size={16} className="text-cud-orange shrink-0" />,
+                    badge: "badge-warning"
                 }
             case "SUCCESS":
                 return {
-                    border: "border-emerald-500/30 hover:border-emerald-500/60 bg-emerald-500/5",
-                    icon: <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />,
-                    badge: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
+                    border: "border-(--cud-teal-border) hover:border-(--cud-teal)/60 bg-(--cud-teal-bg)",
+                    icon: <CheckCircle2 size={16} className="text-cud-teal shrink-0" />,
+                    badge: "badge-success"
                 }
             default:
                 return {
-                    border: "border-indigo-500/30 hover:border-indigo-500/60 bg-indigo-500/5",
-                    icon: <Info size={16} className="text-indigo-400 shrink-0" />,
-                    badge: "bg-indigo-500/10 text-indigo-300 border-indigo-500/20"
+                    border: "border-(--cud-skyblue-border) hover:border-(--cud-skyblue)/60 bg-(--cud-skyblue-bg)",
+                    icon: <Info size={16} className="text-cud-skyblue shrink-0" />,
+                    badge: "badge-info"
                 }
         }
     }
@@ -58,7 +58,7 @@ export const NotificationRows = ({ notification, onNotificationClick }: Notifica
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                     {!read && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-(--cud-vermillon-bg) text-cud-vermillon border border-(--cud-vermillon-border) animate-pulse">
                             Új
                         </span>
                     )}
@@ -83,7 +83,7 @@ export const NotificationRows = ({ notification, onNotificationClick }: Notifica
                 {link && (
                     <button
                         onClick={handleNavigate}
-                        className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 font-medium hover:underline transition-colors"
+                        className="flex items-center gap-1 text-cud-skyblue hover:opacity-80 font-medium hover:underline transition-colors"
                     >
                         Megnyitás
                     </button>

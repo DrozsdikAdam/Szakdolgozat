@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import "./index.css"
 import { LoginView } from "./views/LoginView"
+import { ForgotPasswordView } from "./views/password/ForgotPassword"
+import { ResetPasswordView } from "./views/password/ResetPassword"
 import { AuthProvider } from "./context/AuthContext"
 import { ProtectedRoute } from "./components/ProtectedRoute"
 import { ProductView } from "./views/ProductView"
@@ -128,6 +130,8 @@ function App() {
           </Route>
 
           <Route path="/login" element={<LoginView />} />
+          <Route path="/forgot-password" element={<ForgotPasswordView />} />
+          <Route path="/reset-password" element={<ResetPasswordView />} />
           <Route path="/unauthorized" element={<UnauthorizedView />} />
           <Route path="*" element={<NotFoundView />} />
         </Routes>

@@ -7,18 +7,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import hu.mes.backend.dtos.auth.ForgotPasswordRequest;
 import hu.mes.backend.dtos.auth.LoginRequest;
-import hu.mes.backend.dtos.auth.LoginResponse;
+import hu.mes.backend.dtos.auth.ResetPasswordRequest;
+import hu.mes.backend.dtos.user.UserResponse;
+import hu.mes.backend.models.User;
 import hu.mes.backend.models.enums.AuditAction;
 import hu.mes.backend.models.enums.AuditEntityType;
 import hu.mes.backend.security.CustomUserDetails;
 import hu.mes.backend.services.AuditLogService;
 import hu.mes.backend.services.AuthService;
+import hu.mes.backend.services.PasswordResetService;
+import hu.mes.backend.services.UserService;
 import lombok.RequiredArgsConstructor;
 
 import jakarta.validation.Valid;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -27,19 +31,27 @@ public class AuthController {
 
     private final AuthService authService;
     private final AuditLogService auditLogService;
+    private final PasswordResetService passwordResetService;
+    private final UserService userService;
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getMe(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        if (userDetails == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        UserResponse user = userService.getUserById(userDetails.getId());
+
+        return ResponseEntity.ok(user);
+    }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         CustomUserDetails userDetails = authService.authenticateUser(
                 loginRequest.getUsername(),
                 loginRequest.getPassword());
 
         ResponseCookie accessCookie = authService.generateAccessCookie(userDetails);
         ResponseCookie refreshCookie = authService.generateRefreshCookie(userDetails);
-
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(authority -> authority.getAuthority().replace("ROLE_", ""))
-                .collect(Collectors.toList());
 
         auditLogService.log(
                 userDetails.getUsername(),
@@ -49,7 +61,7 @@ public class AuthController {
                 userDetails.getUsername(),
                 "Sikeres bejelentkezés");
 
-        LoginResponse responseBody = new LoginResponse(userDetails.getUsername(), roles);
+        UserResponse responseBody = userService.getUserById(userDetails.getId());
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
@@ -92,18 +104,33 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<LoginResponse> getMe(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        if (userDetails == null)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        passwordResetService.requestPasswordReset(request);
 
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(authority -> authority.getAuthority().replace("ROLE_", ""))
-                .collect(Collectors.toList());
+        auditLogService.log(null,
+                null,
+                AuditAction.CREATE,
+                AuditEntityType.AUTHENTICATION,
+                request.getEmail(),
+                "Jelszó-visszaállítási kérelem");
 
-        LoginResponse response = new LoginResponse(userDetails.getUsername(), roles);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(Map.of("message",
+                "Amennyiben a megadott e-mail cím regisztrálva van a rendszerben, elküldtük a jelszó-visszaállító linket."));
     }
 
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        User user = passwordResetService.resetPassword(request);
+
+        auditLogService.log(
+                user.getName(),
+                user.getId(),
+                AuditAction.UPDATE,
+                AuditEntityType.USER,
+                user.getId().toString(),
+                "Sikeres jelszó-visszaállítás e-mailes hivatkozáson keresztül");
+
+        return ResponseEntity.ok(Map.of("message", "A jelszava sikeresen módosítva lett."));
+    }
 }

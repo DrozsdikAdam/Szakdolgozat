@@ -45,12 +45,12 @@ export const TelemetryCharts = ({ history }: { history: TelemertyResponse[] }) =
                         <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="tempGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4} />
-                                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
+                                    <stop offset="5%" stopColor="#E69F00" stopOpacity={0.4} />
+                                    <stop offset="95%" stopColor="#E69F00" stopOpacity={0.0} />
                                 </linearGradient>
                                 <linearGradient id="vibGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
-                                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0} />
+                                    <stop offset="5%" stopColor="#56B4E9" stopOpacity={0.4} />
+                                    <stop offset="95%" stopColor="#56B4E9" stopOpacity={0.0} />
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
@@ -70,7 +70,7 @@ export const TelemetryCharts = ({ history }: { history: TelemertyResponse[] }) =
                                 type="monotone"
                                 dataKey="pressureBar"
                                 name="Nyomás (bar)"
-                                stroke="#f59e0b"
+                                stroke="#E69F00"
                                 fillOpacity={1}
                                 fill="url(#tempGradient)"
                                 strokeWidth={2}
@@ -79,7 +79,7 @@ export const TelemetryCharts = ({ history }: { history: TelemertyResponse[] }) =
                                 type="monotone"
                                 dataKey="vibration"
                                 name="Rezgés (mm/s)"
-                                stroke="#6366f1"
+                                stroke="#56B4E9"
                                 fillOpacity={1}
                                 fill="url(#vibGradient)"
                                 strokeWidth={2}
@@ -102,12 +102,12 @@ export const TelemetryCharts = ({ history }: { history: TelemertyResponse[] }) =
                         <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="powerGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                                    <stop offset="5%" stopColor="#009E73" stopOpacity={0.4} />
+                                    <stop offset="95%" stopColor="#009E73" stopOpacity={0.0} />
                                 </linearGradient>
                                 <linearGradient id="pressureGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4} />
-                                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0} />
+                                    <stop offset="5%" stopColor="#CC79A7" stopOpacity={0.4} />
+                                    <stop offset="95%" stopColor="#CC79A7" stopOpacity={0.0} />
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
@@ -127,7 +127,7 @@ export const TelemetryCharts = ({ history }: { history: TelemertyResponse[] }) =
                                 type="monotone"
                                 dataKey="powerKw"
                                 name="Teljesítmény (kW)"
-                                stroke="#10b981"
+                                stroke="#009E73"
                                 fillOpacity={1}
                                 fill="url(#powerGradient)"
                                 strokeWidth={2}
@@ -136,7 +136,7 @@ export const TelemetryCharts = ({ history }: { history: TelemertyResponse[] }) =
                                 type="monotone"
                                 dataKey="temperature"
                                 name="Hőmérséklet (°C)"
-                                stroke="#06b6d4"
+                                stroke="#CC79A7"
                                 fillOpacity={1}
                                 fill="url(#pressureGradient)"
                                 strokeWidth={2}

@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
-import type { ModalProps } from "../../types/Props"
-import { SubmitButton } from "./form/SubmitButton"
+import type { ModalProps } from "../../../types/common/ModalProps"
+import { SubmitButton } from "../form/SubmitButton"
 
 export const Modal = ({
     isOpen,
@@ -33,7 +33,7 @@ export const Modal = ({
                     {children}
 
                     {error && (
-                        <p className="text-rose-400 text-xs font-medium text-center pt-1 animate-in fade-in duration-200">
+                        <p className="text-cud-vermillon text-xs font-medium text-center pt-1 animate-in fade-in duration-200">
                             {error}
                         </p>
                     )}

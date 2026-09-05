@@ -114,7 +114,7 @@ export const UserView = () => {
                     <FilterBar {...FilterBarProps} />
 
                     {error &&
-                        <div className="text-left text-red-400 text-sm font-medium">{error}</div>
+                        <div className="text-left text-cud-vermillon text-sm font-medium">{error}</div>
                     }
 
                     {pagedUsers.totalElements === 0 &&

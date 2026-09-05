@@ -12,7 +12,7 @@ import { MachineFilterBar } from "../../components/machine/Filterbar"
 import { MachineCard } from "../../components/machine/Card"
 import { EditMachineModal } from "../../components/machine/modal/Edit"
 import { useNavigate } from "react-router-dom"
-import { DeleteConfirmModal } from "../../components/common/DeleteConfirmModal"
+import { DeleteConfirmModal } from "../../components/common/modal/DeleteConfirm"
 import { EmergencyStopModal } from "../../components/machine/modal/EmergencyStop"
 import type { WorkOrderResponse, WorkOrderStatusUpdateRequest } from "../../types/workorder/workOrder"
 import { getWorkOrders, updateWorkOrderStatus, updateWorkOrderUser } from "../../services/workOrderService"
@@ -231,7 +231,7 @@ export const MachineView = () => {
                     )}
 
                     {error &&
-                        <div className="text-left text-red-400 text-sm font-medium">{error}</div>
+                        <div className="text-left text-cud-vermillon text-sm font-medium">{error}</div>
                     }
 
                     {pagedMachines.totalElements === 0 && (

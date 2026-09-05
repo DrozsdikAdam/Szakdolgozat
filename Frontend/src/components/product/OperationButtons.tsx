@@ -6,7 +6,7 @@ import {
     restoreProduct,
     deleteProduct,
 } from "../../services/productService"
-import { DeleteConfirmModal } from "../common/DeleteConfirmModal"
+import { DeleteConfirmModal } from "../common/modal/DeleteConfirm"
 import { useState } from "react"
 
 export const OperationButtons = ({ product, activeTab, loadProducts, openModal, setError, setIsLoading }: OperationProps) => {
