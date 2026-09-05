@@ -15,7 +15,7 @@ import { CreateMaintenanceModal } from "../../components/maintenance/modal/Creat
 import { EditMaintenanceStatusModal } from "../../components/maintenance/modal/EditStatus"
 import { getMachines } from "../../services/machineService"
 import { useNavigate } from "react-router-dom"
-import { DeleteConfirmModal } from "../../components/common/DeleteConfirmModal"
+import { DeleteConfirmModal } from "../../components/common/modal/DeleteConfirm"
 import type { PagedResponse } from "../../types/common/PagedResponse"
 import { Pagination } from "../../components/common/Pagination"
 

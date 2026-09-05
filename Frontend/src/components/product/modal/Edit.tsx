@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { updateProduct } from "../../../services/productService"
 import { validateMaxLength, validateMinLength, validateRequired } from "../../../utils/validators"
 import type { EditModalProps } from "../../../types/product/ProductProps"
-import { Modal } from "../../common/Modal"
+import { Modal } from "../../common/modal/Modal"
 import { InputField } from "../../common/form/InputField"
 import { TextAreaField } from "../../common/form/TextAreaField"
 

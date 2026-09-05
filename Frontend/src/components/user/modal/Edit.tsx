@@ -4,7 +4,7 @@ import type { UserRole, UserUpdateRequest } from "../../../types/user/User";
 import { updateUser } from "../../../services/userService";
 import { Check, Save } from "lucide-react";
 import { ROLE_OPTIONS } from "../../../constants/roles"
-import { Modal } from "../../common/Modal"
+import { Modal } from "../../common/modal/Modal"
 import { validateUsername, validateEmail, validatePhoneNumber, validateRequired } from "../../../utils/validators"
 import { InputField } from "../../common/form/InputField"
 

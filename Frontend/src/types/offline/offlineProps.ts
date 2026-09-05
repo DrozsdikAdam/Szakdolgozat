@@ -7,5 +7,5 @@ export interface ConflictCardProps {
 
 export interface SyncConflictModalProps {
     isOpen: boolean;
-    onClose?: () => void;
+    onClose: () => void;
 }

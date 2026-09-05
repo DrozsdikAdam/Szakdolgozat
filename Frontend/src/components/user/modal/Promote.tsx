@@ -4,7 +4,7 @@ import type { UserRole } from "../../../types/user/User"
 import { promoteUser } from "../../../services/userService";
 import { ArrowUp, Check } from "lucide-react";
 import { ROLE_OPTIONS } from "../../../constants/roles"
-import { Modal } from "../../common/Modal";
+import { Modal } from "../../common/modal/Modal";
 import { validateRequired } from "../../../utils/validators";
 
 export const PromoteUser = ({ isOpen, closeModal, user, onSuccess }: UserPromoteModalProps) => {

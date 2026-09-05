@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { WorkOrderPriority, WorkOrderStatus, WorkOrderCreateRequest } from "../../../types/workorder/workOrder";
 import { createWorkOrder } from "../../../services/workOrderService";
 import { workOrderPriorityOptions, workOrderStatusOptions } from "../../../constants/workOrder";
-import { Modal } from "../../common/Modal"
+import { Modal } from "../../common/modal/Modal"
 import { validateMinLength, validatePositiveInteger, validateRequired } from "../../../utils/validators"
 import { InputField } from "../../common/form/InputField"
 import { SelectField } from "../../common/form/SelectField"

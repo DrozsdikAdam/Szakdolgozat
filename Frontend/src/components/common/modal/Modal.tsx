@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
-import type { ModalProps } from "../../types/Props"
-import { SubmitButton } from "./form/SubmitButton"
+import type { ModalProps } from "../../../types/common/ModalProps"
+import { SubmitButton } from "../form/SubmitButton"
 
 export const Modal = ({
     isOpen,

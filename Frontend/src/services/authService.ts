@@ -1,5 +1,6 @@
 import { apiFetch } from "../utils/apiFetch";
 import type { ForgotPasswordRequest, ResetPasswordRequest } from "../types/auth/auth";
+import type { UserResponse } from "../types/user/User";
 
 const baseUrl = '/api/auth';
 
@@ -19,7 +20,7 @@ export const resetPassword = async (request: ResetPasswordRequest): Promise<{ me
     return response;
 };
 
-export const getMe = async () => {
-    const response = await apiFetch(`${baseUrl}/me`);
+export const getMe = async (): Promise<UserResponse> => {
+    const response: UserResponse = await apiFetch(`${baseUrl}/me`);
     return response;
 };

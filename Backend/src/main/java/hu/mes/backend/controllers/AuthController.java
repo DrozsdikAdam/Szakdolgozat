@@ -5,12 +5,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import hu.mes.backend.dtos.auth.ForgotPasswordRequest;
 import hu.mes.backend.dtos.auth.LoginRequest;
 import hu.mes.backend.dtos.auth.LoginResponse;
 import hu.mes.backend.dtos.auth.ResetPasswordRequest;
+import hu.mes.backend.dtos.user.UserResponse;
 import hu.mes.backend.models.User;
 import hu.mes.backend.models.enums.AuditAction;
 import hu.mes.backend.models.enums.AuditEntityType;
@@ -18,11 +20,14 @@ import hu.mes.backend.security.CustomUserDetails;
 import hu.mes.backend.services.AuditLogService;
 import hu.mes.backend.services.AuthService;
 import hu.mes.backend.services.PasswordResetService;
+import hu.mes.backend.services.UserService;
 import lombok.RequiredArgsConstructor;
 
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -33,19 +38,16 @@ public class AuthController {
     private final AuthService authService;
     private final AuditLogService auditLogService;
     private final PasswordResetService passwordResetService;
+    private final UserService userService;
 
     @GetMapping("/me")
-    public ResponseEntity<LoginResponse> getMe(@AuthenticationPrincipal CustomUserDetails userDetails) {
+    public ResponseEntity<UserResponse> getMe(@AuthenticationPrincipal CustomUserDetails userDetails) {
         if (userDetails == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(authority -> authority.getAuthority().replace("ROLE_", ""))
-                .collect(Collectors.toList());
+        UserResponse user = userService.getUserById(userDetails.getId());
 
-        LoginResponse response = new LoginResponse(userDetails.getUsername(), roles);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(user);
     }
 
     @PostMapping("/login")

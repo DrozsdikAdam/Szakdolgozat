@@ -1,5 +1,5 @@
 import type { EmergencyStopModalProps } from "../../../types/machine/MachineProps"
-import { Modal } from "../../common/Modal";
+import { Modal } from "../../common/modal/Modal";
 import { useState } from "react";
 import type { EmergencyStopRequest } from "../../../types/machine/Machine";
 import { emergencyStop } from "../../../services/machineService";

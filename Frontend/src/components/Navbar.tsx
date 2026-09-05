@@ -8,15 +8,20 @@ import type { UserRole } from "../types/user/User"
 import { useNetworkStatus } from "../hooks/UseNetworkStatus"
 import { useSyncStatus } from "../hooks/UseSyncStatus"
 import { SyncConflictModal } from "./offline/modal/SyncConflict"
+import { ProfileModal } from "./profile/ProfileModal"
 
 export const Navbar = () => {
 
     const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false)
-    const [isConflictOpen, setIsConflictOpen] = useState<boolean>(false);
+    const [activeModal, setActiveModal] = useState<"profile" | "notifications" | "sync" | null>(null)
     const { user, logout } = useAuth()
     const navigate = useNavigate()
     const { isOnline, pendingCount, refreshPendingCount } = useNetworkStatus()
     const { isSyncing, conflictCount, current, total } = useSyncStatus();
+
+    const toggleModal = (modal: "profile" | "notifications" | "sync") => {
+        setActiveModal(prev => prev === modal ? null : modal);
+    };
 
     const handleLogout = async () => {
         await logout()
@@ -137,21 +142,38 @@ export const Navbar = () => {
 
                 <div className="flex items-center gap-2 shrink-0">
                     {user && (
-                        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs text-slate-300">
-                            <User size={14} className="text-indigo-400" />
+                        <button
+                            onClick={() => toggleModal("profile")}
+                            title="Profil megtekintése"
+                            className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs transition-all cursor-pointer ${activeModal === "profile"
+                                ? "bg-indigo-600/30 border-indigo-500/50 text-white shadow-sm ring-2 ring-indigo-500/20"
+                                : "bg-slate-800/50 border-slate-700/60 text-slate-300 hover:text-white hover:bg-slate-800 hover:border-slate-600"
+                                }`}
+                        >
+                            <User size={14} className={activeModal === "profile" ? "text-indigo-300" : "text-indigo-400"} />
                             <span className="font-semibold">{user.username}</span>
-                        </div>
+                        </button>
                     )}
+
+                    <ProfileModal
+                        isOpen={activeModal === "profile"}
+                        onClose={() => setActiveModal(null)}
+                    />
 
                     <button
                         onClick={handleLogout}
                         title="Kijelentkezés"
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20 transition-all duration-200"
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20 transition-all duration-200 cursor-pointer"
                     >
                         <LogOut size={16} />
                         <span className="hidden sm:inline">Kijelentkezés</span>
                     </button>
-                    <NotificationBell />
+
+                    <NotificationBell
+                        isOpen={activeModal === "notifications"}
+                        onToggle={() => toggleModal("notifications")}
+                        onClose={() => setActiveModal(null)}
+                    />
 
                     {isSyncing && (
                         <div
@@ -167,7 +189,7 @@ export const Navbar = () => {
                         <button
                             onClick={() => {
                                 refreshPendingCount();
-                                setIsConflictOpen(!isConflictOpen);
+                                toggleModal("sync");
                             }}
                             title={
                                 conflictCount > 0
@@ -176,9 +198,11 @@ export const Navbar = () => {
                                         ? (pendingCount > 0 ? `${pendingCount} várakozó offline kérés` : "Online kapcsolat")
                                         : `${pendingCount} várakozó offline kérés (Nincs internet)`
                             }
-                            className={`relative p-2 rounded-xl border transition-all flex items-center ${conflictCount > 0
-                                ? "bg-rose-500/20 border-rose-500/40 hover:bg-rose-500/30 text-rose-400"
-                                : "bg-slate-800/80 border-slate-700/60 hover:bg-slate-700/80"
+                            className={`relative p-2 rounded-xl border transition-all flex items-center cursor-pointer ${activeModal === "sync"
+                                ? "bg-slate-800 text-white border-indigo-500/50 shadow-sm"
+                                : conflictCount > 0
+                                    ? "bg-rose-500/20 border-rose-500/40 hover:bg-rose-500/30 text-rose-400"
+                                    : "bg-slate-800/80 border-slate-700/60 hover:bg-slate-700/80"
                                 }`}
                         >
                             {isOnline ? (
@@ -195,8 +219,8 @@ export const Navbar = () => {
                         </button>
 
                         <SyncConflictModal
-                            isOpen={isConflictOpen}
-                            onClose={() => setIsConflictOpen(false)}
+                            isOpen={activeModal === "sync"}
+                            onClose={() => setActiveModal(null)}
                         />
                     </div>
 

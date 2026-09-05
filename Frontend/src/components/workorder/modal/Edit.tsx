@@ -4,7 +4,7 @@ import type { WorkOrderPriority, WorkOrderUpdateRequest } from "../../../types/w
 import { Pencil } from "lucide-react";
 import { updateWorkOrder } from "../../../services/workOrderService";
 import { workOrderPriorityOptions } from "../../../constants/workOrder";
-import { Modal } from "../../common/Modal"
+import { Modal } from "../../common/modal/Modal"
 import { validateMinLength, validatePositiveInteger, validateRequired } from "../../../utils/validators"
 import { InputField } from "../../common/form/InputField"
 import { SelectField } from "../../common/form/SelectField"

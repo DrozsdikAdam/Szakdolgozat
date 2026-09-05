@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Modal } from "../../common/Modal";
+import { Modal } from "../../common/modal/Modal";
 import type { MaintenanceStatus, MaintenanceType } from "../../../types/maintenance/MaintenanceStatus";
 import { Plus } from "lucide-react";
 import type { MachineMaintenanceCreateRequest } from "../../../types/maintenance/MachineMaintenance";
