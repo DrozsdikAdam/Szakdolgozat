@@ -115,8 +115,9 @@ public class DataInitializer implements CommandLineRunner {
 		};
 
 		for (User user : users) {
-			Optional<User> userOpt = userRepository.findByName(user.getName());
-			if (userOpt.isEmpty()) {
+			boolean exists = userRepository.findByName(user.getName()).isPresent()
+					|| userRepository.findByEmail(user.getEmail()).isPresent();
+			if (!exists) {
 				user.setPassword(passwordEncoder.encode(user.getPassword()));
 				user.setActive(true);
 				userRepository.save(user);

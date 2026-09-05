@@ -1,13 +1,13 @@
 import { createContext, useState, useEffect, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
 import { apiFetch } from "../utils/apiFetch";
-import type { User } from "../types/user/User";
+import type { UserResponse } from "../types/user/User";
 import type { AuthContextType } from "../types/AuthContextType";
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<UserResponse | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(true);
         setError(null);
         try {
-            const response: User = await apiFetch("/api/auth/me");
+            const response: UserResponse = await apiFetch("/api/auth/me");
             setUser(response);
         } catch (error) {
             setUser(null);
@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(true);
         setError(null);
         try {
-            const response: User = await apiFetch("/api/auth/login", {
+            const response: UserResponse = await apiFetch("/api/auth/login", {
                 method: "POST",
                 body: JSON.stringify({ username, password })
             })
@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     }, []);
 
-    const values = useMemo(() => ({ user, loading, error, login, logout }), [user, loading, error, login, logout]);
+    const values = useMemo(() => ({ user, loading, error, login, logout, checkSession }), [user, loading, error, login, logout, checkSession]);
 
     useEffect(() => {
         checkSession();

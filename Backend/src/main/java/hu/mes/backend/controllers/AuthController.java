@@ -5,12 +5,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import hu.mes.backend.dtos.auth.ForgotPasswordRequest;
 import hu.mes.backend.dtos.auth.LoginRequest;
-import hu.mes.backend.dtos.auth.LoginResponse;
 import hu.mes.backend.dtos.auth.ResetPasswordRequest;
 import hu.mes.backend.dtos.user.UserResponse;
 import hu.mes.backend.models.User;
@@ -24,11 +22,7 @@ import hu.mes.backend.services.UserService;
 import lombok.RequiredArgsConstructor;
 
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -51,17 +45,13 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         CustomUserDetails userDetails = authService.authenticateUser(
                 loginRequest.getUsername(),
                 loginRequest.getPassword());
 
         ResponseCookie accessCookie = authService.generateAccessCookie(userDetails);
         ResponseCookie refreshCookie = authService.generateRefreshCookie(userDetails);
-
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(authority -> authority.getAuthority().replace("ROLE_", ""))
-                .collect(Collectors.toList());
 
         auditLogService.log(
                 userDetails.getUsername(),
@@ -71,7 +61,7 @@ public class AuthController {
                 userDetails.getUsername(),
                 "Sikeres bejelentkezés");
 
-        LoginResponse responseBody = new LoginResponse(userDetails.getUsername(), roles);
+        UserResponse responseBody = userService.getUserById(userDetails.getId());
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())

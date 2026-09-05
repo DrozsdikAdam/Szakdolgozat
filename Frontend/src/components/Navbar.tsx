@@ -163,10 +163,9 @@ export const Navbar = () => {
                     <button
                         onClick={handleLogout}
                         title="Kijelentkezés"
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20 transition-all duration-200 cursor-pointer"
+                        className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20 transition-all duration-200 cursor-pointer flex items-center justify-center"
                     >
-                        <LogOut size={16} />
-                        <span className="hidden sm:inline">Kijelentkezés</span>
+                        <LogOut size={18} />
                     </button>
 
                     <NotificationBell

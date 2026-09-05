@@ -60,7 +60,7 @@ export const NotificationBell = ({ isOpen: controlledIsOpen, onToggle, onClose }
 
     useEffect(() => {
         loadNotifications();
-        const interval = setInterval(loadNotifications, 5000);
+        const interval = setInterval(loadNotifications, 15000);
         return () => clearInterval(interval);
     }, []);
 
@@ -70,8 +70,8 @@ export const NotificationBell = ({ isOpen: controlledIsOpen, onToggle, onClose }
                 onClick={handleToggle}
                 title="Értesítések"
                 className={`relative p-2 rounded-xl transition-all border ${isOpen
-                        ? "bg-slate-800 text-white border-indigo-500/50 shadow-sm"
-                        : "text-slate-300 hover:text-white hover:bg-slate-800/80 border-slate-700/60"
+                    ? "bg-slate-800 text-white border-indigo-500/50 shadow-sm"
+                    : "text-slate-300 hover:text-white hover:bg-slate-800/80 border-slate-700/60"
                     }`}
             >
                 <Bell size={18} />

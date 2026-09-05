@@ -59,13 +59,13 @@ public class ProductService {
     }
 
     public PagedResponse<ProductResponse> getAllProducts(Pageable pageable) {
-        Page<Product> page = productRepository.findByActiveTrue(pageable);
+        Page<Product> page = productRepository.findByActiveTrueAndDeletedFalse(pageable);
         return PagedResponse.of(page, productMapper.convertToResponses(page.getContent()));
     }
 
     @Cacheable(key = "'active'")
     public List<ProductResponse> getActiveProducts() {
-        return productMapper.convertToResponses(productRepository.findByActiveTrue());
+        return productMapper.convertToResponses(productRepository.findByActiveTrueAndDeletedFalse());
     }
 
     public Product getProductEntityById(UUID id) {
@@ -112,11 +112,11 @@ public class ProductService {
     }
 
     public List<ProductResponse> getDeletedProducts() {
-        return productMapper.convertToResponses(productRepository.findDeletedProducts());
+        return productMapper.convertToResponses(productRepository.findByDeletedTrue());
     }
 
     public List<ProductResponse> getInactiveProducts() {
-        return productMapper.convertToResponses(productRepository.findByActiveFalse());
+        return productMapper.convertToResponses(productRepository.findByActiveFalseAndDeletedFalse());
     }
 
     @CacheEvict(allEntries = true)
@@ -133,7 +133,7 @@ public class ProductService {
     @CacheEvict(allEntries = true)
     @Transactional
     public void restoreProduct(UUID id) {
-        Product product = productRepository.findDeletedById(id)
+        Product product = productRepository.findByIdAndDeletedTrue(id)
                 .orElseThrow(() -> new EntityNotFoundException("A keresett termék nem található!"));
         product.setDeleted(false);
         product.setActive(true);

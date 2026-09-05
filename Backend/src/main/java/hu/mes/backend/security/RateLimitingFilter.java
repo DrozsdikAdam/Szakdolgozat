@@ -75,11 +75,11 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
     private Bucket createBucket(Boolean isLogin) {
 
-        Integer capacity = isLogin ? 10 : 100;
+        Integer capacity = isLogin ? 10 : 300;
         Integer refillTime = 1;
 
         return Bucket.builder()
-                .addLimit(Bandwidth.classic(capacity, Refill.intervally(capacity, Duration.ofMinutes(refillTime))))
+                .addLimit(Bandwidth.classic(capacity, Refill.greedy(capacity, Duration.ofMinutes(refillTime))))
                 .build();
     }
 
