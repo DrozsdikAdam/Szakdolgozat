@@ -77,12 +77,13 @@ public class OeeService {
 				? (totalProduced.doubleValue() / potential.doubleValue()) * 100.0
 				: 100.0;
 
+		performancePercentage = Math.min(100.0, performancePercentage);
+
 		Double oeePercentage = (availabilityPercentage / 100.0)
 				* (performancePercentage / 100.0)
 				* (qualityPercentage / 100.0)
 				* 100.0;
 
-		performancePercentage = Math.min(100.0, performancePercentage);
 		oeePercentage = Math.min(100.0, oeePercentage);
 
 		return OeeResponse.builder()
