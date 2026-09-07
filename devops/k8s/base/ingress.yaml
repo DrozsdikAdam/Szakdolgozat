@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mes-ingress
+  labels:
+    app.kubernetes.io/name: mes-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/limit-rps: "20"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: mes.localhost
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/api"
+            backend:
+              service:
+                name: mes-backend
+                port:
+                  number: 8080
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: mes-frontend
+                port:
+                  number: 80
