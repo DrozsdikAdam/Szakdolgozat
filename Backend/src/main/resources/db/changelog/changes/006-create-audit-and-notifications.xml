@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="006-create-audit-and-notifications" author="mes-admin">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="audit_logs" />
+            </not>
+        </preConditions>
+
+        <createTable tableName="audit_logs">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="username" type="VARCHAR(255)">
+                <constraints nullable="false" />
+            </column>
+            <column name="user_id" type="UUID" />
+            <column name="action" type="VARCHAR(50)">
+                <constraints nullable="false" />
+            </column>
+            <column name="entity_type" type="VARCHAR(50)">
+                <constraints nullable="false" />
+            </column>
+            <column name="entity_id" type="VARCHAR(255)" />
+            <column name="ip_address" type="VARCHAR(100)" />
+            <column name="details" type="VARCHAR(2000)" />
+            <column name="timestamp" type="TIMESTAMP">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+
+        <createTable tableName="notifications">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="title" type="VARCHAR(255)">
+                <constraints nullable="false" />
+            </column>
+            <column name="message" type="VARCHAR(1000)">
+                <constraints nullable="false" />
+            </column>
+            <column name="type" type="VARCHAR(50)">
+                <constraints nullable="false" />
+            </column>
+            <column name="is_read" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false" />
+            </column>
+            <column name="link" type="VARCHAR(255)" />
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false" />
+            </column>
+            <column name="updated_at" type="TIMESTAMP">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+
+    </changeSet>
+
+</databaseChangeLog>

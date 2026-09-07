@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="003-create-bom-items" author="mes-admin">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="bom_items" />
+            </not>
+        </preConditions>
+
+        <createTable tableName="bom_items">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="parent_product_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_bom_parent_product" references="products(id)" />
+            </column>
+            <column name="component_product_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_bom_component_product" references="products(id)" />
+            </column>
+            <column name="quantity" type="DECIMAL(19, 4)">
+                <constraints nullable="false" />
+            </column>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false" />
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false" />
+            </column>
+            <column name="updated_at" type="TIMESTAMP">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+
+    </changeSet>
+
+</databaseChangeLog>

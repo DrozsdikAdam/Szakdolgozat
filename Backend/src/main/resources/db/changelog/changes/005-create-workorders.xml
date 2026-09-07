@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="005-create-workorders" author="mes-admin">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="work_orders" />
+            </not>
+        </preConditions>
+
+        <createTable tableName="work_orders">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="order_number" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true" />
+            </column>
+            <column name="product_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_work_orders_product" references="products(id)" />
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints foreignKeyName="fk_work_orders_assigned_user" references="users(id)" />
+            </column>
+            <column name="customer_name" type="VARCHAR(100)">
+                <constraints nullable="false" />
+            </column>
+            <column name="target_quantity" type="DECIMAL(19, 4)">
+                <constraints nullable="false" />
+            </column>
+            <column name="produced_quantity" type="DECIMAL(19, 4)">
+                <constraints nullable="false" />
+            </column>
+            <column name="scrap_quantity" type="DECIMAL(19, 4)">
+                <constraints nullable="false" />
+            </column>
+            <column name="status" type="VARCHAR(50)">
+                <constraints nullable="false" />
+            </column>
+            <column name="priority" type="VARCHAR(50)">
+                <constraints nullable="false" />
+            </column>
+            <column name="start_date" type="TIMESTAMP" />
+            <column name="end_date" type="TIMESTAMP" />
+            <column name="version" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false" />
+            </column>
+            <column name="updated_at" type="TIMESTAMP">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+
+    </changeSet>
+
+</databaseChangeLog>

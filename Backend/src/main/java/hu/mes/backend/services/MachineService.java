@@ -1,0 +1,267 @@
+package hu.mes.backend.services;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import hu.mes.backend.dtos.common.PagedResponse;
+import hu.mes.backend.dtos.machine.EmergencyStopRequest;
+import hu.mes.backend.dtos.machine.MachineCreateRequest;
+import hu.mes.backend.dtos.machine.MachineResponse;
+import hu.mes.backend.dtos.machine.MachineUpdateRequest;
+import hu.mes.backend.dtos.maintenance.MachineMaintenanceCreateRequest;
+import hu.mes.backend.mappers.MachineMapper;
+import hu.mes.backend.models.Machine;
+import hu.mes.backend.models.User;
+import hu.mes.backend.models.enums.AuditAction;
+import hu.mes.backend.models.enums.AuditEntityType;
+import hu.mes.backend.models.enums.MachineStatus;
+import hu.mes.backend.models.enums.MachineType;
+import hu.mes.backend.models.enums.MaintenanceStatus;
+import hu.mes.backend.models.enums.MaintenanceType;
+import hu.mes.backend.models.enums.NotificationType;
+import hu.mes.backend.repositories.MachineRepository;
+import hu.mes.backend.repositories.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+@CacheConfig(cacheNames = "machines")
+public class MachineService {
+
+    private final MachineMaintenanceService machineMaintenanceService;
+    private final MachineRepository machineRepository;
+    private final MachineMapper machineMapper;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
+
+    @Cacheable(key = "'all'")
+    public PagedResponse<MachineResponse> getAllMachines(Pageable pageable) {
+        Page<Machine> page = machineRepository.findByActiveTrue(pageable);
+        return PagedResponse.of(page, machineMapper.convertToResponses(page.getContent()));
+    }
+
+    @Cacheable(key = "#id")
+    public MachineResponse getMachineById(UUID id) {
+        Machine machine = getMachineEntityById(id);
+        return machineMapper.convertToResponse(machine);
+    }
+
+    public List<MachineResponse> getMachinesByStatus(MachineStatus status) {
+        List<Machine> machines = machineRepository.findByStatus(status);
+        List<MachineResponse> responses = machineMapper.convertToResponses(machines);
+        return responses;
+    }
+
+    public List<MachineResponse> getMachinesByType(MachineType type) {
+        List<Machine> machines = machineRepository.findByType(type);
+        List<MachineResponse> responses = machineMapper.convertToResponses(machines);
+        return responses;
+    }
+
+    public List<MachineResponse> getMachinesByUserId(UUID id) {
+        List<Machine> machines = machineRepository.findByAssignedUserId(id);
+        List<MachineResponse> responses = machineMapper.convertToResponses(machines);
+        return responses;
+    }
+
+    public List<MachineResponse> getMachinesByTypeAndStatus(MachineType type, MachineStatus status) {
+        List<Machine> machines = machineRepository.findByTypeAndStatus(type, status);
+        List<MachineResponse> responses = machineMapper.convertToResponses(machines);
+        return responses;
+    }
+
+    @CacheEvict(allEntries = true)
+    @Transactional
+    public MachineResponse createMachine(MachineCreateRequest request) {
+        if (request == null)
+            throw new IllegalArgumentException("A gép adatai nem lehetnek üresek!");
+        boolean exists = machineRepository.existsByCode(request.getCode());
+        if (exists)
+            throw new IllegalArgumentException("A megadott gépkód már létezik!");
+        User user = null;
+        if (request.getAssignedUserId() != null
+                && userRepository.existsById(request.getAssignedUserId()))
+            user = userRepository.findById(request.getAssignedUserId())
+                    .orElseThrow(() -> new EntityNotFoundException("A keresett felhasználó nem található!"));
+
+        Machine machine = Machine.builder()
+                .code(request.getCode())
+                .name(request.getName())
+                .type(request.getType())
+                .status(request.getStatus())
+                .manufacturer(request.getManufacturer())
+                .model(request.getModel())
+                .serialNumber(request.getSerialNumber())
+                .warrantyNumber(request.getWarrantyNumber())
+                .warrantyEndDate(request.getWarrantyEndDate())
+                .idealCycleTimeSeconds(request.getIdealCycleTimeSeconds())
+                .targetPcsPerHour(request.getTargetPcsPerHour())
+                .location(request.getLocation())
+                .assignedUser(user)
+                .build();
+
+        machineRepository.save(machine);
+        auditLogService.log("USER", null, AuditAction.CREATE, AuditEntityType.MACHINE, machine.getCode(),
+                "Új gép regisztrálva: " + machine.getName() + " (" + machine.getCode() + ")");
+        return machineMapper.convertToResponse(machine);
+    }
+
+    @CacheEvict(allEntries = true)
+    @Transactional
+    public MachineResponse updateMachine(UUID id, MachineUpdateRequest request) {
+        if (request == null)
+            throw new IllegalArgumentException("A gép adatai nem lehetnek üresek!");
+
+        Machine machine = getMachineEntityById(id);
+
+        if (!request.getCode().equals(machine.getCode())
+                && machineRepository.existsByCode(request.getCode()))
+            throw new IllegalArgumentException("A gép kódja már létezik!");
+
+        if (request.getAssignedUserId() != null
+                && !userRepository.existsById(request.getAssignedUserId()))
+            throw new IllegalArgumentException("A kijelölt felhasználó nem létezik!");
+
+        machine.setCode(request.getCode());
+        machine.setName(request.getName());
+        machine.setType(request.getType());
+        machine.setStatus(request.getStatus());
+        machine.setManufacturer(request.getManufacturer());
+        machine.setModel(request.getModel());
+        machine.setSerialNumber(request.getSerialNumber());
+        machine.setWarrantyNumber(request.getWarrantyNumber());
+        machine.setWarrantyEndDate(request.getWarrantyEndDate());
+        machine.setIdealCycleTimeSeconds(request.getIdealCycleTimeSeconds());
+        machine.setTargetPcsPerHour(request.getTargetPcsPerHour());
+        machine.setLocation(request.getLocation());
+        machine.setAssignedUser(request.getAssignedUserId() != null
+                ? userRepository.findById(request.getAssignedUserId())
+                        .orElseThrow(() -> new EntityNotFoundException("A keresett felhasználó nem található!"))
+                : null);
+
+        machineRepository.save(machine);
+        auditLogService.log("USER", null, AuditAction.UPDATE, AuditEntityType.MACHINE, machine.getCode(),
+                "Gép adatai módosítva: " + machine.getName());
+        return machineMapper.convertToResponse(machine);
+    }
+
+    @CacheEvict(allEntries = true)
+    @Transactional
+    public MachineResponse updateMachineStatus(UUID id, MachineStatus status) {
+
+        Machine machine = getMachineEntityById(id);
+
+        machine.setStatus(status);
+        machineRepository.save(machine);
+        auditLogService.log("USER", null, AuditAction.STATUS_CHANGE, AuditEntityType.MACHINE, machine.getCode(),
+                "Gép állapota módosítva: " + status.getDisplayValue());
+        return machineMapper.convertToResponse(machine);
+    }
+
+    @CacheEvict(allEntries = true)
+    @Transactional
+    public MachineResponse updateMachineUser(UUID id, UUID userId) {
+
+        User user = null;
+        Machine machine = getMachineEntityById(id);
+        if (userId != null)
+            user = userRepository.findById(userId)
+                    .orElseThrow(() -> new EntityNotFoundException("A keresett felhasználó nem található!"));
+
+        machine.setAssignedUser(user);
+        machineRepository.save(machine);
+        return machineMapper.convertToResponse(machine);
+    }
+
+    @Transactional
+    @CacheEvict(allEntries = true)
+    public void deleteMachine(UUID id) {
+
+        Machine machine = getMachineEntityById(id);
+
+        machine.setDeletedAt(LocalDateTime.now());
+        machine.setActive(false);
+        machineRepository.save(machine);
+    }
+
+    @Transactional
+    @CacheEvict(allEntries = true)
+    public void restoreMachine(UUID id) {
+
+        Machine machine = machineRepository.findByIdAndDeletedAtNotNull(id)
+                .orElseThrow(() -> new EntityNotFoundException("A keresett gép nem található!"));
+
+        machine.setDeletedAt(null);
+        machine.setActive(true);
+        machineRepository.save(machine);
+    }
+
+    @Transactional
+    @CacheEvict(allEntries = true)
+    public void updateMachineActiveStatus(UUID id, boolean active) {
+        Machine machine = getMachineEntityById(id);
+        machine.setActive(active);
+        machineRepository.save(machine);
+    }
+
+    public List<MachineResponse> getDeletedMachines() {
+        List<Machine> machines = machineRepository.findByDeletedAtNotNull();
+        return machineMapper.convertToResponses(machines);
+    }
+
+    public List<MachineResponse> getInactiveMachines() {
+        List<Machine> machines = machineRepository.findByActiveFalse();
+        return machineMapper.convertToResponses(machines);
+    }
+
+    @CacheEvict(allEntries = true)
+    public MachineResponse emergencyStop(UUID id, EmergencyStopRequest request) {
+        Machine machine = getMachineEntityById(id);
+        machine.setStatus(MachineStatus.ERROR);
+        machineRepository.save(machine);
+
+        MachineMaintenanceCreateRequest req = MachineMaintenanceCreateRequest.builder()
+                .machineId(id)
+                .machineCode(machine.getCode())
+                .machineName(machine.getName())
+                .type(MaintenanceType.CORRECTIVE)
+                .title("Vészleállítás: " + request.getReason())
+                .rootCause(request.getReason())
+                .description(request.getDescription() != null ? request.getDescription()
+                        : "Operátori vészleállítás történt.")
+                .status(MaintenanceStatus.SCHEDULED)
+                .technicianId(request.getTechnicianId())
+                .start(LocalDateTime.now())
+                .build();
+
+        notificationService.send("Vészleállítás: " + machine.getCode(),
+                "Vészleállítás történt a(z) " + machine.getName() + " gépen. Ok: " + request.getReason(),
+                NotificationType.ERROR,
+                "/machine");
+
+        auditLogService.log("OPERATOR", null, AuditAction.EMERGENCY_STOP, AuditEntityType.MACHINE, machine.getCode(),
+                "🚨 Vészleállítás történt! Ok: " + request.getReason());
+
+        machineMaintenanceService.createMaintenance(req);
+        return machineMapper.convertToResponse(machine);
+    }
+
+    private Machine getMachineEntityById(UUID id) {
+        return machineRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("A keresett gép nem található!"));
+    }
+
+}
