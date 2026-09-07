@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: haproxy-config
+  namespace: platform-infra
+data:
+  haproxy.cfg: |
+    defaults
+      mode tcp
+      timeout connect 5s
+      timeout client  50s
+      timeout server  50s
+
+    listen mssql
+      bind *:1433
+      mode tcp
+      server mssql mssql:1433 check
+      
+    listen oracle
+      bind *:1521
+      mode tcp
+      server oracle oracle:1521 check

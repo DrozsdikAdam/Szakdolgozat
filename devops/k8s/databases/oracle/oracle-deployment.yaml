@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oracle
+  namespace: platform-infra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oracle
+  template:
+    metadata:
+      labels:
+        app: oracle
+    spec:
+      containers:
+        - name: oracle
+          image: gvenzl/oracle-free:latest
+          ports:
+            - containerPort: 1521
+          env:
+            - name: APP_USER
+              value: "mesuser"
+            - name: APP_USER_PASSWORD
+              value: "mespassword"
+            - name: ORACLE_PASSWORD
+              value: "MesStrongPass123!"
+            - name: ORACLE_DATABASE
+              value: "mesdb"
+          resources:
+            requests:
+              memory: "1024Mi"
+              cpu: "500m"
+            limits:
+              memory: "3Gi"
+              cpu: "2000m"
