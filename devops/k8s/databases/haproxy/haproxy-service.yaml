@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: haproxy
+  namespace: platform-infra
+spec:
+  type: ClusterIP
+  selector:
+    app: haproxy
+  ports:
+    - port: 1433
+      targetPort: 1433
+      name: mssql
+    - port: 1521
+      targetPort: 1521
+      name: oracle

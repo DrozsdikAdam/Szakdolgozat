@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app-mes
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app-generic-demo
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-infra
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-monitoring
