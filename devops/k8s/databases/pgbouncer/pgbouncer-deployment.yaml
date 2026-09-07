@@ -33,6 +33,8 @@ spec:
               value: "transaction"
             - name: MAX_CLIENT_CONN
               value: "100"
+            - name: AUTH_TYPE
+              value: "scram-sha-256"
           resources:
             requests:
               memory: "64Mi"
