@@ -1,0 +1,66 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-backup
+  namespace: platform-infra
+spec:
+  # minute hour day_of_month month day_of_week
+  schedule: "0 2 * * *" # every day at 2 AM
+  concurrencyPolicy: "Forbid"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: db-backup
+        spec:
+          restartPolicy: OnFailure
+          volumes:
+            - name: staging-volume
+              persistentVolumeClaim:
+                claimName: backup-staging-pvc
+          initContainers:
+            - name: postgres-dump
+              image: bitnami/postgresql:latest
+              envFrom:
+                - secretRef:
+                    name: backup-secret
+                - configMapRef:
+                    name: backup-config
+              volumeMounts:
+                - name: staging-volume
+                  mountPath: /staging
+              command: ["/bin/sh", "-c"]
+              # stops when error -> creates a timestamp -> compresses the dump -> updates the most recent -> creates a catalog entry -> uploads catalog entry
+              args:
+                - >
+                  set -e;
+                  TIMESTAMP=$(date +%Y%m%d_%H%M%S);
+                  echo "Creating backup: $TIMESTAMP";
+                  PGPASSWORD=$DB_PASSWORD pg_dump -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME | gzip > /staging/backup_${TIMESTAMP}.sql.gz;
+                  cp /staging/backup_${TIMESTAMP}.sql.gz /staging/latest.sql.gz;
+                  PGPASSWORD=$DB_PASSWORD psql -h $DB_PRIMARY_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "CREATE TABLE IF NOT EXISTS backup_catalog (id SERIAL PRIMARY KEY, filename TEXT, size_bytes BIGINT, status TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
+                  PGPASSWORD=$DB_PASSWORD psql -h $DB_PRIMARY_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "INSERT INTO backup_catalog (filename, size_bytes, status) VALUES ('backup_${TIMESTAMP}.sql.gz', $(stat -c%s /staging/backup_${TIMESTAMP}.sql.gz), 'STAGED_LOCALLY');";
+                  echo "Backup completed successfully."
+
+          containers:
+            - name: s3-sync
+              image: minio/mc:latest
+              envFrom:
+                - secretRef:
+                    name: backup-secret
+                - configMapRef:
+                    name: backup-config
+              volumeMounts:
+                - name: staging-volume
+                  mountPath: /staging
+              command: ["/bin/sh", "-c"]
+              # sets up the s3 alias -> syncs the backup to minio
+              args:
+                - >
+                  set -e;
+                  mc alias set remote $S3_ENDPOINT $S3_ACCESS_KEY $S3_SECRET_KEY;
+                  mc cp /staging/latest.sql.gz remote/$S3_BUCKET/latest.sql.gz && mc mirror --overwrite /staging remote/$S3_BUCKET/archive/;
+                  echo "Backup uploaded successfully."
