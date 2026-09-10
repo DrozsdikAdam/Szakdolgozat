@@ -8,6 +8,7 @@ export class AuditLog extends Model {
     declare action: AuditAction;
     declare details: string;
     declare status: AuditStatus;
+    declare createdAt: Date;
 
 }
 
@@ -30,6 +31,10 @@ AuditLog.init(
         status: {
             type: DataTypes.ENUM('SUCCESS', 'FAILED'),
             defaultValue: "SUCCESS"
+        },
+        createdAt: {
+            type: DataTypes.DATE,
+            defaultValue: DataTypes.NOW
         }
     },
     {

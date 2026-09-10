@@ -9,6 +9,8 @@ export class BackupRecord extends Model {
     declare sizeBytes: number;
     declare status: BackupStatus;
     declare s3Path: string;
+    declare createdAt: Date;
+    declare updatedAt: Date;
 
 }
 
@@ -36,6 +38,14 @@ BackupRecord.init(
         s3Path: {
             type: DataTypes.STRING,
             allowNull: true
+        },
+        createdAt: {
+            type: DataTypes.DATE,
+            defaultValue: DataTypes.NOW
+        },
+        updatedAt: {
+            type: DataTypes.DATE,
+            defaultValue: DataTypes.NOW
         }
     },
     {

@@ -1,17 +1,19 @@
 import type { BackupStatus } from "../types/backup.types.js"
 
-export interface BackupCatalogItemDto {
+export interface BackupResponseDto {
     id: string
     filename: string
     size: number
     status: BackupStatus
+    s3Path: string
     createdAt: string
+    updatedAt: string
 }
 
 export interface BackupHistoryResponseDto {
-    backups: BackupCatalogItemDto[]
+    backups: BackupResponseDto[]
     totalCount: number
-    latestBackup?: BackupCatalogItemDto
+    latestBackup?: BackupResponseDto
 }
 
 export interface JobTriggerResponseDto {
