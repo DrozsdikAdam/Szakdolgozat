@@ -3,4 +3,5 @@ export type FeatureFlagName = 'rate_limiting'
     | 'haproxy'
     | 'cronjob_backup'
     | 'hpa_scaling'
-    | 'maintenance_mode';
+    | 'maintenance_mode'
+    | 'vpa_scaling';

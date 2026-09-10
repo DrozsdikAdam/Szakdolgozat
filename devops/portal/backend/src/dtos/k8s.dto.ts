@@ -20,3 +20,22 @@ export interface UpdateHpaDto {
     currentMemoryUsage?: number;
     targetMemoryUtil?: number;
 }
+
+export interface VpaOverviewDto {
+    name: string;
+    updateMode: 'Auto' | 'Off';
+    minAllowedCpu?: string;
+    minAllowedMemory?: string;
+    maxAllowedCpu?: string;
+    maxAllowedMemory?: string;
+    targetCpu?: string;
+    targetMemory?: string;
+}
+
+export interface UpdateVpaDto {
+    updateMode: 'Auto' | 'Off';
+    minAllowedCpu: string;
+    minAllowedMemory: string;
+    maxAllowedCpu: string;
+    maxAllowedMemory: string;
+}
