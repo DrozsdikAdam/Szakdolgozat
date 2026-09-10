@@ -1,11 +1,11 @@
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../config/database.js";
-import type { AuditStatus } from "../types/Audit.types.js";
+import type { AuditAction, AuditStatus } from "../types/Audit.types.js";
 
 export class AuditLog extends Model {
 
     declare id: string;
-    declare action: string;
+    declare action: AuditAction;
     declare details: string;
     declare status: AuditStatus;
 
