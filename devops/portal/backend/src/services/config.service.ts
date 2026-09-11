@@ -105,7 +105,7 @@ export class ConfigService {
         }
     }
 
-    toggleFeature = async (request: FeatureTogglePayload) => {
+    toggleFeature = async (request: FeatureTogglePayload): Promise<FeatureFlag> => {
         try {
             const [flag] = await FeatureFlag.findOrCreate({ where: { name: request.name }, defaults: { name: request.name, enabled: request.enabled } });
 
@@ -116,10 +116,12 @@ export class ConfigService {
             await flag.save();
 
             await this.auditService.logAudit('TOGGLE_FEATURE', `Feature flag ${request.name} set to ${request.enabled}`);
+
+            return flag;
         } catch (error) {
             await this.auditService.logAudit('TOGGLE_FEATURE', `Feature flag ${request.name} set to ${request.enabled}`, 'FAILED');
 
-            console.error('Error toggling function:', error);
+            console.error('Error toggling feature:', error);
             throw error;
         }
     }

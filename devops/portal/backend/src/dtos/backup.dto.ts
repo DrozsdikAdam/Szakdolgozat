@@ -13,7 +13,7 @@ export interface BackupResponseDto {
 export interface BackupHistoryResponseDto {
     backups: BackupResponseDto[]
     totalCount: number
-    latestBackup?: BackupResponseDto
+    latestBackup?: BackupResponseDto | undefined
 }
 
 export interface JobTriggerResponseDto {
