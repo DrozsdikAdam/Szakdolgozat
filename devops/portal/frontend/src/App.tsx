@@ -7,6 +7,7 @@ import { Card } from './components/common/Card'
 import { Button } from './components/common/Button'
 import { ArrowLeft } from 'lucide-react'
 import { PlatformApi } from './client/api/platform'
+import { ClusterOverviewTab } from './components/dashboard/ClusterOverviewTab'
 
 function App() {
   const [activeView, setActiveView] = useState<ServiceId | 'hub'>('hub')
@@ -74,23 +75,27 @@ function App() {
                 </Button>
               </div>
 
-              <Card
-                title={currentService?.label}
-                subtitle={currentService?.description}
-                hoverEffect={false}
-              >
-                <div className="py-12 flex flex-col items-center justify-center text-center">
-                  <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 text-cud-skyblue mb-4">
-                    {currentService?.iconName}
+              {activeView === 'cluster' ? (
+                <ClusterOverviewTab />
+              ) : (
+                <Card
+                  title={currentService?.label}
+                  subtitle={currentService?.description}
+                  hoverEffect={false}
+                >
+                  <div className="py-12 flex flex-col items-center justify-center text-center">
+                    <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 text-cud-skyblue mb-4">
+                      {currentService?.iconName}
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-100">
+                      {currentService?.label} vezérlőpult
+                    </h3>
+                    <p className="text-sm text-slate-400 mt-2 max-w-md">
+                      A szolgáltatás részletes konfigurációs és monitorozási felülete a következő lépésben épül fel.
+                    </p>
                   </div>
-                  <h3 className="text-xl font-bold text-slate-100">
-                    {currentService?.label} vezérlőpult
-                  </h3>
-                  <p className="text-sm text-slate-400 mt-2 max-w-md">
-                    A szolgáltatás részletes konfigurációs és monitorozási felülete a következő lépésben épül fel.
-                  </p>
-                </div>
-              </Card>
+                </Card>
+              )}
             </div>
         }
 
