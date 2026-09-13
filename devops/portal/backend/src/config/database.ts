@@ -15,6 +15,10 @@ export const sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: dbPath,
     logging: false,
+    retry: {
+        max: 5,
+        match: [/SQLITE_BUSY/]
+    }
 });
 
 

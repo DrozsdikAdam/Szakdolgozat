@@ -32,10 +32,10 @@ export const ServiceGrid = ({ services, onSelectService, selectedServiceId }: Se
                     className="w-full sm:w-80"
                 />
 
-                <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+                <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
                     <button
                         type="button"
-                        className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${activeFilter === "all"
+                        className={`w-full sm:w-38 py-2 rounded-lg text-xs font-medium text-center transition-all duration-200 cursor-pointer ${activeFilter === "all"
                             ? "bg-cud-skyblue text-slate-950 font-semibold shadow-sm"
                             : "bg-slate-900/60 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-slate-200"
                             }`}
@@ -45,7 +45,7 @@ export const ServiceGrid = ({ services, onSelectService, selectedServiceId }: Se
                     </button>
                     <button
                         type="button"
-                        className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${activeFilter === "configured"
+                        className={`w-full sm:w-38 py-2 rounded-lg text-xs font-medium text-center transition-all duration-200 cursor-pointer ${activeFilter === "configured"
                             ? "bg-cud-skyblue text-slate-950 font-semibold shadow-sm"
                             : "bg-slate-900/60 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-slate-200"
                             }`}
@@ -55,7 +55,7 @@ export const ServiceGrid = ({ services, onSelectService, selectedServiceId }: Se
                     </button>
                     <button
                         type="button"
-                        className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${activeFilter === "pending"
+                        className={`w-full sm:w-38 py-2 rounded-lg text-xs font-medium text-center transition-all duration-200 cursor-pointer ${activeFilter === "pending"
                             ? "bg-cud-skyblue text-slate-950 font-semibold shadow-sm"
                             : "bg-slate-900/60 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-slate-200"
                             }`}

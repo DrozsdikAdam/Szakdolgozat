@@ -15,8 +15,6 @@ export class ConfigService {
 
     constructor() {
         this.auditService = new AuditService();
-
-        this.initDatabase();
     }
 
     initDatabase = async (): Promise<void> => {
@@ -25,8 +23,8 @@ export class ConfigService {
 
             const options: FeatureFlagName[] = ['rate_limiting', 'pgbouncer', 'haproxy', 'cronjob_backup', 'hpa_scaling', 'vpa_scaling', 'maintenance_mode'];
 
-            const featureFlags = await Promise.all(options.map(async (option) => {
-                return await FeatureFlag.findOrCreate({
+            for (const option of options) {
+                await FeatureFlag.findOrCreate({
                     where: {
                         name: option
                     },
@@ -35,7 +33,7 @@ export class ConfigService {
                         enabled: false
                     }
                 });
-            }));
+            }
 
             console.log('Database connection has been established successfully.');
         } catch (error) {
