@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from "react"
 import { RefreshCw, Server } from "lucide-react"
-import { K8sApi } from "../../client/api/k8s"
-import type { ClusterOverviewDto } from "../../types/k8s"
-import { Button } from "../common/Button"
-import { SearchInput } from "../common/SearchInput"
-import { ClusterStats } from "./cluster/ClusterStats"
-import { PodTable } from "./cluster/PodTable"
-import type { PodTableItem } from "../../types/component/cluster/podTableProps"
+import { K8sApi } from "../client/api/k8s"
+import type { ClusterOverviewDto } from "../types/k8s"
+import { Button } from "../components/common/Button"
+import { SearchInput } from "../components/common/SearchInput"
+import { ClusterStats } from "../components/dashboard/cluster/ClusterStats"
+import { PodTable } from "../components/dashboard/cluster/PodTable"
+import type { PodTableItem } from "../types/component/cluster/podTableProps"
 
 export const ClusterOverviewTab = () => {
     const [data, setData] = useState<ClusterOverviewDto | null>(null)
@@ -110,8 +110,8 @@ export const ClusterOverviewTab = () => {
                     <button
                         type="button"
                         className={`w-full sm:w-36 py-2 rounded-lg text-xs font-medium text-center transition-all duration-200 cursor-pointer ${activeTab === "all"
-                                ? "bg-cud-skyblue text-slate-950 font-semibold shadow-sm"
-                                : "bg-slate-900/60 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-slate-200"
+                            ? "bg-cud-skyblue text-slate-950 font-semibold shadow-sm"
+                            : "bg-slate-900/60 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-slate-200"
                             }`}
                         onClick={() => setActiveTab("all")}
                     >
@@ -120,8 +120,8 @@ export const ClusterOverviewTab = () => {
                     <button
                         type="button"
                         className={`w-full sm:w-36 py-2 rounded-lg text-xs font-medium text-center transition-all duration-200 cursor-pointer ${activeTab === "app"
-                                ? "bg-cud-skyblue text-slate-950 font-semibold shadow-sm"
-                                : "bg-slate-900/60 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-slate-200"
+                            ? "bg-cud-skyblue text-slate-950 font-semibold shadow-sm"
+                            : "bg-slate-900/60 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-slate-200"
                             }`}
                         onClick={() => setActiveTab("app")}
                     >
@@ -130,8 +130,8 @@ export const ClusterOverviewTab = () => {
                     <button
                         type="button"
                         className={`w-full sm:w-36 py-2 rounded-lg text-xs font-medium text-center transition-all duration-200 cursor-pointer ${activeTab === "platform"
-                                ? "bg-cud-skyblue text-slate-950 font-semibold shadow-sm"
-                                : "bg-slate-900/60 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-slate-200"
+                            ? "bg-cud-skyblue text-slate-950 font-semibold shadow-sm"
+                            : "bg-slate-900/60 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-slate-200"
                             }`}
                         onClick={() => setActiveTab("platform")}
                     >

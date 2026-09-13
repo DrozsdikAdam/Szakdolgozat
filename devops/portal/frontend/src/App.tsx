@@ -7,7 +7,7 @@ import { Card } from './components/common/Card'
 import { Button } from './components/common/Button'
 import { ArrowLeft } from 'lucide-react'
 import { PlatformApi } from './client/api/platform'
-import { ClusterOverviewTab } from './components/dashboard/ClusterOverviewTab'
+import { ClusterOverviewTab } from './view/ClusterOverviewTab'
 
 function App() {
   const [activeView, setActiveView] = useState<ServiceId | 'hub'>('hub')
