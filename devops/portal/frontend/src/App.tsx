@@ -8,6 +8,7 @@ import { Button } from './components/common/Button'
 import { ArrowLeft } from 'lucide-react'
 import { PlatformApi } from './client/api/platform'
 import { ClusterOverviewTab } from './view/ClusterOverviewTab'
+import { FlagsTab } from './view/FlagsTab'
 
 function App() {
   const [activeView, setActiveView] = useState<ServiceId | 'hub'>('hub')
@@ -77,6 +78,8 @@ function App() {
 
               {activeView === 'cluster' ? (
                 <ClusterOverviewTab />
+              ) : activeView === 'features' ? (
+                <FlagsTab />
               ) : (
                 <Card
                   title={currentService?.label}
