@@ -1,0 +1,5 @@
+export type BackupStatus = 'STAGED_LOCALLY'
+    | 'SYNCED'
+    | 'RESTORE_COMPLETED'
+    | 'RESTORE_SUCCESS'
+    | 'FAILED'
