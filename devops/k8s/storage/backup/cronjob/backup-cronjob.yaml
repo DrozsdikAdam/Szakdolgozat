@@ -47,7 +47,7 @@ spec:
 
           containers:
             - name: s3-sync
-              image: minio/mc:latest
+              image: quay.io/minio/mc:latest
               envFrom:
                 - secretRef:
                     name: backup-secret
