@@ -9,6 +9,7 @@ import { ArrowLeft } from 'lucide-react'
 import { PlatformApi } from './client/api/platform'
 import { ClusterOverviewTab } from './view/ClusterOverviewTab'
 import { FlagsTab } from './view/FlagsTab'
+import { AuditTab } from './view/AuditTab'
 
 function App() {
   const [activeView, setActiveView] = useState<ServiceId | 'hub'>('hub')
@@ -29,8 +30,8 @@ function App() {
     setIsRefreshing(true)
     new PlatformApi()
       .getStatus()
-      .then((res) => {
-        setIsClusterHealthy(res.isInitialized)
+      .then(() => {
+        setIsClusterHealthy(true)
       })
       .catch(() => {
         setIsClusterHealthy(false)
@@ -43,8 +44,8 @@ function App() {
   useEffect(() => {
     new PlatformApi()
       .getStatus()
-      .then((res) => {
-        setIsClusterHealthy(res.isInitialized)
+      .then(() => {
+        setIsClusterHealthy(true)
       })
       .catch((_error) => {
         setService(DEFAULT_SERVICES)
@@ -80,6 +81,8 @@ function App() {
                 <ClusterOverviewTab />
               ) : activeView === 'features' ? (
                 <FlagsTab />
+              ) : activeView === 'audit' ? (
+                <AuditTab />
               ) : (
                 <Card
                   title={currentService?.label}
