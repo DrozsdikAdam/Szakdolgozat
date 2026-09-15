@@ -2,6 +2,6 @@ import type { BackupResponseDto } from "../../backup"
 
 export interface BackupStatsProps {
     totalCount: number
-    latestBackup: BackupResponseDto
+    latestBackup: BackupResponseDto | null | undefined
     syncedCount: number
 }

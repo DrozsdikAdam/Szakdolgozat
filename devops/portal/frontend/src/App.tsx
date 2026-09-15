@@ -10,6 +10,7 @@ import { PlatformApi } from './client/api/platform'
 import { ClusterOverviewTab } from './view/ClusterOverviewTab'
 import { FlagsTab } from './view/FlagsTab'
 import { AuditTab } from './view/AuditTab'
+import { BackupTab } from './view/BackupTab'
 
 function App() {
   const [activeView, setActiveView] = useState<ServiceId | 'hub'>('hub')
@@ -83,6 +84,8 @@ function App() {
                 <FlagsTab />
               ) : activeView === 'audit' ? (
                 <AuditTab />
+              ) : activeView === 'backup' ? (
+                <BackupTab />
               ) : (
                 <Card
                   title={currentService?.label}
