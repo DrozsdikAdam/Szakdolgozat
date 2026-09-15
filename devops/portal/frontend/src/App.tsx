@@ -12,6 +12,7 @@ import { FlagsTab } from './view/FlagsTab'
 import { AuditTab } from './view/AuditTab'
 import { BackupTab } from './view/BackupTab'
 import { TrafficTab } from './view/TrafficTab'
+import { AutoscalingTab } from './view/AutoscalingTab'
 
 function App() {
   const [activeView, setActiveView] = useState<ServiceId | 'hub'>('hub')
@@ -89,6 +90,8 @@ function App() {
                 <BackupTab />
               ) : activeView === 'traffic' ? (
                 <TrafficTab />
+              ) : activeView === 'autoscaling' ? (
+                <AutoscalingTab />
               ) : (
                 <Card
                   title={currentService?.label}

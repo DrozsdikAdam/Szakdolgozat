@@ -1,39 +1,27 @@
 import type { RateLimitCardProps } from "../../../types/component/traffic/rateLimitCardProps"
+import type { PresetItem } from "../../../types/component/common/presetGroupProps"
 import { Card } from "../../common/Card"
 import { Button } from "../../common/Button"
 import { Badge } from "../../common/Badge"
-import { Gauge, Info, RotateCcw, Save, Sliders, Zap } from "lucide-react"
+import { Slider } from "../../common/Slider"
+import { PresetGroup } from "../../common/PresetGroup"
+import { InfoCallout } from "../../common/InfoCallout"
+import { Gauge, RotateCcw, Save, Sliders } from "lucide-react"
 
-interface PresetOption {
-    value: number
-    label: string
-    description: string
-}
-
-const PRESET_OPTIONS: PresetOption[] = [
-    { value: 50, label: "50 RPS", description: "Kímélő (Eco)" },
-    { value: 100, label: "100 RPS", description: "Normál üzemi" },
-    { value: 250, label: "250 RPS", description: "Nagy forgalom" },
-    { value: 500, label: "500 RPS", description: "Csúcs / Max" },
+const RPS_PRESETS: PresetItem<number>[] = [
+    { id: 50, label: "50 RPS", description: "Kímélő (Eco)", value: 50 },
+    { id: 100, label: "100 RPS", description: "Normál üzemi", value: 100 },
+    { id: 250, label: "250 RPS", description: "Nagy forgalom", value: 250 },
+    { id: 500, label: "500 RPS", description: "Csúcs / Max", value: 500 },
 ]
 
-interface BurstOption {
-    value: number
-    label: string
-    badge: string
-    description: string
-}
-
-const BURST_OPTIONS: BurstOption[] = [
-    { value: 1, label: "1x", badge: "Szigorú", description: "Nincs extra puffer" },
-    { value: 2, label: "2x", badge: "Kíméletes", description: "Kisebb mikrotüskék" },
-    { value: 3, label: "3x", badge: "Kiegyensúlyozott", description: "Átlagos terhelés" },
-    { value: 5, label: "5x", badge: "Ajánlott", description: "NGINX alapértelmezett" },
-    { value: 10, label: "10x", badge: "Megengedő", description: "Nagy tűréshatár" },
+const BURST_OPTIONS: PresetItem<number>[] = [
+    { id: 1, label: "1x", badge: "Szigorú", description: "Nincs extra puffer", value: 1 },
+    { id: 2, label: "2x", badge: "Kíméletes", description: "Kisebb mikrotüskék", value: 2 },
+    { id: 3, label: "3x", badge: "Kiegyensúlyozott", description: "Átlagos terhelés", value: 3 },
+    { id: 5, label: "5x", badge: "Ajánlott", description: "NGINX alapértelmezett", value: 5 },
+    { id: 10, label: "10x", badge: "Megengedő", description: "Nagy tűréshatár", value: 10 },
 ]
-
-const SLIDER_MIN = 20
-const SLIDER_MAX = 500
 
 const SLIDER_MARKS = [
     { value: 20, label: "20 (Min)" },
@@ -42,16 +30,7 @@ const SLIDER_MARKS = [
     { value: 500, label: "500 (Max)" },
 ]
 
-export const RateLimitCard = ({
-    currentRps,
-    selectRps,
-    onRpsChange,
-    currentBurst,
-    selectBurst,
-    onBurstChange,
-    onSave,
-    isLoading,
-}: RateLimitCardProps) => {
+export const RateLimitCard = ({ currentRps, selectRps, onRpsChange, currentBurst, selectBurst, onBurstChange, onSave, isLoading, }: RateLimitCardProps) => {
     const hasChanges = selectRps !== currentRps || selectBurst !== currentBurst
     const calculatedBufferCapacity = selectRps * selectBurst
 
@@ -62,42 +41,16 @@ export const RateLimitCard = ({
             hoverEffect={false}
             className="flex flex-col gap-6"
         >
-            <div>
-                <div className="flex items-center justify-between mb-3">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-cud-skyblue" />
-                        Gyors Beállítási Profilok
-                    </label>
-                    <span className="text-xs text-slate-500">
-                        Ajánlott forgalmi forgatókönyvek
-                    </span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {PRESET_OPTIONS.map((preset) => {
-                        const isSelected = selectRps === preset.value
-                        return (
-                            <button
-                                key={preset.value}
-                                type="button"
-                                onClick={() => onRpsChange(preset.value)}
-                                disabled={isLoading}
-                                className={`p-3 rounded-xl border text-left transition-all duration-150 cursor-pointer disabled:opacity-50 ${isSelected
-                                    ? "bg-cud-skyblue/10 border-cud-skyblue text-cud-skyblue shadow-lg shadow-cud-skyblue/10"
-                                    : "bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-800/40"
-                                    }`}
-                            >
-                                <div className="text-sm font-bold font-mono">
-                                    {preset.label}
-                                </div>
-                                <div className="text-xs text-slate-400 mt-0.5">
-                                    {preset.description}
-                                </div>
-                            </button>
-                        )
-                    })}
-                </div>
-            </div>
+            <PresetGroup
+                title="Gyors Beállítási Profilok"
+                subtitle="Ajánlott forgalmi forgatókönyvek"
+                options={RPS_PRESETS}
+                selectedId={selectRps}
+                onSelect={(preset) => onRpsChange(preset.value)}
+                disabled={isLoading}
+                accentColor="skyblue"
+                columns={4}
+            />
 
             <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -134,48 +87,17 @@ export const RateLimitCard = ({
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-1 pt-2">
-                    <input
-                        type="range"
-                        min={SLIDER_MIN}
-                        max={SLIDER_MAX}
-                        step="10"
-                        value={selectRps}
-                        onChange={(e) => onRpsChange(Number(e.target.value))}
-                        disabled={isLoading}
-                        className="w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cud-skyblue focus:outline-none transition-all"
-                        aria-label="Forgalomkorlát beállítása"
-                    />
-
-                    <div className="relative w-full h-5 text-xs text-slate-500 font-mono select-none mt-1">
-                        {SLIDER_MARKS.map((mark) => {
-                            const percent = ((mark.value - SLIDER_MIN) / (SLIDER_MAX - SLIDER_MIN)) * 100
-                            const isAtStart = mark.value === SLIDER_MIN
-                            const isAtEnd = mark.value === SLIDER_MAX
-                            const transform = isAtStart
-                                ? "translateX(0%)"
-                                : isAtEnd
-                                    ? "translateX(-100%)"
-                                    : "translateX(-50%)"
-
-                            const isCurrentOrSelected = selectRps === mark.value
-
-                            return (
-                                <button
-                                    key={mark.value}
-                                    type="button"
-                                    onClick={() => onRpsChange(mark.value)}
-                                    disabled={isLoading}
-                                    style={{ left: `${percent}%`, transform }}
-                                    className={`absolute top-0 cursor-pointer transition-colors hover:text-slate-200 focus:outline-none ${isCurrentOrSelected ? "text-cud-skyblue font-bold" : "text-slate-500"
-                                        }`}
-                                >
-                                    {mark.label}
-                                </button>
-                            )
-                        })}
-                    </div>
-                </div>
+                <Slider
+                    value={selectRps}
+                    min={20}
+                    max={500}
+                    step={10}
+                    marks={SLIDER_MARKS}
+                    accentColor="skyblue"
+                    onChange={onRpsChange}
+                    disabled={isLoading}
+                    ariaLabel="Forgalomkorlát beállítása"
+                />
             </div>
 
             <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex flex-col gap-4">
@@ -210,35 +132,14 @@ export const RateLimitCard = ({
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
-                    {BURST_OPTIONS.map((burstOpt) => {
-                        const isSelected = selectBurst === burstOpt.value
-                        return (
-                            <button
-                                key={burstOpt.value}
-                                type="button"
-                                onClick={() => onBurstChange(burstOpt.value)}
-                                disabled={isLoading}
-                                className={`p-3 rounded-xl border text-left transition-all duration-150 cursor-pointer disabled:opacity-50 ${isSelected
-                                    ? "bg-cud-purple/10 border-cud-purple text-cud-purple shadow-lg shadow-cud-purple/10"
-                                    : "bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-800/40"
-                                    }`}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm font-bold font-mono">
-                                        {burstOpt.label}
-                                    </span>
-                                    <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
-                                        {burstOpt.badge}
-                                    </span>
-                                </div>
-                                <div className="text-[11px] text-slate-400 mt-1">
-                                    {burstOpt.description}
-                                </div>
-                            </button>
-                        )
-                    })}
-                </div>
+                <PresetGroup
+                    options={BURST_OPTIONS}
+                    selectedId={selectBurst}
+                    onSelect={(preset) => onBurstChange(preset.value)}
+                    disabled={isLoading}
+                    accentColor="purple"
+                    columns={5}
+                />
 
                 <div className="p-3 rounded-lg bg-slate-950/50 border border-slate-800/80 flex items-center justify-between text-xs text-slate-300">
                     <div className="flex items-center gap-2">
@@ -256,24 +157,18 @@ export const RateLimitCard = ({
                 </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800/60 flex items-start gap-3 text-xs text-slate-400 leading-relaxed">
-                <Info className="w-5 h-5 text-cud-skyblue shrink-0 mt-0.5" />
-                <div>
-                    <span className="font-semibold text-slate-300 block mb-0.5">
-                        Hogyan működik a felhőalapú forgalomszabályozás?
+            <InfoCallout title="Hogyan működik a felhőalapú forgalomszabályozás?">
+                A beállított értékek közvetlenül az Ingress Controller annotációiba kerülnek beírásra:
+                <div className="flex flex-wrap gap-2 my-1.5 font-mono text-xs">
+                    <span className="bg-slate-800 text-cud-teal px-2 py-0.5 rounded">
+                        nginx.ingress.kubernetes.io/limit-rps: &quot;{selectRps}&quot;
                     </span>
-                    A beállított értékek közvetlenül az Ingress Controller annotációiba kerülnek beírásra:
-                    <div className="flex flex-wrap gap-2 my-1.5 font-mono text-xs">
-                        <span className="bg-slate-800 text-cud-teal px-2 py-0.5 rounded">
-                            nginx.ingress.kubernetes.io/limit-rps: &quot;{selectRps}&quot;
-                        </span>
-                        <span className="bg-slate-800 text-cud-purple px-2 py-0.5 rounded">
-                            nginx.ingress.kubernetes.io/limit-burst-multiplier: &quot;{selectBurst}&quot;
-                        </span>
-                    </div>
-                    A módosítás azonnal, <strong>konténer-újraindítás nélkül (Zero-Downtime)</strong> lép életbe, és védelmet nyújt a hirtelen kéréscunami vagy DoS jellegű túlterhelés ellen.
+                    <span className="bg-slate-800 text-cud-purple px-2 py-0.5 rounded">
+                        nginx.ingress.kubernetes.io/limit-burst-multiplier: &quot;{selectBurst}&quot;
+                    </span>
                 </div>
-            </div>
+                A módosítás azonnal, <strong>konténer-újraindítás nélkül (Zero-Downtime)</strong> lép életbe, és védelmet nyújt a hirtelen kéréscunami vagy DoS jellegű túlterhelés ellen.
+            </InfoCallout>
 
             <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
                 <div>
