@@ -39,7 +39,7 @@ const configService = new ConfigService();
 async function startServer() {
     try {
         await configService.initDatabase();
-        app.listen(PORT, () => {
+        app.listen(Number(PORT), "0.0.0.0", () => {
             console.log(`[PaaS Portal Backend] Server running on port ${PORT}`);
         });
     } catch (error) {

@@ -62,5 +62,6 @@ spec:
                 - >
                   set -e;
                   mc alias set remote $S3_ENDPOINT $S3_ACCESS_KEY $S3_SECRET_KEY;
+                  mc mb --ignore-existing remote/$S3_BUCKET;
                   mc cp /staging/latest.sql.gz remote/$S3_BUCKET/latest.sql.gz && mc mirror --overwrite /staging remote/$S3_BUCKET/archive/;
                   echo "Backup uploaded successfully."
