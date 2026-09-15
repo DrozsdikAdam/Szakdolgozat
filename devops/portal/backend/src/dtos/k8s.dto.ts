@@ -11,6 +11,11 @@ export interface UpdateRateLimitDto {
     burst?: number;
 }
 
+export interface RateLimitResponseDto {
+    rps: number;
+    burst: number;
+}
+
 export interface UpdateHpaDto {
     minReplicas: number;
     maxReplicas: number;

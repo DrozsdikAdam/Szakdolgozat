@@ -11,6 +11,7 @@ import { ClusterOverviewTab } from './view/ClusterOverviewTab'
 import { FlagsTab } from './view/FlagsTab'
 import { AuditTab } from './view/AuditTab'
 import { BackupTab } from './view/BackupTab'
+import { TrafficTab } from './view/TrafficTab'
 
 function App() {
   const [activeView, setActiveView] = useState<ServiceId | 'hub'>('hub')
@@ -86,6 +87,8 @@ function App() {
                 <AuditTab />
               ) : activeView === 'backup' ? (
                 <BackupTab />
+              ) : activeView === 'traffic' ? (
+                <TrafficTab />
               ) : (
                 <Card
                   title={currentService?.label}

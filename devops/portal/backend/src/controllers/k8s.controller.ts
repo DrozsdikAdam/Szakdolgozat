@@ -3,6 +3,7 @@ import { K8sService } from "../services/k8s.service.js";
 import type { ApiResponse } from "../dtos/common.dto.js";
 import type {
     ClusterOverviewDto,
+    RateLimitResponseDto,
     UpdateHpaDto,
     UpdateRateLimitDto,
     UpdateVpaDto,
@@ -38,11 +39,11 @@ export class K8sController {
             const namespace = (req.query.namespace as string) || "app-mes";
             const ingressName = (req.query.ingressName as string) || "mes-ingress";
 
-            const rps = await this.k8sService.getRateLimit(namespace, ingressName);
+            const rateLimit = await this.k8sService.getRateLimit(namespace, ingressName);
 
-            const response: ApiResponse<{ rps: number }> = {
+            const response: ApiResponse<RateLimitResponseDto> = {
                 success: true,
-                data: { rps },
+                data: rateLimit,
                 timestamp: new Date().toISOString(),
             };
 

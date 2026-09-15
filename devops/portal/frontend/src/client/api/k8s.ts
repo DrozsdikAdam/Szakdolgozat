@@ -1,5 +1,5 @@
 import type { ApiResponse } from "../../types/api";
-import type { ClusterOverviewDto, UpdateHpaDto, UpdateRateLimitDto, UpdateVpaDto, VpaOverviewDto } from "../../types/k8s";
+import type { ClusterOverviewDto, RateLimitResponseDto, UpdateHpaDto, UpdateRateLimitDto, UpdateVpaDto, VpaOverviewDto } from "../../types/k8s";
 import { apiClient } from "../apiClient";
 
 export class K8sApi {
@@ -9,8 +9,8 @@ export class K8sApi {
         return response.data!;
     }
 
-    getRateLimit = async (): Promise<{ rps: number }> => {
-        const response: ApiResponse<{ rps: number }> = await apiClient("/api/k8s/ratelimit", "GET");
+    getRateLimit = async (): Promise<RateLimitResponseDto> => {
+        const response: ApiResponse<RateLimitResponseDto> = await apiClient("/api/k8s/ratelimit", "GET");
         return response.data!;
     }
 

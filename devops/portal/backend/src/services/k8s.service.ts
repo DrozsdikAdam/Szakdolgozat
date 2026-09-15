@@ -1,7 +1,7 @@
 import * as k8s from "@kubernetes/client-node";
 import { K8sMapper } from "../mappers/k8s.mapper.js";
 import type { JobTriggerResponseDto } from "../dtos/backup.dto.js";
-import type { ClusterOverviewDto, UpdateHpaDto, UpdateRateLimitDto, UpdateVpaDto, VpaOverviewDto } from "../dtos/k8s.dto.js";
+import type { ClusterOverviewDto, RateLimitResponseDto, UpdateHpaDto, UpdateRateLimitDto, UpdateVpaDto, VpaOverviewDto } from "../dtos/k8s.dto.js";
 
 export class K8sService {
 
@@ -68,14 +68,18 @@ export class K8sService {
         }
     }
 
-    getRateLimit = async (namespace = 'app-mes', ingressName = 'mes-ingress'): Promise<number> => {
+    getRateLimit = async (namespace = 'app-mes', ingressName = 'mes-ingress'): Promise<RateLimitResponseDto> => {
         try {
             const ingress = await this.networkApi.readNamespacedIngress({ name: ingressName, namespace });
-            const annotation = ingress.metadata?.annotations?.['nginx.ingress.kubernetes.io/limit-rps']
-            return annotation ? Number(annotation) : 20;
+            const rpsAnnotation = ingress.metadata?.annotations?.['nginx.ingress.kubernetes.io/limit-rps'];
+            const burstAnnotation = ingress.metadata?.annotations?.['nginx.ingress.kubernetes.io/limit-burst-multiplier'];
+            return {
+                rps: rpsAnnotation ? Number(rpsAnnotation) : 20,
+                burst: burstAnnotation ? Number(burstAnnotation) : 5
+            };
         } catch (error) {
-            console.warn('Rate limit fallback to 20 rps (K8s not reachable):', (error as any)?.message || error);
-            return 20;
+            console.warn('Rate limit fallback to defaults (K8s not reachable):', (error as any)?.message || error);
+            return { rps: 20, burst: 5 };
         }
     }
 
@@ -90,6 +94,9 @@ export class K8sService {
             if (!ingress.metadata.annotations) ingress.metadata.annotations = {};
 
             ingress.metadata.annotations['nginx.ingress.kubernetes.io/limit-rps'] = String(request.rps);
+            if (request.burst !== undefined) {
+                ingress.metadata.annotations['nginx.ingress.kubernetes.io/limit-burst-multiplier'] = String(request.burst);
+            }
 
             await this.networkApi.replaceNamespacedIngress({
                 name: ingressName,
