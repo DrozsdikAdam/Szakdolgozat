@@ -1,6 +1,7 @@
 export type GitProvider = 'GITHUB' | 'GITLAB'
 
 export type DatabaseMode = 'internal' | 'external'
+export type DatabaseEngine = 'postgres' | 'mssql' | 'oracle'
 
 export type S3Provider = 'internal' | 'external'
 
@@ -10,6 +11,7 @@ export interface PlatformStatusResponse {
     isInitialized: boolean,
     gitProvider?: GitProvider,
     repoUrl?: string,
+    dbEngine?: DatabaseEngine,
     dbMode?: DatabaseMode,
     s3Provider?: S3Provider,
     activeFeatures: Record<FeatureFlagName, boolean>
@@ -26,6 +28,7 @@ export interface SetupWizardPayload {
     gitProvider: GitProvider,
     repoUrl: string,
     webhookSecret?: string,
+    dbEngine?: DatabaseEngine,
     dbMode: DatabaseMode,
     s3Provider: S3Provider,
     s3Bucket?: string,

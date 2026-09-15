@@ -109,6 +109,11 @@ html {
     color: #f8fafc;
 }
 
+input::placeholder,
+textarea::placeholder {
+    color: #64748b; /* slate-500 */
+}
+
 @keyframes pulse-subtle {
     0% {
         opacity: 0.4;
