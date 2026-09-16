@@ -1,9 +1,10 @@
-import type { DatabaseMode, GitProvider, S3Provider } from "../types/setup.types.js"
+import type { DatabaseEngine, DatabaseMode, GitProvider, S3Provider } from "../types/setup.types.js"
 
 export interface SetupWizardPayload {
     gitProvider: GitProvider
     repoUrl: string
     webhookSecret?: string
+    dbEngine?: DatabaseEngine
     dbMode: DatabaseMode
     dbConnectionString?: string
     s3Provider: S3Provider

@@ -6,16 +6,18 @@ import { BackupRecord } from "../models/BackupRecords.js";
 import { FeatureFlag } from "../models/FeatureFlag.js";
 import { SystemConfig } from "../models/SystemConfig.js";
 import type { FeatureFlagName } from "../types/feature.types.js";
-import type { DatabaseMode, GitProvider, S3Provider } from "../types/setup.types.js";
+import type { DatabaseEngine, DatabaseMode, GitProvider, S3Provider } from "../types/setup.types.js";
 import { AuditService } from "./audit.service.js";
+import { K8sService } from "./k8s.service.js";
 
 export class ConfigService {
 
     private auditService: AuditService;
-
+    private k8sService: K8sService;
 
     constructor() {
         this.auditService = new AuditService();
+        this.k8sService = new K8sService();
     }
 
     initDatabase = async (): Promise<void> => {
@@ -98,6 +100,7 @@ export class ConfigService {
                 isInitialized: configMap.get('is_initialized') === 'true',
                 gitProvider: configMap.get('git_provider') as GitProvider,
                 repoUrl: configMap.get('repo_url') as string,
+                dbEngine: (configMap.get('db_engine') as DatabaseEngine) || 'postgres',
                 dbMode: configMap.get('db_mode') as DatabaseMode,
                 s3Provider: configMap.get('s3_provider') as S3Provider,
                 activeFeatures: activeFeatures
@@ -112,11 +115,13 @@ export class ConfigService {
 
     saveSetupWizard = async (request: SetupWizardPayload): Promise<void> => {
         try {
+            const engine = request.dbEngine ?? 'postgres';
             const map: Record<string, string> = {
                 'is_initialized': 'true',
                 'git_provider': request.gitProvider,
                 'repo_url': request.repoUrl,
                 'db_mode': request.dbMode,
+                'db_engine': engine,
                 's3_provider': request.s3Provider,
                 's3_bucket': request.s3Bucket ?? 'mes-backups',
                 's3_bucket_size': request.s3BucketSize ?? '5Gi'
@@ -133,6 +138,9 @@ export class ConfigService {
                     where: { name: feature }
                 })
             }));
+
+            const dbResult = await this.k8sService.deployDatabaseEngine(engine, request.dbMode);
+            await this.auditService.logAudit('SETUP_DATABASE_PROVISION', `Database provisioning (${engine}, ${request.dbMode}): ${dbResult.message}`, dbResult.success ? 'SUCCESS' : 'FAILED');
 
             await this.auditService.logAudit('SETUP_WIZARD', 'Platform setup wizard completed');
 

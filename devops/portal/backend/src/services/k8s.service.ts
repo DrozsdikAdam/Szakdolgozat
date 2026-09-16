@@ -2,12 +2,14 @@ import * as k8s from "@kubernetes/client-node";
 import { K8sMapper } from "../mappers/k8s.mapper.js";
 import type { JobTriggerResponseDto } from "../dtos/backup.dto.js";
 import type { ClusterOverviewDto, RateLimitResponseDto, UpdateHpaDto, UpdateRateLimitDto, UpdateVpaDto, VpaOverviewDto } from "../dtos/k8s.dto.js";
+import type { DatabaseEngine, DatabaseMode } from "../types/setup.types.js";
 
 export class K8sService {
 
     private k8sApi: k8s.KubeConfig;
     private mapper: K8sMapper;
     private coreApi: k8s.CoreV1Api;
+    private appsApi: k8s.AppsV1Api;
     private networkApi: k8s.NetworkingV1Api;
     private autoscalingApi: k8s.AutoscalingV1Api;
     private batchApi: k8s.BatchV1Api;
@@ -32,6 +34,7 @@ export class K8sService {
         }
 
         this.coreApi = this.k8sApi.makeApiClient(k8s.CoreV1Api);
+        this.appsApi = this.k8sApi.makeApiClient(k8s.AppsV1Api);
         this.networkApi = this.k8sApi.makeApiClient(k8s.NetworkingV1Api);
         this.autoscalingApi = this.k8sApi.makeApiClient(k8s.AutoscalingV1Api);
         this.batchApi = this.k8sApi.makeApiClient(k8s.BatchV1Api);
@@ -331,6 +334,131 @@ export class K8sService {
         } catch (error) {
             console.error('Error updating VPA:', error);
             throw error;
+        }
+    }
+
+    deployDatabaseEngine = async (engine: DatabaseEngine, mode: DatabaseMode): Promise<{ success: boolean; message: string }> => {
+        if (mode !== 'internal') {
+            console.log(`[K8sService] Adatbázis mód '${mode}', belső K8s provisioning nem szükséges.`);
+            return { success: true, message: `Külső adatbázis kapcsolat regisztrálva (${engine})` };
+        }
+
+        const namespace = 'platform-infra';
+
+        try {
+            if (engine === 'mssql') {
+                const deployment: k8s.V1Deployment = {
+                    metadata: { name: 'mssql', namespace, labels: { app: 'mssql' } },
+                    spec: {
+                        replicas: 1,
+                        selector: { matchLabels: { app: 'mssql' } },
+                        template: {
+                            metadata: { labels: { app: 'mssql' } },
+                            spec: {
+                                containers: [{
+                                    name: 'mssql',
+                                    image: 'mcr.microsoft.com/mssql/server:2022-latest',
+                                    ports: [{ containerPort: 1433 }],
+                                    env: [
+                                        { name: 'ACCEPT_EULA', value: 'Y' },
+                                        { name: 'MSSQL_PID', value: 'Developer' },
+                                        { name: 'MSSQL_SA_PASSWORD', value: 'MesStrongPass123!' },
+                                        { name: 'DB_NAME', value: 'mesdb' }
+                                    ],
+                                    resources: {
+                                        requests: { memory: '512Mi', cpu: '250m' },
+                                        limits: { memory: '1024Mi', cpu: '1000m' }
+                                    }
+                                }]
+                            }
+                        }
+                    }
+                };
+
+                const service: k8s.V1Service = {
+                    metadata: { name: 'mssql', namespace },
+                    spec: {
+                        type: 'ClusterIP',
+                        selector: { app: 'mssql' },
+                        ports: [{ port: 1433, targetPort: 1433, name: 'mssql' }]
+                    }
+                };
+
+                try {
+                    await this.appsApi.readNamespacedDeployment({ name: 'mssql', namespace });
+                    await this.appsApi.replaceNamespacedDeployment({ name: 'mssql', namespace, body: deployment });
+                } catch {
+                    await this.appsApi.createNamespacedDeployment({ namespace, body: deployment });
+                }
+
+                try {
+                    await this.coreApi.readNamespacedService({ name: 'mssql', namespace });
+                } catch {
+                    await this.coreApi.createNamespacedService({ namespace, body: service });
+                }
+
+                console.log('[K8sService] MS SQL Server 2022 deployment és service sikeresen alkalmazva a platform-infra névtérben.');
+                return { success: true, message: 'MS SQL Server 2022 provisioning sikeres a platform-infra névtérben' };
+            } else if (engine === 'oracle') {
+                const deployment: k8s.V1Deployment = {
+                    metadata: { name: 'oracle', namespace, labels: { app: 'oracle' } },
+                    spec: {
+                        replicas: 1,
+                        selector: { matchLabels: { app: 'oracle' } },
+                        template: {
+                            metadata: { labels: { app: 'oracle' } },
+                            spec: {
+                                containers: [{
+                                    name: 'oracle',
+                                    image: 'gvenzl/oracle-free:latest',
+                                    ports: [{ containerPort: 1521 }],
+                                    env: [
+                                        { name: 'APP_USER', value: 'mesuser' },
+                                        { name: 'APP_USER_PASSWORD', value: 'mespassword' },
+                                        { name: 'ORACLE_PASSWORD', value: 'MesStrongPass123!' },
+                                        { name: 'ORACLE_DATABASE', value: 'mesdb' }
+                                    ],
+                                    resources: {
+                                        requests: { memory: '1024Mi', cpu: '500m' },
+                                        limits: { memory: '3Gi', cpu: '2000m' }
+                                    }
+                                }]
+                            }
+                        }
+                    }
+                };
+
+                const service: k8s.V1Service = {
+                    metadata: { name: 'oracle', namespace },
+                    spec: {
+                        type: 'ClusterIP',
+                        selector: { app: 'oracle' },
+                        ports: [{ port: 1521, targetPort: 1521, name: 'oracle' }]
+                    }
+                };
+
+                try {
+                    await this.appsApi.readNamespacedDeployment({ name: 'oracle', namespace });
+                    await this.appsApi.replaceNamespacedDeployment({ name: 'oracle', namespace, body: deployment });
+                } catch {
+                    await this.appsApi.createNamespacedDeployment({ namespace, body: deployment });
+                }
+
+                try {
+                    await this.coreApi.readNamespacedService({ name: 'oracle', namespace });
+                } catch {
+                    await this.coreApi.createNamespacedService({ namespace, body: service });
+                }
+
+                console.log('[K8sService] Oracle Database Free 23c deployment és service sikeresen alkalmazva a platform-infra névtérben.');
+                return { success: true, message: 'Oracle Database Free 23c provisioning sikeres a platform-infra névtérben' };
+            } else {
+                console.log('[K8sService] PostgreSQL Patroni HA klaszter aktív az app-mes/storage névtérben.');
+                return { success: true, message: 'PostgreSQL Patroni HA klaszter aktív a fürtben' };
+            }
+        } catch (error) {
+            console.warn(`[K8sService] Figyelmeztetés a(z) ${engine} K8s provisioning során:`, (error as any)?.message || error);
+            return { success: false, message: `K8s provisioning figyelmeztetés: ${(error as any)?.message || error}` };
         }
     }
 
