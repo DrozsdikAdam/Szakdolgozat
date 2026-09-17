@@ -3,6 +3,26 @@ import type { ServiceItem } from "../types/component/hub";
 
 export const DEFAULT_SERVICES: ServiceItem[] = [
     {
+        id: 'setup',
+        accentColor: 'teal',
+        label: "Rendszer Inicializálás (Setup)",
+        description: "GitOps repository, adatbázis motor, tároló réteg és erőforráskeretek beállítása és élesítése.",
+        iconName: <Wrench className="w-6 h-6" />,
+        badgeText: "Inicializálva",
+        badgeVariant: 'teal',
+        isConfigured: true
+    },
+    {
+        id: 'features',
+        accentColor: 'orange',
+        label: "Funkciókapcsolók (Feature Flags)",
+        description: "Platform modulok (PgBouncer, HAProxy, Karbantartási mód) dinamikus kapcsolása futásidőben.",
+        iconName: <ToggleRight className="w-6 h-6" />,
+        badgeText: "7 aktív flag",
+        badgeVariant: 'orange',
+        isConfigured: true
+    },
+    {
         id: 'cluster',
         accentColor: 'teal',
         label: "Klaszter és Podok",
@@ -43,16 +63,6 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         isConfigured: true
     },
     {
-        id: 'features',
-        accentColor: 'orange',
-        label: "Funkciókapcsolók (Feature Flags)",
-        description: "Platform modulok (PgBouncer, HAProxy, Karbantartási mód) dinamikus kapcsolása.",
-        iconName: <ToggleRight className="w-6 h-6" />,
-        badgeText: "7 aktív flag",
-        badgeVariant: 'orange',
-        isConfigured: true
-    },
-    {
         id: 'audit',
         accentColor: 'purple',
         label: "Audit és Biztonsági Naplók",
@@ -60,16 +70,6 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         iconName: <ShieldAlert className="w-6 h-6" />,
         badgeText: "Audit naplózás",
         badgeVariant: 'purple',
-        isConfigured: true
-    },
-    {
-        id: 'setup',
-        accentColor: 'teal',
-        label: "Rendszer Inicializálás (Setup)",
-        description: "GitOps repository, PostgreSQL adatbázis és tároló réteg beállítása és ellenőrzése.",
-        iconName: <Wrench className="w-6 h-6" />,
-        badgeText: "Inicializálva",
-        badgeVariant: 'teal',
         isConfigured: true
     }
 ]
