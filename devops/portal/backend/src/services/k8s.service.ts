@@ -11,6 +11,13 @@ import type {
     UpdateVpaDto,
     VpaOverviewDto,
 } from "../dtos/k8s.dto.js";
+import type {
+    ConfigMapDto,
+    SecretDto,
+    SecretRevealDto,
+    SaveConfigDto,
+    RestartWorkloadDto
+} from "../dtos/config.dto.js";
 import type { DatabaseEngine, DatabaseMode, InstanceSize } from "../types/setup.types.js";
 
 export class K8sService {
@@ -479,7 +486,8 @@ export class K8sService {
             large: { requests: { cpu: '2000m', memory: '4Gi' }, limits: { cpu: '4000m', memory: '8Gi' } }
         };
 
-        const targetResources = sizeMap[size] || sizeMap.small;
+        const fallbackResources = { requests: { cpu: '500m', memory: '1Gi' }, limits: { cpu: '1000m', memory: '2Gi' } };
+        const targetResources = sizeMap[size] ?? fallbackResources;
 
         try {
             const deployment = await this.appsApi.readNamespacedDeployment({ name: deploymentName, namespace });
@@ -662,4 +670,308 @@ export class K8sService {
         }
     };
 
-}
+    getConfigMaps = async (namespace?: string): Promise<ConfigMapDto[]> => {
+        try {
+            const targetNamespaces = namespace && namespace !== 'all'
+                ? [namespace]
+                : ['platform-infra', 'app-mes'];
+
+            const configMaps: ConfigMapDto[] = [];
+
+            for (const ns of targetNamespaces) {
+                try {
+                    const configMapList = await this.coreApi.listNamespacedConfigMap({ namespace: ns });
+                    for (const item of configMapList.items || []) {
+                        const cmName = item.metadata?.name || '';
+                        const bound = await this.getBoundWorkloads(ns, cmName, false);
+                        configMaps.push({
+                            name: cmName,
+                            namespace: item.metadata?.namespace || ns,
+                            data: (item.data as Record<string, string>) || {},
+                            keyCount: Object.keys(item.data || {}).length,
+                            createdAt: (item.metadata?.creationTimestamp || new Date()).toString(),
+                            boundWorkloads: bound
+                        });
+                    }
+                } catch (nsErr) {
+                    console.warn(`[K8sService] Hiba a configMapek lekérésekor a '${ns}' névtérből:`, (nsErr as any)?.message || nsErr);
+                }
+            }
+
+            configMaps.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            return configMaps;
+        } catch (error) {
+            console.warn('[K8sService] Hiba a configMapek lekérésekor:', (error as any)?.message || error);
+            return [];
+        }
+    };
+
+    getSecrets = async (namespace?: string): Promise<SecretDto[]> => {
+        try {
+            const targetNamespaces = namespace && namespace !== 'all'
+                ? [namespace]
+                : ['platform-infra', 'app-mes'];
+
+            const secrets: SecretDto[] = [];
+
+            for (const ns of targetNamespaces) {
+                try {
+                    const secretList = await this.coreApi.listNamespacedSecret({ namespace: ns });
+                    for (const item of secretList.items || []) {
+                        const secName = item.metadata?.name || '';
+                        const rawData = item.data || {};
+                        const keys = Object.keys(rawData);
+
+                        // Masked data for safe frontend display
+                        const maskedData: Record<string, string> = {};
+                        for (const key of keys) {
+                            maskedData[key] = "••••••••";
+                        }
+
+                        const bound = await this.getBoundWorkloads(ns, secName, true);
+
+                        secrets.push({
+                            name: secName,
+                            namespace: item.metadata?.namespace || ns,
+                            secretType: item.type || 'Opaque',
+                            data: maskedData,
+                            keys,
+                            keyCount: keys.length,
+                            isMasked: true,
+                            createdAt: (item.metadata?.creationTimestamp || new Date()).toString(),
+                            boundWorkloads: bound
+                        });
+                    }
+                } catch (nsErr) {
+                    console.warn(`[K8sService] Hiba a titkok lekérésekor a '${ns}' névtérből:`, (nsErr as any)?.message || nsErr);
+                }
+            }
+
+            secrets.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            return secrets;
+        } catch (error) {
+            console.warn('[K8sService] Hiba a titkok lekérésekor:', (error as any)?.message || error);
+            return [];
+        }
+    };
+
+    revealSecret = async (namespace: string, name: string): Promise<SecretRevealDto> => {
+        try {
+            const secret = await this.coreApi.readNamespacedSecret({ name, namespace });
+            const rawData = secret.data || {};
+            const revealedData: Record<string, string> = {};
+
+            for (const [key, base64Val] of Object.entries(rawData)) {
+                try {
+                    revealedData[key] = Buffer.from(base64Val, 'base64').toString('utf-8');
+                } catch {
+                    revealedData[key] = String(base64Val);
+                }
+            }
+
+            return {
+                name,
+                namespace,
+                data: revealedData
+            };
+        } catch (error) {
+            console.error(`[K8sService] Nem sikerült feloldani a titkot (${name}):`, error);
+            throw new Error(`Nem sikerült kiolvasni a titok adatait: ${(error as any)?.message || error}`);
+        }
+    };
+
+    saveConfigMap = async (dto: SaveConfigDto): Promise<ConfigMapDto> => {
+        try {
+            let exists = false;
+            try {
+                await this.coreApi.readNamespacedConfigMap({ name: dto.name, namespace: dto.namespace });
+                exists = true;
+            } catch {
+                exists = false;
+            }
+
+            const cmBody: k8s.V1ConfigMap = {
+                metadata: {
+                    name: dto.name,
+                    namespace: dto.namespace
+                },
+                data: dto.data
+            };
+
+            if (exists) {
+                await this.coreApi.replaceNamespacedConfigMap({
+                    name: dto.name,
+                    namespace: dto.namespace,
+                    body: cmBody
+                });
+            } else {
+                await this.coreApi.createNamespacedConfigMap({
+                    namespace: dto.namespace,
+                    body: cmBody
+                });
+            }
+
+            const bound = await this.getBoundWorkloads(dto.namespace, dto.name, false);
+            return {
+                name: dto.name,
+                namespace: dto.namespace,
+                data: dto.data,
+                keyCount: Object.keys(dto.data).length,
+                createdAt: new Date().toISOString(),
+                boundWorkloads: bound
+            };
+        } catch (error) {
+            console.error(`[K8sService] Hiba a ConfigMap mentésekor (${dto.name}):`, error);
+            throw new Error(`Nem sikerült elmenteni a ConfigMap-et: ${(error as any)?.message || error}`);
+        }
+    };
+
+    deleteConfigMap = async (namespace: string, name: string): Promise<boolean> => {
+        try {
+            await this.coreApi.deleteNamespacedConfigMap({ name, namespace });
+            return true;
+        } catch (error) {
+            console.error(`[K8sService] Hiba a ConfigMap törlésekor (${name}):`, error);
+            throw new Error(`Nem sikerült törölni a ConfigMap-et: ${(error as any)?.message || error}`);
+        }
+    };
+
+    saveSecret = async (dto: SaveConfigDto): Promise<SecretDto> => {
+        try {
+            let exists = false;
+            try {
+                await this.coreApi.readNamespacedSecret({ name: dto.name, namespace: dto.namespace });
+                exists = true;
+            } catch {
+                exists = false;
+            }
+
+            const secretBody: k8s.V1Secret = {
+                metadata: {
+                    name: dto.name,
+                    namespace: dto.namespace
+                },
+                type: dto.secretType || 'Opaque',
+                stringData: dto.data
+            };
+
+            if (exists) {
+                await this.coreApi.replaceNamespacedSecret({
+                    name: dto.name,
+                    namespace: dto.namespace,
+                    body: secretBody
+                });
+            } else {
+                await this.coreApi.createNamespacedSecret({
+                    namespace: dto.namespace,
+                    body: secretBody
+                });
+            }
+
+            const keys = Object.keys(dto.data);
+            const maskedData: Record<string, string> = {};
+            for (const key of keys) {
+                maskedData[key] = "••••••••";
+            }
+
+            const bound = await this.getBoundWorkloads(dto.namespace, dto.name, true);
+            return {
+                name: dto.name,
+                namespace: dto.namespace,
+                secretType: dto.secretType || 'Opaque',
+                data: maskedData,
+                keys,
+                keyCount: keys.length,
+                isMasked: true,
+                createdAt: new Date().toISOString(),
+                boundWorkloads: bound
+            };
+        } catch (error) {
+            console.error(`[K8sService] Hiba a Secret mentésekor (${dto.name}):`, error);
+            throw new Error(`Nem sikerült elmenteni a Secret-et: ${(error as any)?.message || error}`);
+        }
+    };
+
+    deleteSecret = async (namespace: string, name: string): Promise<boolean> => {
+        try {
+            await this.coreApi.deleteNamespacedSecret({ name, namespace });
+            return true;
+        } catch (error) {
+            console.error(`[K8sService] Hiba a Secret törlésekor (${name}):`, error);
+            throw new Error(`Nem sikerült törölni a Secret-et: ${(error as any)?.message || error}`);
+        }
+    };
+
+    restartWorkload = async (namespace: string, workloadNames: string[]): Promise<RestartWorkloadDto> => {
+        const restartedAt = new Date().toISOString();
+        const successNames: string[] = [];
+
+        for (const name of workloadNames) {
+            try {
+                const dep = await this.appsApi.readNamespacedDeployment({ name, namespace });
+                if (dep.spec?.template) {
+                    if (!dep.spec.template.metadata) {
+                        dep.spec.template.metadata = {};
+                    }
+                    if (!dep.spec.template.metadata.annotations) {
+                        dep.spec.template.metadata.annotations = {};
+                    }
+
+                    dep.spec.template.metadata.annotations['kubectl.kubernetes.io/restartedAt'] = restartedAt;
+
+                    await this.appsApi.replaceNamespacedDeployment({
+                        name,
+                        namespace,
+                        body: dep
+                    });
+                    successNames.push(name);
+                }
+            } catch (err) {
+                console.warn(`[K8sService] Nem sikerült újraindítani a '${name}' deploymentet:`, (err as any)?.message || err);
+            }
+        }
+
+        return {
+            namespace,
+            workloadNames: successNames,
+            restartedAt,
+            message: `${successNames.length} workload sikeresen újraindítva.`
+        };
+    };
+
+    private getBoundWorkloads = async (namespace: string, configName: string, isSecret: boolean): Promise<string[]> => {
+        try {
+            const deploys = await this.appsApi.listNamespacedDeployment({ namespace });
+            const bound: string[] = [];
+            for (const dep of deploys.items || []) {
+                const depName = dep.metadata?.name || '';
+                const containers = dep.spec?.template?.spec?.containers || [];
+                let isUsed = false;
+
+                for (const c of containers) {
+                    if (isSecret) {
+                        if (c.envFrom?.some(ef => ef.secretRef?.name === configName)) isUsed = true;
+                        if (c.env?.some(e => e.valueFrom?.secretKeyRef?.name === configName)) isUsed = true;
+                    } else {
+                        if (c.envFrom?.some(ef => ef.configMapRef?.name === configName)) isUsed = true;
+                        if (c.env?.some(e => e.valueFrom?.configMapKeyRef?.name === configName)) isUsed = true;
+                    }
+                }
+
+                const volumes = dep.spec?.template?.spec?.volumes || [];
+                for (const v of volumes) {
+                    if (isSecret && v.secret?.secretName === configName) isUsed = true;
+                    if (!isSecret && v.configMap?.name === configName) isUsed = true;
+                }
+
+                if (isUsed && !bound.includes(depName)) {
+                    bound.push(depName);
+                }
+            }
+            return bound;
+        } catch {
+            return [];
+        }
+    };
+
+}
