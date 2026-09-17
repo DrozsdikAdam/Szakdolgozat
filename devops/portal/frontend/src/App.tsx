@@ -95,6 +95,8 @@ function App() {
 
               {activeView === 'cluster' ? (
                 <ClusterOverviewTab />
+              ) : activeView === 'events' ? (
+                <ClusterOverviewTab initialView="events" />
               ) : activeView === 'features' ? (
                 <FlagsTab onNavigate={handleSelectService} />
               ) : activeView === 'audit' ? (

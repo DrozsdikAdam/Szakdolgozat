@@ -1,4 +1,4 @@
-import { Activity, Archive, Cpu, Server, ShieldAlert, ToggleRight, Wrench } from "lucide-react";
+import { Activity, Archive, Cpu, Server, ShieldAlert, Terminal, ToggleRight, Wrench } from "lucide-react";
 import type { ServiceItem } from "../types/component/hub";
 import type { FeatureFlagName, PlatformStatusResponse } from "../types/platform";
 import type { ClusterOverviewDto } from "../types/k8s";
@@ -86,6 +86,18 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         badgeVariant: 'purple',
         isConfigured: true,
         statusLabel: "Biztonsági naplózás aktív",
+        statusVariant: 'teal'
+    },
+    {
+        id: 'events',
+        accentColor: 'skyblue',
+        label: "Pod Naplók és Események",
+        description: "Valós idejű konténer log streamer és K8s klaszter eseménynapló szűréssel és kereséssel.",
+        iconName: <Terminal className="w-6 h-6" />,
+        badgeText: "Streamer aktív",
+        badgeVariant: 'skyblue',
+        isConfigured: true,
+        statusLabel: "Valós idejű naplózás üzemkész",
         statusVariant: 'teal'
     }
 ]
@@ -222,6 +234,17 @@ export const computeDynamicServices = (
                     isConfigured: true,
                     statusLabel: "Biztonsági naplózás aktív",
                     statusVariant: 'teal'
+                };
+            }
+
+            case 'events': {
+                return {
+                    ...service,
+                    badgeText: isClusterHealthy ? "Streamer aktív" : "Kapcsolat megszakadt",
+                    badgeVariant: isClusterHealthy ? 'skyblue' : 'vermillon',
+                    isConfigured: isClusterHealthy,
+                    statusLabel: isClusterHealthy ? "Valós idejű naplózás és események" : "Klaszter nem érhető el",
+                    statusVariant: isClusterHealthy ? 'teal' : 'vermillon'
                 };
             }
 

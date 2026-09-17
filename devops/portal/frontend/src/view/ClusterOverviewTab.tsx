@@ -1,22 +1,39 @@
 import { useState, useEffect, useMemo } from "react"
-import { RefreshCw, Server } from "lucide-react"
+import { Activity, Box, RefreshCw, Server } from "lucide-react"
 import { K8sApi } from "../client/api/k8s"
-import type { ClusterOverviewDto } from "../types/k8s"
+import type { ClusterOverviewDto, K8sEventDto } from "../types/k8s"
+import type { SegmentedControlOption } from "../types/component/common/segmentedControlProps"
 import { Button } from "../components/common/Button"
 import { SearchInput } from "../components/common/SearchInput"
+import { SegmentedControl } from "../components/common/SegmentedControl"
 import { ClusterStats } from "../components/dashboard/cluster/ClusterStats"
 import { PodTable } from "../components/dashboard/cluster/PodTable"
+import { PodLogModal } from "../components/dashboard/cluster/PodLogModal"
+import { ClusterEventsTable } from "../components/dashboard/cluster/ClusterEventsTable"
 import type { PodTableItem } from "../types/component/cluster/podTableProps"
 
-export const ClusterOverviewTab = () => {
+interface ClusterOverviewTabProps {
+    initialView?: "pods" | "events"
+}
+
+export const ClusterOverviewTab = ({ initialView = "pods" }: ClusterOverviewTabProps) => {
+    const [viewMode, setViewMode] = useState<"pods" | "events">(initialView)
     const [data, setData] = useState<ClusterOverviewDto | null>(null)
     const [loading, setLoading] = useState<boolean>(true)
     const [search, setSearch] = useState<string>("")
     const [activeTab, setActiveTab] = useState<"all" | "app" | "platform">("all")
 
+    const [events, setEvents] = useState<K8sEventDto[]>([])
+    const [eventsLoading, setEventsLoading] = useState<boolean>(false)
+    const [eventsSearch, setEventsSearch] = useState<string>("")
+
+    const [selectedLogPod, setSelectedLogPod] = useState<PodTableItem | null>(null)
+
+    const k8sApi = useMemo(() => new K8sApi(), [])
+
     const loadClusterData = () => {
         setLoading(true)
-        new K8sApi()
+        k8sApi
             .getOverview()
             .then((res) => {
                 setData(res)
@@ -29,8 +46,24 @@ export const ClusterOverviewTab = () => {
             })
     }
 
+    const loadEventsData = () => {
+        setEventsLoading(true)
+        k8sApi
+            .getEvents()
+            .then((res) => {
+                setEvents(res || [])
+            })
+            .catch((err) => {
+                console.warn("Nem sikerült lekérni a klaszter eseményeket:", err)
+            })
+            .finally(() => {
+                setEventsLoading(false)
+            })
+    }
+
     useEffect(() => {
         loadClusterData()
+        loadEventsData()
     }, [])
 
     const allPods: PodTableItem[] = useMemo(() => {
@@ -63,6 +96,29 @@ export const ClusterOverviewTab = () => {
         return allPods.reduce((sum, p) => sum + (p.restarts || 0), 0)
     }, [allPods])
 
+    const viewModeOptions: SegmentedControlOption<"pods" | "events">[] = [
+        {
+            id: "pods",
+            label: "Podok",
+            count: allPods.length,
+            icon: <Box className="w-3.5 h-3.5" />,
+            variant: "skyblue"
+        },
+        {
+            id: "events",
+            label: "Klaszter Események",
+            count: events.length,
+            icon: <Activity className="w-3.5 h-3.5" />,
+            variant: "skyblue"
+        }
+    ]
+
+    const podTabOptions: SegmentedControlOption<"all" | "app" | "platform">[] = [
+        { id: "all", label: "Összes", count: allPods.length, variant: "skyblue" },
+        { id: "app", label: "App Podok", count: data?.appPods?.length || 0, variant: "skyblue" },
+        { id: "platform", label: "Platform", count: data?.platformPods?.length || 0, variant: "skyblue" }
+    ]
+
     return (
         <div className="flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -72,7 +128,7 @@ export const ClusterOverviewTab = () => {
                         Klaszter és Pod Áttekintés
                     </h2>
                     <p className="text-sm text-slate-400 mt-1">
-                        Kubernetes workloadok, pod állapotok és konténer újraindítások valós időben.
+                        Kubernetes workloadok, pod állapotok, konténer naplók és életesemények valós időben.
                         {data?.timestamp && (
                             <span className="text-xs text-slate-500 ml-2">
                                 (Utolsó szinkronizáció: {new Date(data.timestamp).toLocaleTimeString()})
@@ -81,15 +137,24 @@ export const ClusterOverviewTab = () => {
                     </p>
                 </div>
 
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    loading={loading}
-                    icon={<RefreshCw className="w-4 h-4" />}
-                    onClick={loadClusterData}
-                >
-                    Adatok frissítése
-                </Button>
+                <div className="flex items-center gap-2">
+                    <SegmentedControl<"pods" | "events">
+                        value={viewMode}
+                        onChange={setViewMode}
+                        options={viewModeOptions}
+                        layout="pill"
+                    />
+
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        loading={viewMode === "pods" ? loading : eventsLoading}
+                        icon={<RefreshCw className="w-4 h-4" />}
+                        onClick={viewMode === "pods" ? loadClusterData : loadEventsData}
+                    >
+                        Frissítés
+                    </Button>
+                </div>
             </div>
 
             <ClusterStats
@@ -98,49 +163,49 @@ export const ClusterOverviewTab = () => {
                 totalRestarts={totalRestarts}
             />
 
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <SearchInput
-                    value={search}
-                    onChange={setSearch}
-                    placeholder="Pod keresése név alapján..."
-                    className="w-full sm:w-80"
-                />
+            {viewMode === "pods" && (
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <SearchInput
+                            value={search}
+                            onChange={setSearch}
+                            placeholder="Pod keresése név alapján..."
+                            className="w-full sm:w-80"
+                        />
 
-                <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
-                    <button
-                        type="button"
-                        className={`w-full sm:w-36 py-2 rounded-lg text-xs font-medium text-center transition-all duration-200 cursor-pointer ${activeTab === "all"
-                            ? "bg-cud-skyblue text-slate-950 font-semibold shadow-sm"
-                            : "bg-slate-900/60 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-slate-200"
-                            }`}
-                        onClick={() => setActiveTab("all")}
-                    >
-                        Összes ({allPods.length})
-                    </button>
-                    <button
-                        type="button"
-                        className={`w-full sm:w-36 py-2 rounded-lg text-xs font-medium text-center transition-all duration-200 cursor-pointer ${activeTab === "app"
-                            ? "bg-cud-skyblue text-slate-950 font-semibold shadow-sm"
-                            : "bg-slate-900/60 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-slate-200"
-                            }`}
-                        onClick={() => setActiveTab("app")}
-                    >
-                        App Podok ({data?.appPods?.length || 0})
-                    </button>
-                    <button
-                        type="button"
-                        className={`w-full sm:w-36 py-2 rounded-lg text-xs font-medium text-center transition-all duration-200 cursor-pointer ${activeTab === "platform"
-                            ? "bg-cud-skyblue text-slate-950 font-semibold shadow-sm"
-                            : "bg-slate-900/60 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-slate-200"
-                            }`}
-                        onClick={() => setActiveTab("platform")}
-                    >
-                        Platform ({data?.platformPods?.length || 0})
-                    </button>
+                        <SegmentedControl<"all" | "app" | "platform">
+                            value={activeTab}
+                            onChange={setActiveTab}
+                            options={podTabOptions}
+                            layout="grid"
+                        />
+                    </div>
+
+                    <PodTable
+                        pods={filteredPods}
+                        loading={loading}
+                        searchQuery={search}
+                        onViewLogs={(pod) => setSelectedLogPod(pod)}
+                    />
                 </div>
-            </div>
+            )}
 
-            <PodTable pods={filteredPods} loading={loading} searchQuery={search} />
+            {viewMode === "events" && (
+                <ClusterEventsTable
+                    events={events}
+                    loading={eventsLoading}
+                    onRefresh={loadEventsData}
+                    searchQuery={eventsSearch}
+                    onSearchChange={setEventsSearch}
+                />
+            )}
+
+            {selectedLogPod && (
+                <PodLogModal
+                    pod={selectedLogPod}
+                    onClose={() => setSelectedLogPod(null)}
+                />
+            )}
         </div>
     )
 }

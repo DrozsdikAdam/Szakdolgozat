@@ -9,13 +9,7 @@ import { SearchInput } from "../../common/SearchInput"
 import { Button } from "../../common/Button"
 import { SegmentedControl } from "../../common/SegmentedControl"
 
-export const ClusterEventsTable = ({
-    events,
-    loading,
-    onRefresh,
-    searchQuery,
-    onSearchChange
-}: ClusterEventsProps) => {
+export const ClusterEventsTable = ({ events, loading, onRefresh, searchQuery, onSearchChange }: ClusterEventsProps) => {
     const [typeFilter, setTypeFilter] = useState<"all" | "warning" | "normal">("all")
 
     const filteredEvents = useMemo(() => {

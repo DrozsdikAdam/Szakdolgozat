@@ -2,16 +2,7 @@ import { useEffect, useMemo, useRef } from "react"
 import { RefreshCw, Terminal } from "lucide-react"
 import type { TerminalViewerProps } from "../../../types/component/cluster/terminalViewerProps"
 
-export const TerminalViewer = ({
-    lines,
-    loading = false,
-    searchQuery = "",
-    autoScroll = true,
-    loadingText = "Naplók olvasása a Kubernetes API-ból...",
-    emptyText = "A podhoz jelenleg nem található naplóbejegyzés.",
-    noMatchText = "Nincs a keresésnek megfelelő naplósor.",
-    className = ""
-}: TerminalViewerProps) => {
+export const TerminalViewer = ({ lines, loading = false, searchQuery = "", autoScroll = true, loadingText = "Naplók olvasása a Kubernetes API-ból...", emptyText = "A podhoz jelenleg nem található naplóbejegyzés.", noMatchText = "Nincs a keresésnek megfelelő naplósor.", className = "" }: TerminalViewerProps) => {
     const endRef = useRef<HTMLDivElement | null>(null)
 
     const filteredLines = useMemo(() => {

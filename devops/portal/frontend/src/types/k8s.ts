@@ -50,3 +50,26 @@ export interface UpdateVpaDto {
     maxAllowedCpu: string;
     maxAllowedMemory: string;
 }
+
+export interface K8sEventDto {
+    id: string;
+    type: 'Normal' | 'Warning';
+    reason: string;
+    message: string;
+    involvedObjectName: string;
+    involvedObjectKind: string;
+    namespace: string;
+    count: number;
+    firstTimestamp?: string;
+    lastTimestamp: string;
+    sourceComponent?: string;
+}
+
+export interface PodLogsResponseDto {
+    podName: string;
+    namespace: string;
+    containerName: string;
+    lines: string[];
+    totalLines: number;
+    timestamp: string;
+}
