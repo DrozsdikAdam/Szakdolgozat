@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from "react"
 import { RefreshCw, Sliders, Search } from "lucide-react"
 import { PlatformApi } from "../client/api/platform"
-import type { FeatureFlagName } from "../types/platform"
+import type { FeatureFlagName, InactivationStrategy } from "../types/platform"
 import type { FeatureMetaItem, FeatureCategory } from "../types/component/features/featureCardProps"
+import type { PresetItem } from "../types/component/common/presetGroupProps"
 import { FeatureConfigs } from "../constants/featureFlags"
 import { FeatureStats } from "../components/dashboard/features/Stats"
 import { FeatureCard } from "../components/dashboard/features/Card"
+import { PresetGroup } from "../components/common/PresetGroup"
 import { SearchInput } from "../components/common/SearchInput"
 import { Button } from "../components/common/Button"
 import { EmptyState } from "../components/common/EmptyState"
@@ -29,6 +31,23 @@ const CATEGORY_TABS: { id: "all" | FeatureCategory; label: string }[] = [
     { id: "operations", label: "Üzemeltetés" }
 ]
 
+const INACTIVATION_PRESETS: PresetItem<InactivationStrategy>[] = [
+    {
+        id: "scale_to_zero",
+        label: "Scale-to-Zero",
+        badge: "0 Pod / 0 MB RAM",
+        description: "Inaktív állapotban a podok 0 példányra állnak le (0 MB RAM / 0 CPU). Reaktiváláskor hidegindítás (~5-10 mp).",
+        value: "scale_to_zero"
+    },
+    {
+        id: "hot_standby",
+        label: "Hot-Standby",
+        badge: "1 Pod / 0s késleltetés",
+        description: "Inaktív állapotban a pod a háttérben futva marad (1 Pod), a routing kikerüli. Reaktiválás azonnali (0 mp).",
+        value: "hot_standby"
+    }
+]
+
 export const FlagsTab = () => {
     const [flags, setFlags] = useState<Record<FeatureFlagName, boolean>>({
         rate_limiting: false,
@@ -39,6 +58,7 @@ export const FlagsTab = () => {
         vpa_scaling: false,
         maintenance_mode: false
     })
+    const [inactivationStrategy, setInactivationStrategy] = useState<InactivationStrategy>("scale_to_zero")
     const [loading, setLoading] = useState<boolean>(true)
     const [togglingKey, setTogglingKey] = useState<FeatureFlagName | null>(null)
     const [search, setSearch] = useState<string>("")
@@ -52,6 +72,8 @@ export const FlagsTab = () => {
             .then((res) => {
                 if (res.activeFeatures)
                     setFlags(res.activeFeatures)
+                if (res.inactivationStrategy)
+                    setInactivationStrategy(res.inactivationStrategy)
                 setLastUpdated(new Date())
             })
             .catch((err) => {
@@ -73,7 +95,8 @@ export const FlagsTab = () => {
         try {
             await new PlatformApi().toggleFeature({
                 name: key,
-                enabled: nextState
+                enabled: nextState,
+                strategy: inactivationStrategy
             })
         } catch (err) {
             console.error("Hiba a feature flag módosításakor:", err)
@@ -136,6 +159,16 @@ export const FlagsTab = () => {
                 maintenanceActive={maintenanceActive}
             />
 
+            <PresetGroup<InactivationStrategy>
+                title="Kikapcsolási & Inaktiválási Stratégia"
+                subtitle="K8s FinOps Workload Profilok"
+                columns={2}
+                accentColor={inactivationStrategy === "scale_to_zero" ? "teal" : "skyblue"}
+                options={INACTIVATION_PRESETS}
+                selectedId={inactivationStrategy}
+                onSelect={(preset) => setInactivationStrategy(preset.value)}
+            />
+
             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
                 <SearchInput
                     value={search}
@@ -178,6 +211,7 @@ export const FlagsTab = () => {
                             feature={feature}
                             enabled={Boolean(flags[feature.key])}
                             isToggling={togglingKey === feature.key}
+                            strategy={inactivationStrategy}
                             onToggle={handleToggle}
                         />
                     ))}

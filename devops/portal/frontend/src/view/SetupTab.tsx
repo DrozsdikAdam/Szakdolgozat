@@ -49,6 +49,7 @@ const INITIAL_FORM_DATA: SetupFormData = {
     targetCpu: 70,
     instanceSize: "small",
 
+    inactivationStrategy: "scale_to_zero",
     enabledFeatures: [],
 };
 
@@ -109,6 +110,7 @@ export const SetupTab = ({ onComplete }: SetupTabProps) => {
                 s3Bucket: formData.s3Bucket,
                 s3BucketSize: formData.s3BucketSize,
                 instanceSize: formData.instanceSize,
+                inactivationStrategy: formData.inactivationStrategy || "scale_to_zero",
                 enabledFeatures: features,
             };
 
@@ -131,7 +133,7 @@ export const SetupTab = ({ onComplete }: SetupTabProps) => {
                     </div>
 
                     <h2 className="text-2xl font-bold text-slate-100 mb-2">
-                        Platform Sikeresen Inicializálva! 🎉
+                        Platform Sikeresen Inicializálva!
                     </h2>
                     <p className="text-sm text-slate-400 mb-6">
                         A Kubernetes klaszter megkapta a konfigurációkat. Az adatbázis motor, az erőforráskorlátok,

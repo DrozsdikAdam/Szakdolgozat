@@ -1,5 +1,6 @@
 import { Cpu, Server, ShieldCheck, Zap, Sliders, TrendingUp } from "lucide-react"
 import type { InstanceSize, SetupStepComponentProps } from "../../../types/component/setup/setupDataProps"
+import type { InactivationStrategy } from "../../../types/platform"
 import type { PresetItem } from "../../../types/component/common/presetGroupProps"
 import type { SliderMark } from "../../../types/component/common/sliderProps"
 import { Button } from "../../common/Button"
@@ -99,6 +100,23 @@ const SIZE_DETAILS: Record<InstanceSize, { requestsCpu: string; requestsRam: str
     medium: { requestsCpu: "1000m", requestsRam: "2Gi", limitsCpu: "2000m", limitsRam: "4Gi", desc: "Nagy megbízhatóságú termelési környezetekhez, pufferelt kapacitással." },
     large: { requestsCpu: "2000m", requestsRam: "4Gi", limitsCpu: "4000m", limitsRam: "8Gi", desc: "Nagy adatfeldolgozási és intenzív memóriahasználatú rendszerekhez." },
 }
+
+const INACTIVATION_OPTIONS: PresetItem<InactivationStrategy>[] = [
+    {
+        id: "scale_to_zero",
+        label: "Scale-to-Zero",
+        badge: "0 MB RAM / FinOps",
+        description: "Inaktív állapotban a podok leállnak 0 példányra (replicas: 0), 0 CPU és 0 MB RAM terheléssel. Bekapcsoláskor ~5-10 mp hidegindítás.",
+        value: "scale_to_zero"
+    },
+    {
+        id: "hot_standby",
+        label: "Hot-Standby",
+        badge: "0s Késleltetés",
+        description: "A podok a háttérben futva maradnak készenlétben (1 példány), a routing kikerüli őket. Bekapcsoláskor azonnali, 0 másodperces rendelkezésre állás.",
+        value: "hot_standby"
+    }
+]
 
 export const AutoScalingStep = ({ data, onChange, disabled }: SetupStepComponentProps) => {
     const currentSize = data.instanceSize || "small"
@@ -313,6 +331,27 @@ export const AutoScalingStep = ({ data, onChange, disabled }: SetupStepComponent
                     )}
                 </div>
             )}
+
+            <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 shadow-inner flex flex-col gap-4">
+                <PresetGroup<InactivationStrategy>
+                    title="Kikapcsolási & Inaktiválási Stratégia"
+                    subtitle="K8s FinOps Workload Profilok (Dual-Strategy)"
+                    options={INACTIVATION_OPTIONS}
+                    selectedId={data.inactivationStrategy || "scale_to_zero"}
+                    onSelect={(option) => onChange("inactivationStrategy", option.value)}
+                    columns={2}
+                    accentColor={(data.inactivationStrategy || "scale_to_zero") === "scale_to_zero" ? "teal" : "skyblue"}
+                    disabled={disabled}
+                />
+
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/60">
+                    <Zap className="w-4 h-4 text-cud-orange shrink-0" />
+                    <span>
+                        Ez a beállítás lesz a klaszter alapértelmezett inaktiválási politikája, de a <strong>Funkciókapcsolók</strong> oldalon futásidőben bármikor egy kattintással átváltható.
+                    </span>
+                </div>
+            </div>
+
         </div>
     )
 }

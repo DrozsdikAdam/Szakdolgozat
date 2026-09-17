@@ -259,15 +259,15 @@ export const ReviewStep = ({ data, onGoToStep }: ReviewStepProps) => {
                                 <>
                                     {renderDetailItem("Replikaszám Határok", `Min: ${data.minReplicas} Pod – Max: ${data.maxReplicas} Pod`, <Layers className="w-3.5 h-3.5 text-cud-orange" />)}
                                     {renderDetailItem("Cél CPU Küszöbérték", `${data.targetCpu}% Terhelésnél új pod indul`, <Gauge className="w-3.5 h-3.5 text-cud-teal" />)}
+                                    {renderDetailItem("Inaktiválási Stratégia", data.inactivationStrategy === "hot_standby" ? "Hot-Standby (1 Pod)" : "Scale-to-Zero (0 Pod)", <Shield className="w-3.5 h-3.5 text-cud-orange" />)}
                                     {renderDetailItem("Metrika Forrás", "K8s Metrics Server (15s ciklusidő)", <Radio className="w-3.5 h-3.5 text-slate-400" />)}
-                                    {renderDetailItem("Skálázódási Viselkedés", "Gyors felskálázás, 5 perces stabilizált lecsillapítás", <Shield className="w-3.5 h-3.5 text-slate-400" />)}
                                 </>
                             ) : (
                                 <>
                                     {renderDetailItem("CPU Korlát Határok", "100m – 1000m automatikus illesztés", <Layers className="w-3.5 h-3.5 text-cud-orange" />)}
                                     {renderDetailItem("Memória Határok", "256Mi – 1Gi dinamikus allokáció", <Server className="w-3.5 h-3.5 text-slate-400" />)}
+                                    {renderDetailItem("Inaktiválási Stratégia", data.inactivationStrategy === "hot_standby" ? "Hot-Standby (1 Pod)" : "Scale-to-Zero (0 Pod)", <Shield className="w-3.5 h-3.5 text-cud-orange" />)}
                                     {renderDetailItem("VPA Mód", "Auto (In-Place / Pod Restart)", <Zap className="w-3.5 h-3.5 text-cud-teal" />)}
-                                    {renderDetailItem("Cél Deployment", "mes-backend (app-mes névtér)", <Shield className="w-3.5 h-3.5 text-slate-400" />)}
                                 </>
                             )}
                         </div>
@@ -289,7 +289,7 @@ export const ReviewStep = ({ data, onGoToStep }: ReviewStepProps) => {
                         {renderDetailItem("Kiválasztott Méretosztály", currentSize.label, <Server className="w-3.5 h-3.5 text-cud-teal" />)}
                         {renderDetailItem("Garantált Erőforrás-allokáció", currentSize.desc, <Layers className="w-3.5 h-3.5 text-cud-skyblue" />)}
                         {renderDetailItem("Példányszám", "spec.replicas: 1 (Dedikált pod)", <Radio className="w-3.5 h-3.5 text-slate-400" />)}
-                        {renderDetailItem("Skálázási Státusz", "Autoscaler kikapcsolva, állandó garantált erőforrás", <Shield className="w-3.5 h-3.5 text-slate-400" />)}
+                        {renderDetailItem("Inaktiválási Stratégia", data.inactivationStrategy === "hot_standby" ? "Hot-Standby (1 Pod)" : "Scale-to-Zero (0 Pod)", <Shield className="w-3.5 h-3.5 text-cud-orange" />)}
                         {renderDetailItem("Cél Deployment", "mes-backend (app-mes névtér)", <Zap className="w-3.5 h-3.5 text-slate-400" />)}
                     </div>
                 );

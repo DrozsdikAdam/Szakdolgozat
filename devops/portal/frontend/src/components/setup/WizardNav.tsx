@@ -105,7 +105,7 @@ export const WizardNav = ({ currentStep, totalSteps, onNext, onPrev, onGoToStep,
                             disabled={isLoading}
                             className="bg-cud-teal hover:bg-cud-teal/90 text-slate-950 font-bold shadow-lg shadow-cud-teal/20"
                         >
-                            Platform Inicializálása 🎉
+                            Platform Inicializálása
                         </Button>
                     ) : (
                         <Button

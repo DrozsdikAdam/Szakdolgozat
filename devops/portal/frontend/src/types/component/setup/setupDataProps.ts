@@ -1,4 +1,4 @@
-import type { DatabaseMode, GitProvider, S3Provider } from "../../platform";
+import type { DatabaseMode, GitProvider, InactivationStrategy, S3Provider } from "../../platform";
 
 export type DeploymentStrategy = 'RollingUpdate' | 'BlueGreen' | 'Canary';
 export type DatabaseEngine = 'postgres' | 'mssql' | 'oracle';
@@ -37,6 +37,7 @@ export interface SetupFormData {
     targetCpu: number;
     instanceSize?: InstanceSize;
 
+    inactivationStrategy: InactivationStrategy;
     enabledFeatures: string[];
 }
 export interface SetupStepComponentProps {

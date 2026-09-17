@@ -15,19 +15,25 @@ const CATEGORY_CONFIG: Record<FeatureCategory, { label: string; variant: "skyblu
     operations: { label: "Üzemeltetés", variant: "orange" }
 }
 
-const STATUS_CONFIG: Record<"true" | "false", { text: string; variant: "teal" | "neutral"; pulse: boolean }> = {
-    true: { text: "Aktív", variant: "teal", pulse: true },
-    false: { text: "Inaktív", variant: "neutral", pulse: false }
-}
-
-export const FeatureCard = ({ feature, enabled, isToggling, onToggle }: FeatureCardProps) => {
+export const FeatureCard = ({ feature, enabled, isToggling, strategy = "scale_to_zero", onToggle }: FeatureCardProps) => {
 
     const isCriticalActive = Boolean(feature.isCritical && enabled)
     const criticalKey = String(isCriticalActive) as "true" | "false"
-    const statusKey = String(enabled) as "true" | "false"
 
     const categoryInfo = CATEGORY_CONFIG[feature.category]
-    const statusInfo = STATUS_CONFIG[statusKey]
+
+    let statusInfo: { text: string; variant: "teal" | "skyblue" | "orange" | "neutral"; pulse: boolean };
+    if (enabled) {
+        statusInfo = { text: "Aktív (Fut)", variant: "teal", pulse: true };
+    } else if (["pgbouncer", "haproxy", "cronjob_backup"].includes(feature.key)) {
+        if (strategy === "hot_standby") {
+            statusInfo = { text: "Készenlét (1 Pod)", variant: "skyblue", pulse: false };
+        } else {
+            statusInfo = { text: "Leállítva (0 Pod)", variant: "orange", pulse: false };
+        }
+    } else {
+        statusInfo = { text: "Inaktív", variant: "neutral", pulse: false };
+    }
 
     return (
         <div
