@@ -2,6 +2,7 @@ import type { DatabaseMode, GitProvider, S3Provider } from "../../platform";
 
 export type DeploymentStrategy = 'RollingUpdate' | 'BlueGreen' | 'Canary';
 export type DatabaseEngine = 'postgres' | 'mssql' | 'oracle';
+export type InstanceSize = 'nano' | 'small' | 'medium' | 'large';
 
 export interface SetupFormData {
     gitEnabled: boolean;
@@ -34,6 +35,7 @@ export interface SetupFormData {
     minReplicas: number;
     maxReplicas: number;
     targetCpu: number;
+    instanceSize?: InstanceSize;
 
     enabledFeatures: string[];
 }

@@ -1,3 +1,5 @@
+import type { InstanceSize } from "./component/setup/setupDataProps"
+
 export type GitProvider = 'GITHUB' | 'GITLAB'
 
 export type DatabaseMode = 'internal' | 'external'
@@ -33,5 +35,6 @@ export interface SetupWizardPayload {
     s3Provider: S3Provider,
     s3Bucket?: string,
     s3BucketSize?: string,
+    instanceSize?: InstanceSize,
     enabledFeatures: FeatureFlagName[]
 }
