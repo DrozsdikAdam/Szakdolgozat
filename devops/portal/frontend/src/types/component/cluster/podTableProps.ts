@@ -8,4 +8,5 @@ export interface PodTableProps {
     pods: PodTableItem[]
     loading: boolean
     searchQuery: string
+    onViewLogs?: (pod: PodTableItem) => void
 }

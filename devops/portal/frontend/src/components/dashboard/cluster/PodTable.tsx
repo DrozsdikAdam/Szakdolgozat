@@ -1,10 +1,10 @@
-import { Box, RefreshCw } from "lucide-react"
+import { Box, RefreshCw, Terminal } from "lucide-react"
 import type { PodTableProps } from "../../../types/component/cluster/podTableProps"
 import { Badge } from "../../common/Badge"
 import { Card } from "../../common/Card"
 import { EmptyState } from "../../common/EmptyState"
 
-export const PodTable = ({ pods, loading, searchQuery }: PodTableProps) => {
+export const PodTable = ({ pods, loading, searchQuery, onViewLogs }: PodTableProps) => {
     const getStatusBadge = (status: string) => {
         const s = status.toLowerCase()
         if (s === "running") {
@@ -55,6 +55,7 @@ export const PodTable = ({ pods, loading, searchQuery }: PodTableProps) => {
                                 <th className="py-3.5 px-4">Újraindítás</th>
                                 <th className="py-3.5 px-4">Életkor</th>
                                 <th className="py-3.5 px-4">Névtér</th>
+                                <th className="py-3.5 px-4 text-right">Művelet</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/60 text-sm">
@@ -94,6 +95,17 @@ export const PodTable = ({ pods, loading, searchQuery }: PodTableProps) => {
                                         >
                                             {pod.namespace || (pod.source === "app" ? "app-mes" : "platform-infra")}
                                         </span>
+                                    </td>
+                                    <td className="py-3.5 px-4 text-right">
+                                        <button
+                                            type="button"
+                                            onClick={() => onViewLogs?.(pod)}
+                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-medium bg-slate-800 hover:bg-slate-700 text-cud-skyblue border border-slate-700/80 hover:border-cud-skyblue/50 transition-all cursor-pointer group"
+                                            title="Pod napló és események megtekintése"
+                                        >
+                                            <Terminal className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
+                                            <span>Napló</span>
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
