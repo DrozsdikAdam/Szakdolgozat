@@ -1,3 +1,4 @@
+import type { InactivationStrategy } from "../types/feature.types.js"
 import type { DatabaseEngine, DatabaseMode, GitProvider, InstanceSize, S3Provider } from "../types/setup.types.js"
 
 export interface SetupWizardPayload {
@@ -15,4 +16,5 @@ export interface SetupWizardPayload {
     s3SecretKey?: string
     instanceSize?: InstanceSize
     enabledFeatures: string[]
+    inactivationStrategy: InactivationStrategy
 }

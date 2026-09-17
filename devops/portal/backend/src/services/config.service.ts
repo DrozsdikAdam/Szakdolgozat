@@ -5,10 +5,22 @@ import type { PlatformStatusResponse } from "../dtos/status.dto.js";
 import { BackupRecord } from "../models/BackupRecords.js";
 import { FeatureFlag } from "../models/FeatureFlag.js";
 import { SystemConfig } from "../models/SystemConfig.js";
-import type { FeatureFlagName } from "../types/feature.types.js";
+import type { FeatureFlagName, InactivationStrategy } from "../types/feature.types.js";
 import type { DatabaseEngine, DatabaseMode, GitProvider, InstanceSize, S3Provider } from "../types/setup.types.js";
 import { AuditService } from "./audit.service.js";
 import { K8sService } from "./k8s.service.js";
+
+interface FeatureWorkloadTarget {
+    type: 'deployment' | 'cronjob';
+    name: string;
+    namespace: string;
+}
+
+const FEATURE_WORKLOAD_MAP: Partial<Record<FeatureFlagName, FeatureWorkloadTarget>> = {
+    pgbouncer: { type: 'deployment', name: 'pgbouncer', namespace: 'platform-infra' },
+    haproxy: { type: 'deployment', name: 'haproxy', namespace: 'platform-infra' },
+    cronjob_backup: { type: 'cronjob', name: 'db-backup', namespace: 'platform-infra' },
+};
 
 export class ConfigService {
 
@@ -104,6 +116,7 @@ export class ConfigService {
                 dbMode: configMap.get('db_mode') as DatabaseMode,
                 s3Provider: configMap.get('s3_provider') as S3Provider,
                 instanceSize: (configMap.get('instance_size') as InstanceSize) || 'small',
+                inactivationStrategy: (configMap.get('inactivation_strategy') as InactivationStrategy) || 'scale_to_zero',
                 activeFeatures: activeFeatures
             }
 
@@ -118,6 +131,7 @@ export class ConfigService {
         try {
             const engine = request.dbEngine ?? 'postgres';
             const size = request.instanceSize ?? 'small';
+            const strategy = request.inactivationStrategy ?? 'scale_to_zero';
             const map: Record<string, string> = {
                 'is_initialized': 'true',
                 'git_provider': request.gitProvider,
@@ -127,7 +141,8 @@ export class ConfigService {
                 's3_provider': request.s3Provider,
                 's3_bucket': request.s3Bucket ?? 'mes-backups',
                 's3_bucket_size': request.s3BucketSize ?? '5Gi',
-                'instance_size': size
+                'instance_size': size,
+                'inactivation_strategy': strategy
             }
 
             await Promise.all(
@@ -162,22 +177,44 @@ export class ConfigService {
         }
     }
 
+    private applyWorkloadStrategy = async (featureName: FeatureFlagName, enabled: boolean, strategy: InactivationStrategy): Promise<void> => {
+        const target = FEATURE_WORKLOAD_MAP[featureName];
+        if (!target) return;
+
+        if (target.type === 'deployment') {
+            // Ha aktív -> 1 pod; ha inaktív és scale_to_zero -> 0 pod; ha hot_standby -> 1 pod marad
+            const replicas = enabled ? 1 : (strategy === 'scale_to_zero' ? 0 : 1);
+            await this.k8sService.scaleDeployment(target.name, target.namespace, replicas);
+        } else if (target.type === 'cronjob') {
+            // CronJob felfüggesztése csak kikapcsolt + scale_to_zero állapotban
+            const isSuspended = !enabled && strategy === 'scale_to_zero';
+            await this.k8sService.setCronJobSuspended(target.name, target.namespace, isSuspended);
+        }
+    };
+
     toggleFeature = async (request: FeatureTogglePayload): Promise<FeatureFlag> => {
         try {
-            const [flag] = await FeatureFlag.findOrCreate({ where: { name: request.name }, defaults: { name: request.name, enabled: request.enabled } });
+            const [flag] = await FeatureFlag.findOrCreate({
+                where: { name: request.name },
+                defaults: { name: request.name, enabled: request.enabled }
+            });
 
-            flag.enabled = request.enabled
+            const strategy: InactivationStrategy = request.strategy || request.inactivationStrategy || (request.params?.strategy as InactivationStrategy) || 'scale_to_zero';
 
-            if (request.params) flag.params = request.params;
-
+            flag.enabled = request.enabled;
+            flag.params = { ...(flag.params || {}), ...(request.params || {}), strategy };
             await flag.save();
 
-            await this.auditService.logAudit('TOGGLE_FEATURE', `Feature flag ${request.name} set to ${request.enabled}`);
+            await this.applyWorkloadStrategy(request.name, request.enabled, strategy);
+
+            await this.auditService.logAudit(
+                'TOGGLE_FEATURE',
+                `Feature flag ${request.name} set to ${request.enabled} (Strategy: ${strategy})`
+            );
 
             return flag;
         } catch (error) {
             await this.auditService.logAudit('TOGGLE_FEATURE', `Feature flag ${request.name} set to ${request.enabled}`, 'FAILED');
-
             console.error('Error toggling feature:', error);
             throw error;
         }

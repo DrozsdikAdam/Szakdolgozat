@@ -495,4 +495,31 @@ export class K8sService {
         }
     }
 
+    scaleDeployment = async (name: string, namespace: string, replicas: number) => {
+        try {
+            const deployment = await this.appsApi.readNamespacedDeployment({ name, namespace });
+            if (deployment.spec) {
+                deployment.spec.replicas = replicas;
+            }
+            await this.appsApi.replaceNamespacedDeployment({ name, namespace, body: deployment });
+            return { success: true, message: `Deployment sikeresen átméretezve (${replicas})` };
+        } catch (error) {
+            console.warn(`[K8sService] Nem sikerült átméretezni a deploymentet (${name}):`, (error as any)?.message || error);
+            return { success: false, message: `Átméretezési figyelmeztetés: ${(error as any)?.message || error}` };
+        }
+    }
+
+    setCronJobSuspended = async (name: string, namespace: string, suspended: boolean) => {
+        try {
+            const cronJob = await this.batchApi.readNamespacedCronJob({ name, namespace });
+            if (cronJob.spec)
+                cronJob.spec.suspend = suspended;
+            await this.batchApi.replaceNamespacedCronJob({ name, namespace, body: cronJob });
+            return { success: true, message: `CronJob sikeresen felfüggesztve (${suspended})` };
+        } catch (error) {
+            console.warn(`[K8sService] Nem sikerült felfüggeszteni a CronJobot (${name}):`, (error as any)?.message || error);
+            return { success: false, message: `Felfüggesztési figyelmeztetés: ${(error as any)?.message || error}` };
+        }
+    }
+
 }

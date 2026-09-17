@@ -15,3 +15,4 @@ export type SystemConfigKey = 'is_initialized'
     | 's3_bucket'
     | 's3_bucket_size'
     | 'instance_size'
+    | 'inactivation_strategy';
