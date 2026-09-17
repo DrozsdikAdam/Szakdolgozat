@@ -1,4 +1,4 @@
-import type { DatabaseEngine, DatabaseMode, GitProvider, S3Provider } from "../types/setup.types.js"
+import type { DatabaseEngine, DatabaseMode, GitProvider, InstanceSize, S3Provider } from "../types/setup.types.js"
 
 export interface SetupWizardPayload {
     gitProvider: GitProvider
@@ -13,5 +13,6 @@ export interface SetupWizardPayload {
     s3BucketSize?: string
     s3AccessKey?: string
     s3SecretKey?: string
+    instanceSize?: InstanceSize
     enabledFeatures: string[]
 }

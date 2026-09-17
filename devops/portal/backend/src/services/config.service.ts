@@ -6,7 +6,7 @@ import { BackupRecord } from "../models/BackupRecords.js";
 import { FeatureFlag } from "../models/FeatureFlag.js";
 import { SystemConfig } from "../models/SystemConfig.js";
 import type { FeatureFlagName } from "../types/feature.types.js";
-import type { DatabaseEngine, DatabaseMode, GitProvider, S3Provider } from "../types/setup.types.js";
+import type { DatabaseEngine, DatabaseMode, GitProvider, InstanceSize, S3Provider } from "../types/setup.types.js";
 import { AuditService } from "./audit.service.js";
 import { K8sService } from "./k8s.service.js";
 
@@ -103,6 +103,7 @@ export class ConfigService {
                 dbEngine: (configMap.get('db_engine') as DatabaseEngine) || 'postgres',
                 dbMode: configMap.get('db_mode') as DatabaseMode,
                 s3Provider: configMap.get('s3_provider') as S3Provider,
+                instanceSize: (configMap.get('instance_size') as InstanceSize) || 'small',
                 activeFeatures: activeFeatures
             }
 
@@ -116,6 +117,7 @@ export class ConfigService {
     saveSetupWizard = async (request: SetupWizardPayload): Promise<void> => {
         try {
             const engine = request.dbEngine ?? 'postgres';
+            const size = request.instanceSize ?? 'small';
             const map: Record<string, string> = {
                 'is_initialized': 'true',
                 'git_provider': request.gitProvider,
@@ -124,7 +126,8 @@ export class ConfigService {
                 'db_engine': engine,
                 's3_provider': request.s3Provider,
                 's3_bucket': request.s3Bucket ?? 'mes-backups',
-                's3_bucket_size': request.s3BucketSize ?? '5Gi'
+                's3_bucket_size': request.s3BucketSize ?? '5Gi',
+                'instance_size': size
             }
 
             await Promise.all(
@@ -141,6 +144,13 @@ export class ConfigService {
 
             const dbResult = await this.k8sService.deployDatabaseEngine(engine, request.dbMode);
             await this.auditService.logAudit('SETUP_DATABASE_PROVISION', `Database provisioning (${engine}, ${request.dbMode}): ${dbResult.message}`, dbResult.success ? 'SUCCESS' : 'FAILED');
+
+            // Ha nincs autoscaling, a választott statikus példányméretet (requests & limits) állítjuk be a podra
+            const isAutoscalingActive = request.enabledFeatures.includes('hpa_scaling') || request.enabledFeatures.includes('vpa_scaling');
+            if (!isAutoscalingActive) {
+                const sizeResult = await this.k8sService.applyInstanceSize(size);
+                await this.auditService.logAudit('SETUP_INSTANCE_SIZE', `Static instance sizing (${size}): ${sizeResult.message}`, sizeResult.success ? 'SUCCESS' : 'FAILED');
+            }
 
             await this.auditService.logAudit('SETUP_WIZARD', 'Platform setup wizard completed');
 

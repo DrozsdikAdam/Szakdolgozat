@@ -1,5 +1,5 @@
 import type { FeatureFlagName } from "../types/feature.types.js"
-import type { DatabaseEngine, DatabaseMode, GitProvider, S3Provider } from "../types/setup.types.js"
+import type { DatabaseEngine, DatabaseMode, GitProvider, InstanceSize, S3Provider } from "../types/setup.types.js"
 
 export interface PlatformStatusResponse {
 
@@ -9,6 +9,7 @@ export interface PlatformStatusResponse {
     dbEngine?: DatabaseEngine
     dbMode?: DatabaseMode
     s3Provider?: S3Provider
+    instanceSize?: InstanceSize
     activeFeatures: Record<FeatureFlagName, boolean>
 
 }

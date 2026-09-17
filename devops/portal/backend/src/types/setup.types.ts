@@ -4,6 +4,7 @@ export type DatabaseMode = 'internal' | 'external';
 export type DatabaseEngine = 'postgres' | 'mssql' | 'oracle';
 
 export type S3Provider = "internal" | 'external';
+export type InstanceSize = 'nano' | 'small' | 'medium' | 'large';
 
 export type SystemConfigKey = 'is_initialized'
     | 'git_provider'
@@ -13,3 +14,4 @@ export type SystemConfigKey = 'is_initialized'
     | 's3_provider'
     | 's3_bucket'
     | 's3_bucket_size'
+    | 'instance_size'

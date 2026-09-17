@@ -2,7 +2,7 @@ import * as k8s from "@kubernetes/client-node";
 import { K8sMapper } from "../mappers/k8s.mapper.js";
 import type { JobTriggerResponseDto } from "../dtos/backup.dto.js";
 import type { ClusterOverviewDto, RateLimitResponseDto, UpdateHpaDto, UpdateRateLimitDto, UpdateVpaDto, VpaOverviewDto } from "../dtos/k8s.dto.js";
-import type { DatabaseEngine, DatabaseMode } from "../types/setup.types.js";
+import type { DatabaseEngine, DatabaseMode, InstanceSize } from "../types/setup.types.js";
 
 export class K8sService {
 
@@ -459,6 +459,39 @@ export class K8sService {
         } catch (error) {
             console.warn(`[K8sService] Figyelmeztetés a(z) ${engine} K8s provisioning során:`, (error as any)?.message || error);
             return { success: false, message: `K8s provisioning figyelmeztetés: ${(error as any)?.message || error}` };
+        }
+    }
+
+    applyInstanceSize = async (size: InstanceSize, namespace = 'app-mes', deploymentName = 'mes-backend'): Promise<{ success: boolean; message: string }> => {
+        const sizeMap: Record<InstanceSize, { requests: { cpu: string; memory: string }; limits: { cpu: string; memory: string } }> = {
+            nano: { requests: { cpu: '250m', memory: '512Mi' }, limits: { cpu: '500m', memory: '1024Mi' } },
+            small: { requests: { cpu: '500m', memory: '1Gi' }, limits: { cpu: '1000m', memory: '2Gi' } },
+            medium: { requests: { cpu: '1000m', memory: '2Gi' }, limits: { cpu: '2000m', memory: '4Gi' } },
+            large: { requests: { cpu: '2000m', memory: '4Gi' }, limits: { cpu: '4000m', memory: '8Gi' } }
+        };
+
+        const targetResources = sizeMap[size] || sizeMap.small;
+
+        try {
+            const deployment = await this.appsApi.readNamespacedDeployment({ name: deploymentName, namespace });
+            const container = deployment.spec?.template.spec?.containers[0];
+            if (!container) throw new Error(`Container nem található a(z) ${deploymentName} deploymentben`);
+
+            container.resources = {
+                requests: { cpu: targetResources.requests.cpu, memory: targetResources.requests.memory },
+                limits: { cpu: targetResources.limits.cpu, memory: targetResources.limits.memory }
+            };
+
+            if (deployment.spec) {
+                deployment.spec.replicas = 1;
+            }
+
+            await this.appsApi.replaceNamespacedDeployment({ name: deploymentName, namespace, body: deployment });
+            console.log(`[K8sService] Statikus példányméret sikeresen alkalmazva (${size}) a(z) ${deploymentName} deploymentre.`);
+            return { success: true, message: `Példányméret beállítva: ${size} (${targetResources.requests.cpu} / ${targetResources.requests.memory})` };
+        } catch (error) {
+            console.warn(`[K8sService] Nem sikerült frissíteni a példányméretet (${size}) a K8s-ban:`, (error as any)?.message || error);
+            return { success: false, message: `Példányméret beállítás figyelmeztetés: ${(error as any)?.message || error}` };
         }
     }
 
