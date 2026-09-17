@@ -1,9 +1,11 @@
 export interface PodInfo {
     name: string,
+    namespace?: string,
     status: string,
     ready: string,
     restarts: number,
-    age: string
+    age: string,
+    ip?: string
 }
 
 export interface ClusterOverviewDto {

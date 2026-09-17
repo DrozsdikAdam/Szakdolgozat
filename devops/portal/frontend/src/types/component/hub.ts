@@ -11,4 +11,6 @@ export interface ServiceItem {
     badgeVariant: 'teal' | 'vermillon' | 'orange' | 'skyblue' | 'purple'
     accentColor: string
     isConfigured: boolean
+    statusLabel?: string
+    statusVariant?: 'teal' | 'orange' | 'vermillon' | 'skyblue'
 }

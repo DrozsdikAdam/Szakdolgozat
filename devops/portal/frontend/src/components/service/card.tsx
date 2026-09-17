@@ -55,15 +55,20 @@ export const ServiceCard = ({ service, onSelect, isSelected = false }: ServiceCa
 
             <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5 font-medium">
-                    {service.isConfigured ? (
+                    {service.statusVariant === 'vermillon' ? (
                         <>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-cud-teal shrink-0" />
-                            <span className="text-slate-300">Aktív & Üzemkész</span>
+                            <AlertCircle className="w-3.5 h-3.5 text-cud-vermillon shrink-0" />
+                            <span className="text-cud-vermillon font-semibold">{service.statusLabel || "Kritikus állapot"}</span>
+                        </>
+                    ) : service.statusVariant === 'orange' || (!service.isConfigured && !service.statusVariant) ? (
+                        <>
+                            <AlertCircle className="w-3.5 h-3.5 text-cud-orange shrink-0" />
+                            <span className="text-slate-300">{service.statusLabel || "Beállítás szükséges"}</span>
                         </>
                     ) : (
                         <>
-                            <AlertCircle className="w-3.5 h-3.5 text-cud-orange shrink-0" />
-                            <span className="text-slate-400">Beállítás szükséges</span>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-cud-teal shrink-0" />
+                            <span className="text-slate-300">{service.statusLabel || "Aktív & Üzemkész"}</span>
                         </>
                     )}
                 </div>

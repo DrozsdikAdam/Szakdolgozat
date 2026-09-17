@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import type { ServiceId, ServiceItem } from './types/component/hub'
-import { DEFAULT_SERVICES } from './constants/services'
+import { DEFAULT_SERVICES, computeDynamicServices } from './constants/services'
 import { Navbar } from './components/layout/navbar'
 import { ServiceGrid } from './components/service/grid'
 import { Card } from './components/common/Card'
 import { Button } from './components/common/Button'
 import { ArrowLeft } from 'lucide-react'
 import { PlatformApi } from './client/api/platform'
+import { K8sApi } from './client/api/k8s'
 import { ClusterOverviewTab } from './view/ClusterOverviewTab'
 import { FlagsTab } from './view/FlagsTab'
 import { AuditTab } from './view/AuditTab'
@@ -22,40 +23,51 @@ function App() {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
   const currentService = services.find(s => s.id === activeView)
 
+  const platformApi = useMemo(() => new PlatformApi(), [])
+  const k8sApi = useMemo(() => new K8sApi(), [])
+
+  const loadPortalData = useCallback(async () => {
+    setIsRefreshing(true)
+    try {
+      const [statusRes, clusterRes] = await Promise.allSettled([
+        platformApi.getStatus(),
+        k8sApi.getOverview()
+      ])
+
+      const status = statusRes.status === 'fulfilled' ? statusRes.value : null
+      const cluster = clusterRes.status === 'fulfilled' ? clusterRes.value : null
+      const isHealthy = statusRes.status === 'fulfilled'
+
+      setIsClusterHealthy(isHealthy)
+      if (status) {
+        setService(computeDynamicServices(status, cluster, isHealthy))
+      } else {
+        setService(DEFAULT_SERVICES)
+      }
+    } catch {
+      setIsClusterHealthy(false)
+      setService(DEFAULT_SERVICES)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }, [platformApi, k8sApi])
+
   const handleSelectService = (id: ServiceId) => {
     setActiveView(id)
   }
 
   const handleBackToHub = () => {
     setActiveView('hub')
+    loadPortalData()
   }
 
   const handleRefresh = () => {
-    setIsRefreshing(true)
-    new PlatformApi()
-      .getStatus()
-      .then(() => {
-        setIsClusterHealthy(true)
-      })
-      .catch(() => {
-        setIsClusterHealthy(false)
-      })
-      .finally(() => {
-        setIsRefreshing(false)
-      })
+    loadPortalData()
   }
 
   useEffect(() => {
-    new PlatformApi()
-      .getStatus()
-      .then(() => {
-        setIsClusterHealthy(true)
-      })
-      .catch((_error) => {
-        setService(DEFAULT_SERVICES)
-        setIsClusterHealthy(false)
-      })
-  }, [])
+    loadPortalData()
+  }, [loadPortalData])
 
   return (
     <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-sans">

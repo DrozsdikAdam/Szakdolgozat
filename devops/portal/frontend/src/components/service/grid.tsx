@@ -51,7 +51,7 @@ export const ServiceGrid = ({ services, onSelectService, selectedServiceId }: Se
                             }`}
                         onClick={() => setActiveFilter("configured")}
                     >
-                        Aktív & Üzemkész
+                        Üzemkész ({services.filter(s => s.isConfigured).length})
                     </button>
                     <button
                         type="button"
@@ -61,7 +61,7 @@ export const ServiceGrid = ({ services, onSelectService, selectedServiceId }: Se
                             }`}
                         onClick={() => setActiveFilter("pending")}
                     >
-                        Beállítás szükséges
+                        Figyelmet igénylő ({services.filter(s => !s.isConfigured).length})
                     </button>
                 </div>
             </div>
