@@ -19,7 +19,7 @@ export interface RateLimitResponseDto {
 export interface UpdateHpaDto {
     minReplicas: number;
     maxReplicas: number;
-    currentReplicas: number;
+    currentReplicas?: number;
     targetCpuUtil: number;
     currentCpuPercent?: number;
     currentMemoryUsage?: number;

@@ -22,6 +22,19 @@ const FEATURE_WORKLOAD_MAP: Partial<Record<FeatureFlagName, FeatureWorkloadTarge
     cronjob_backup: { type: 'cronjob', name: 'db-backup', namespace: 'platform-infra' },
 };
 
+const PLATFORM_FEATURE_DEFAULTS: Partial<Record<FeatureFlagName, Record<string, any>>> = {
+    rate_limiting: { rps: 100, burst: 5 },
+    hpa_scaling: { minReplicas: 2, maxReplicas: 6, targetCpuUtil: 70 },
+    vpa_scaling: {
+        updateMode: 'Auto',
+        minAllowedCpu: '100m',
+        maxAllowedCpu: '1000m',
+        minAllowedMemory: '128Mi',
+        maxAllowedMemory: '2Gi'
+    },
+    cronjob_backup: { schedule: '0 2 * * *' }
+};
+
 export class ConfigService {
 
     private auditService: AuditService;
@@ -108,6 +121,12 @@ export class ConfigService {
                 return acc;
             }, {} as Record<FeatureFlagName, boolean>);
 
+            const featureParams = flags.reduce((acc, flag) => {
+                const defaults = PLATFORM_FEATURE_DEFAULTS[flag.name] || {};
+                acc[flag.name] = { ...defaults, ...(flag.params || {}) };
+                return acc;
+            }, {} as Partial<Record<FeatureFlagName, Record<string, any>>>);
+
             const response: PlatformStatusResponse = {
                 isInitialized: configMap.get('is_initialized') === 'true',
                 gitProvider: configMap.get('git_provider') as GitProvider,
@@ -117,7 +136,8 @@ export class ConfigService {
                 s3Provider: configMap.get('s3_provider') as S3Provider,
                 instanceSize: (configMap.get('instance_size') as InstanceSize) || 'small',
                 inactivationStrategy: (configMap.get('inactivation_strategy') as InactivationStrategy) || 'scale_to_zero',
-                activeFeatures: activeFeatures
+                activeFeatures: activeFeatures,
+                featureParams: featureParams
             }
 
             return response;
@@ -200,12 +220,45 @@ export class ConfigService {
             });
 
             const strategy: InactivationStrategy = request.strategy || request.inactivationStrategy || (request.params?.strategy as InactivationStrategy) || 'scale_to_zero';
+            const defaults = PLATFORM_FEATURE_DEFAULTS[request.name] || {};
+            const mergedParams: Record<string, any> = { ...defaults, ...(flag.params || {}), ...(request.params || {}), strategy };
 
             flag.enabled = request.enabled;
-            flag.params = { ...(flag.params || {}), ...(request.params || {}), strategy };
+            flag.params = mergedParams;
             await flag.save();
 
-            await this.applyWorkloadStrategy(request.name, request.enabled, strategy);
+            if (request.name === 'rate_limiting') {
+                if (request.enabled) {
+                    await this.k8sService.updateRateLimit({
+                        rps: Number(mergedParams.rps ?? 100),
+                        burst: Number(mergedParams.burst ?? 5)
+                    });
+                } else {
+                    await this.k8sService.updateRateLimit({ rps: 0, burst: 0 });
+                }
+            } else if (request.name === 'hpa_scaling') {
+                if (request.enabled) {
+                    await this.k8sService.updateHpa({
+                        minReplicas: Number(mergedParams.minReplicas ?? 2),
+                        maxReplicas: Number(mergedParams.maxReplicas ?? 6),
+                        targetCpuUtil: Number(mergedParams.targetCpuUtil ?? 70)
+                    });
+                } else {
+                    await this.k8sService.scaleDeployment('mes-backend', 'app-mes', 1);
+                }
+            } else if (request.name === 'vpa_scaling') {
+                await this.k8sService.updateVpa({
+                    minAllowedCpu: String(mergedParams.minAllowedCpu ?? '100m'),
+                    maxAllowedCpu: String(mergedParams.maxAllowedCpu ?? '1000m'),
+                    minAllowedMemory: String(mergedParams.minAllowedMemory ?? '128Mi'),
+                    maxAllowedMemory: String(mergedParams.maxAllowedMemory ?? '2Gi'),
+                    updateMode: request.enabled ? 'Auto' : 'Off'
+                });
+            } else if (request.name === 'maintenance_mode') {
+                await this.k8sService.setMaintenanceMode(request.enabled);
+            } else {
+                await this.applyWorkloadStrategy(request.name, request.enabled, strategy);
+            }
 
             await this.auditService.logAudit(
                 'TOGGLE_FEATURE',

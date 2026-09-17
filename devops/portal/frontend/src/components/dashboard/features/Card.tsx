@@ -1,7 +1,8 @@
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, ArrowUpRight } from "lucide-react"
 import { Badge } from "../../common/Badge"
 import { Toggle } from "../../common/Toggle"
 import type { FeatureCardProps, FeatureCategory } from "../../../types/component/features/featureCardProps"
+import type { FeatureFlagName } from "../../../types/platform"
 
 const CARD_BORDER_STYLE: Record<"true" | "false", string> = {
     true: "border-cud-vermillon/60 bg-cud-vermillon/5 shadow-lg shadow-cud-vermillon/5",
@@ -15,12 +16,44 @@ const CATEGORY_CONFIG: Record<FeatureCategory, { label: string; variant: "skyblu
     operations: { label: "Üzemeltetés", variant: "orange" }
 }
 
-export const FeatureCard = ({ feature, enabled, isToggling, strategy = "scale_to_zero", onToggle }: FeatureCardProps) => {
+const NAVIGATION_TARGETS: Partial<Record<FeatureFlagName, { target: string; label: string }>> = {
+    rate_limiting: { target: "traffic", label: "Beállítások a Forgalom oldalon" },
+    hpa_scaling: { target: "autoscaling", label: "Finomhangolás a Skálázás oldalon" },
+    vpa_scaling: { target: "autoscaling", label: "Finomhangolás a Skálázás oldalon" },
+    cronjob_backup: { target: "backup", label: "Mentési napló a Mentések oldalon" }
+}
+
+const getParamSummary = (key: FeatureFlagName, params?: Record<string, any>): string | null => {
+    if (!params) return null
+    if (key === "rate_limiting") {
+        const rps = params.rps ?? 100
+        const burst = params.burst ?? 5
+        return `${rps} RPS / ${burst}x puffer`
+    }
+    if (key === "hpa_scaling") {
+        const min = params.minReplicas ?? 2
+        const max = params.maxReplicas ?? 6
+        const cpu = params.targetCpuUtil ?? 70
+        return `${min}–${max} Pod / ${cpu}% CPU`
+    }
+    if (key === "vpa_scaling") {
+        const mode = params.updateMode ?? "Auto"
+        return `VPA ${mode}`
+    }
+    if (key === "cronjob_backup") {
+        return params.schedule ? `Cron: ${params.schedule}` : "Napi 02:00"
+    }
+    return null
+}
+
+export const FeatureCard = ({ feature, enabled, isToggling, strategy = "scale_to_zero", params, onNavigate, onToggle }: FeatureCardProps) => {
 
     const isCriticalActive = Boolean(feature.isCritical && enabled)
     const criticalKey = String(isCriticalActive) as "true" | "false"
 
     const categoryInfo = CATEGORY_CONFIG[feature.category]
+    const navInfo = NAVIGATION_TARGETS[feature.key]
+    const paramSummary = getParamSummary(feature.key, params)
 
     let statusInfo: { text: string; variant: "teal" | "skyblue" | "orange" | "neutral"; pulse: boolean };
     if (enabled) {
@@ -72,13 +105,34 @@ export const FeatureCard = ({ feature, enabled, isToggling, strategy = "scale_to
                 </p>
             </div>
 
-            <div className="mt-4 pt-3.5 border-t border-slate-800/70 flex items-center justify-between gap-2 flex-wrap">
-                <Badge
-                    variant={statusInfo.variant}
-                    text={statusInfo.text}
-                    pulse={statusInfo.pulse}
-                    size="sm"
-                />
+            <div className="mt-4 pt-3.5 border-t border-slate-800/70 flex flex-col gap-2.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                        <Badge
+                            variant={statusInfo.variant}
+                            text={statusInfo.text}
+                            pulse={statusInfo.pulse}
+                            size="sm"
+                        />
+
+                        {paramSummary && enabled && (
+                            <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-slate-800/90 text-slate-300 border border-slate-700/60">
+                                {paramSummary}
+                            </span>
+                        )}
+                    </div>
+
+                    {enabled && navInfo && onNavigate && (
+                        <button
+                            type="button"
+                            onClick={() => onNavigate(navInfo.target)}
+                            className="text-xs font-medium text-cud-skyblue hover:text-white flex items-center gap-1 transition-colors cursor-pointer group"
+                        >
+                            <span>{navInfo.label}</span>
+                            <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                        </button>
+                    )}
+                </div>
 
                 {isCriticalActive && (
                     <div className="flex items-center gap-1.5 text-xs font-medium text-cud-vermillon">

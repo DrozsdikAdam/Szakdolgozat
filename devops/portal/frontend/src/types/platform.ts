@@ -19,7 +19,8 @@ export interface PlatformStatusResponse {
     dbMode?: DatabaseMode,
     s3Provider?: S3Provider,
     inactivationStrategy?: InactivationStrategy,
-    activeFeatures: Record<FeatureFlagName, boolean>
+    activeFeatures: Record<FeatureFlagName, boolean>,
+    featureParams?: Partial<Record<FeatureFlagName, Record<string, any>>>
 }
 
 export interface FeatureTogglePayload {

@@ -522,4 +522,28 @@ export class K8sService {
         }
     }
 
+    setMaintenanceMode = async (enabled: boolean, namespace = 'app-mes', ingressName = 'mes-ingress'): Promise<{ success: boolean; message: string }> => {
+        try {
+            const ingress = await this.networkApi.readNamespacedIngress({ name: ingressName, namespace });
+            if (!ingress.metadata) ingress.metadata = {};
+            if (!ingress.metadata.annotations) ingress.metadata.annotations = {};
+
+            if (enabled) {
+                ingress.metadata.annotations['nginx.ingress.kubernetes.io/custom-http-errors'] = '503';
+                ingress.metadata.annotations['platform.devops.io/maintenance-mode'] = 'true';
+                console.log('[K8sService] Karbantartási üzemmód (503 Service) bekapcsolva az Ingress rétegen.');
+            } else {
+                delete ingress.metadata.annotations['nginx.ingress.kubernetes.io/custom-http-errors'];
+                delete ingress.metadata.annotations['platform.devops.io/maintenance-mode'];
+                console.log('[K8sService] Karbantartási üzemmód kikapcsolva, normál forgalom visszaállítva.');
+            }
+
+            await this.networkApi.replaceNamespacedIngress({ name: ingressName, namespace, body: ingress });
+            return { success: true, message: `Karbantartási üzemmód ${enabled ? 'bekapcsolva' : 'kikapcsolva'}` };
+        } catch (error) {
+            console.warn('[K8sService] Ingress nem érhető el (pl. helyi fejlesztés), karbantartási üzemmód szimulálva:', (error as any)?.message || error);
+            return { success: true, message: `Karbantartási üzemmód szimulálva: ${enabled ? 'AKTÍV' : 'INAKTÍV'}` };
+        }
+    }
+
 }

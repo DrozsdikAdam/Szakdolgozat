@@ -12,5 +12,6 @@ export interface PlatformStatusResponse {
     instanceSize?: InstanceSize
     activeFeatures: Record<FeatureFlagName, boolean>
     inactivationStrategy?: InactivationStrategy
+    featureParams?: Partial<Record<FeatureFlagName, Record<string, any>>>
 
 }

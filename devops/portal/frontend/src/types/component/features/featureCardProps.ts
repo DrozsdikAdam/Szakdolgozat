@@ -17,5 +17,7 @@ export interface FeatureCardProps {
     enabled: boolean
     isToggling: boolean
     strategy?: InactivationStrategy
+    params?: Record<string, any>
+    onNavigate?: (serviceId: string) => void
     onToggle: (key: FeatureFlagName, nextState: boolean) => void
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { RefreshCw, Sliders, Search } from "lucide-react"
+import { RefreshCw, Sliders, Search, AlertTriangle } from "lucide-react"
 import { PlatformApi } from "../client/api/platform"
 import type { FeatureFlagName, InactivationStrategy } from "../types/platform"
 import type { FeatureMetaItem, FeatureCategory } from "../types/component/features/featureCardProps"
@@ -48,7 +48,11 @@ const INACTIVATION_PRESETS: PresetItem<InactivationStrategy>[] = [
     }
 ]
 
-export const FlagsTab = () => {
+interface FlagsTabProps {
+    onNavigate?: (serviceId: any) => void
+}
+
+export const FlagsTab = ({ onNavigate }: FlagsTabProps) => {
     const [flags, setFlags] = useState<Record<FeatureFlagName, boolean>>({
         rate_limiting: false,
         pgbouncer: false,
@@ -58,6 +62,7 @@ export const FlagsTab = () => {
         vpa_scaling: false,
         maintenance_mode: false
     })
+    const [featureParams, setFeatureParams] = useState<Partial<Record<FeatureFlagName, Record<string, any>>>>({})
     const [inactivationStrategy, setInactivationStrategy] = useState<InactivationStrategy>("scale_to_zero")
     const [loading, setLoading] = useState<boolean>(true)
     const [togglingKey, setTogglingKey] = useState<FeatureFlagName | null>(null)
@@ -72,6 +77,8 @@ export const FlagsTab = () => {
             .then((res) => {
                 if (res.activeFeatures)
                     setFlags(res.activeFeatures)
+                if (res.featureParams)
+                    setFeatureParams(res.featureParams)
                 if (res.inactivationStrategy)
                     setInactivationStrategy(res.inactivationStrategy)
                 setLastUpdated(new Date())
@@ -98,6 +105,7 @@ export const FlagsTab = () => {
                 enabled: nextState,
                 strategy: inactivationStrategy
             })
+            loadPlatformStatus()
         } catch (err) {
             console.error("Hiba a feature flag módosításakor:", err)
             setFlags((prev) => ({ ...prev, [key]: !nextState }))
@@ -159,6 +167,32 @@ export const FlagsTab = () => {
                 maintenanceActive={maintenanceActive}
             />
 
+            {maintenanceActive && (
+                <div className="p-4 rounded-xl bg-cud-vermillon/10 border border-cud-vermillon/40 text-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-cud-vermillon/5">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-cud-vermillon/20 text-cud-vermillon shrink-0">
+                            <AlertTriangle className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h4 className="text-sm font-bold text-cud-vermillon flex items-center gap-2">
+                                Karbantartási Üzemmód Aktív!
+                            </h4>
+                            <p className="text-xs text-slate-300 mt-0.5">
+                                A felhasználói forgalom át van irányítva az 503-as statikus karbantartási oldalra. A mikroszolgáltatások közvetlen elérése korlátozva van.
+                            </p>
+                        </div>
+                    </div>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleToggle("maintenance_mode", false)}
+                        className="shrink-0 border-cud-vermillon/40 hover:bg-cud-vermillon/20 text-xs"
+                    >
+                        Karbantartás feloldása
+                    </Button>
+                </div>
+            )}
+
             <PresetGroup<InactivationStrategy>
                 title="Kikapcsolási & Inaktiválási Stratégia"
                 subtitle="K8s FinOps Workload Profilok"
@@ -212,6 +246,8 @@ export const FlagsTab = () => {
                             enabled={Boolean(flags[feature.key])}
                             isToggling={togglingKey === feature.key}
                             strategy={inactivationStrategy}
+                            params={featureParams[feature.key]}
+                            onNavigate={onNavigate}
                             onToggle={handleToggle}
                         />
                     ))}
