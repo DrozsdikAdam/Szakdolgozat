@@ -1,7 +1,16 @@
 import * as k8s from "@kubernetes/client-node";
 import { K8sMapper } from "../mappers/k8s.mapper.js";
 import type { JobTriggerResponseDto } from "../dtos/backup.dto.js";
-import type { ClusterOverviewDto, RateLimitResponseDto, UpdateHpaDto, UpdateRateLimitDto, UpdateVpaDto, VpaOverviewDto } from "../dtos/k8s.dto.js";
+import type {
+    ClusterOverviewDto,
+    K8sEventDto,
+    PodLogsResponseDto,
+    RateLimitResponseDto,
+    UpdateHpaDto,
+    UpdateRateLimitDto,
+    UpdateVpaDto,
+    VpaOverviewDto,
+} from "../dtos/k8s.dto.js";
 import type { DatabaseEngine, DatabaseMode, InstanceSize } from "../types/setup.types.js";
 
 export class K8sService {
@@ -545,5 +554,112 @@ export class K8sService {
             return { success: true, message: `Karbantartási üzemmód szimulálva: ${enabled ? 'AKTÍV' : 'INAKTÍV'}` };
         }
     }
+
+    getPodLogs = async (
+        namespace: string,
+        podName: string,
+        tailLines = 150,
+        container?: string
+    ): Promise<PodLogsResponseDto> => {
+        let containerName = container || '';
+        try {
+            if (!containerName) {
+                try {
+                    const pod = await this.coreApi.readNamespacedPod({ name: podName, namespace });
+                    containerName = pod.spec?.containers?.[0]?.name || podName;
+                } catch {
+                    containerName = podName;
+                }
+            }
+
+            const logRequest: k8s.CoreV1ApiReadNamespacedPodLogRequest = {
+                name: podName,
+                namespace,
+                tailLines
+            };
+            if (containerName) {
+                logRequest.container = containerName;
+            }
+
+            const rawLogs = await this.coreApi.readNamespacedPodLog(logRequest);
+
+            const lines = (typeof rawLogs === 'string' ? rawLogs : String(rawLogs || ''))
+                .split('\n')
+                .filter(l => l.trim().length > 0);
+
+            return {
+                podName,
+                namespace,
+                containerName,
+                lines: lines.length > 0 ? lines : ['[INFO] A konténer fut, de még nem generált naplókimenetet.'],
+                totalLines: lines.length,
+                timestamp: new Date().toISOString()
+            };
+        } catch (error) {
+            console.warn(`[K8sService] Nem sikerült kiolvasni a pod (${podName}) logjait:`, (error as any)?.message || error);
+            return {
+                podName,
+                namespace,
+                containerName: containerName || podName,
+                lines: [
+                    `[WARN] A Kubernetes API-ból nem sikerült lekérni a naplót: ${(error as any)?.message || error}`,
+                    `[INFO] Ellenőrizd, hogy a pod fut-e és a konténer neve helyes-e (${containerName || 'default'}).`
+                ],
+                totalLines: 2,
+                timestamp: new Date().toISOString()
+            };
+        }
+    };
+
+    getClusterEvents = async (
+        namespace?: string,
+        podName?: string
+    ): Promise<K8sEventDto[]> => {
+        try {
+            const targetNamespaces = namespace && namespace !== 'all'
+                ? [namespace]
+                : ['platform-infra', 'app-mes'];
+
+            const allEvents: K8sEventDto[] = [];
+
+            for (const ns of targetNamespaces) {
+                try {
+                    const eventList = await this.coreApi.listNamespacedEvent({ namespace: ns });
+                    for (const item of eventList.items || []) {
+                        if (podName && item.involvedObject?.name !== podName) {
+                            continue;
+                        }
+
+                        allEvents.push({
+                            id: item.metadata?.uid || `${item.metadata?.name}-${Date.now()}`,
+                            type: item.type === 'Warning' ? 'Warning' : 'Normal',
+                            reason: item.reason || 'Ismeretlen',
+                            message: item.message || '',
+                            involvedObjectName: item.involvedObject?.name || '',
+                            involvedObjectKind: item.involvedObject?.kind || '',
+                            namespace: item.involvedObject?.namespace || ns,
+                            count: item.count || 1,
+                            firstTimestamp: item.firstTimestamp?.toString(),
+                            lastTimestamp: (item.lastTimestamp || item.eventTime || item.metadata?.creationTimestamp || new Date()).toString(),
+                            sourceComponent: item.source?.component || item.reportingComponent
+                        });
+                    }
+                } catch (nsErr) {
+                    console.warn(`[K8sService] Hiba az események lekérésekor a '${ns}' névtérből:`, (nsErr as any)?.message || nsErr);
+                }
+            }
+
+            allEvents.sort((a, b) => {
+                const dateA = new Date(a.lastTimestamp).getTime();
+                const dateB = new Date(b.lastTimestamp).getTime();
+                return dateB - dateA;
+            });
+
+            return allEvents;
+        } catch (error) {
+            console.warn('[K8sService] Hiba a K8s események lekérésekor:', (error as any)?.message || error);
+            return [];
+        }
+    };
 
 }
