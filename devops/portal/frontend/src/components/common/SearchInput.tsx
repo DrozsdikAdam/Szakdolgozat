@@ -12,7 +12,7 @@ export const SearchInput = ({ value, onChange, placeholder = "Keresés...", clas
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
                         placeholder={placeholder}
-                        className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cud-skyblue/50"
+                        className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cud-skyblue/50"
                     />
                 </div>
             </div>

@@ -1,4 +1,4 @@
-import { Activity, Archive, Cpu, Server, ShieldAlert, Terminal, ToggleRight, Wrench } from "lucide-react";
+import { Activity, Archive, Cpu, KeyRound, Server, ShieldAlert, Terminal, ToggleRight, Wrench } from "lucide-react";
 import type { ServiceItem } from "../types/component/hub";
 import type { FeatureFlagName, PlatformStatusResponse } from "../types/platform";
 import type { ClusterOverviewDto } from "../types/k8s";
@@ -38,6 +38,18 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         badgeVariant: 'teal',
         isConfigured: true,
         statusLabel: "Klaszter kapcsolat aktív",
+        statusVariant: 'teal'
+    },
+    {
+        id: 'configs',
+        accentColor: 'teal',
+        label: "Környezeti Változók & Titkok",
+        description: "Kubernetes ConfigMaps és Secrets böngészése, biztonságos feloldása és workload újraindítások.",
+        iconName: <KeyRound className="w-6 h-6" />,
+        badgeText: "Config & Secrets",
+        badgeVariant: 'teal',
+        isConfigured: true,
+        statusLabel: "Konfigurációkezelő aktív",
         statusVariant: 'teal'
     },
     {
@@ -187,6 +199,17 @@ export const computeDynamicServices = (
                     isConfigured: isReady,
                     statusLabel: clusterLabel,
                     statusVariant: clusterVariant
+                };
+            }
+
+            case 'configs': {
+                return {
+                    ...service,
+                    badgeText: isClusterHealthy ? "Config & Secrets" : "Klaszter Offline",
+                    badgeVariant: isClusterHealthy ? 'teal' : 'vermillon',
+                    isConfigured: isClusterHealthy,
+                    statusLabel: isClusterHealthy ? "Konfigurációkezelő aktív" : "Klaszter nem érhető el",
+                    statusVariant: isClusterHealthy ? 'teal' : 'vermillon'
                 };
             }
 
