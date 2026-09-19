@@ -1,4 +1,4 @@
-import { Activity, Archive, Cpu, KeyRound, Server, ShieldAlert, Terminal, ToggleRight, Wrench } from "lucide-react";
+import { Activity, Archive, Cpu, HeartPulse, KeyRound, Server, ShieldAlert, Terminal, ToggleRight, Wrench } from "lucide-react";
 import type { ServiceItem } from "../types/component/hub";
 import type { FeatureFlagName, PlatformStatusResponse } from "../types/platform";
 import type { ClusterOverviewDto } from "../types/k8s";
@@ -110,6 +110,18 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         badgeVariant: 'skyblue',
         isConfigured: true,
         statusLabel: "Valós idejű naplózás üzemkész",
+        statusVariant: 'teal'
+    },
+    {
+        id: 'health',
+        accentColor: 'teal',
+        label: "Egészségellenőrzés & Szondák",
+        description: "Konténer Startup, Liveness és Readiness szondák felügyelete, finomhangolása és élő tesztelése.",
+        iconName: <HeartPulse className="w-6 h-6" />,
+        badgeText: "Szondák aktívak",
+        badgeVariant: 'teal',
+        isConfigured: true,
+        statusLabel: "Szonda felügyelet aktív",
         statusVariant: 'teal'
     }
 ]
@@ -267,6 +279,17 @@ export const computeDynamicServices = (
                     badgeVariant: isClusterHealthy ? 'skyblue' : 'vermillon',
                     isConfigured: isClusterHealthy,
                     statusLabel: isClusterHealthy ? "Valós idejű naplózás és események" : "Klaszter nem érhető el",
+                    statusVariant: isClusterHealthy ? 'teal' : 'vermillon'
+                };
+            }
+
+            case 'health': {
+                return {
+                    ...service,
+                    badgeText: isClusterHealthy ? "Szondák aktívak" : "Klaszter Offline",
+                    badgeVariant: isClusterHealthy ? 'teal' : 'vermillon',
+                    isConfigured: isClusterHealthy,
+                    statusLabel: isClusterHealthy ? "Szonda felügyelet és öngyógyítás aktív" : "Klaszter nem érhető el",
                     statusVariant: isClusterHealthy ? 'teal' : 'vermillon'
                 };
             }
