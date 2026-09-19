@@ -1,6 +1,7 @@
 import { K8sWorkloadService } from "./k8s/k8s-workload.service.js";
 import { K8sConfigService } from "./k8s/k8s-config.service.js";
 import { K8sHealthService } from "./k8s/k8s-health.service.js";
+import { K8sDeploymentService } from "./k8s/k8s-deployment.service.js";
 import type { JobTriggerResponseDto } from "../dtos/backup.dto.js";
 import type {
     ClusterOverviewDto,
@@ -24,17 +25,25 @@ import type {
     UpdateProbeDto,
     ProbeTestResultDto
 } from "../dtos/healthcheck.dto.js";
+import type {
+    DeploymentsOverviewDto,
+    WorkloadDeploymentDto,
+    UpdateDeploymentStrategyDto,
+    RollbackDeploymentDto
+} from "../dtos/deployment.dto.js";
 import type { DatabaseEngine, DatabaseMode, InstanceSize } from "../types/setup.types.js";
 
 export class K8sService {
     private workloadService: K8sWorkloadService;
     private configService: K8sConfigService;
     private healthService: K8sHealthService;
+    private deploymentService: K8sDeploymentService;
 
     constructor() {
         this.workloadService = new K8sWorkloadService();
         this.configService = new K8sConfigService();
         this.healthService = new K8sHealthService();
+        this.deploymentService = new K8sDeploymentService();
     }
 
     getClusterOverView = async (): Promise<ClusterOverviewDto> => {
@@ -156,5 +165,21 @@ export class K8sService {
         port: number | string = 8080
     ): Promise<ProbeTestResultDto> => {
         return this.healthService.testProbeEndpoint(namespace, deploymentName, path, port);
+    };
+
+    getDeploymentsOverview = async (namespace?: string): Promise<DeploymentsOverviewDto> => {
+        return this.deploymentService.getDeploymentsOverview(namespace);
+    };
+
+    syncGitOps = async (): Promise<DeploymentsOverviewDto> => {
+        return this.deploymentService.syncGitOps();
+    };
+
+    updateDeploymentStrategy = async (dto: UpdateDeploymentStrategyDto): Promise<WorkloadDeploymentDto> => {
+        return this.deploymentService.updateDeploymentStrategy(dto);
+    };
+
+    rollbackDeployment = async (dto: RollbackDeploymentDto): Promise<WorkloadDeploymentDto> => {
+        return this.deploymentService.rollbackDeployment(dto);
     };
 }
