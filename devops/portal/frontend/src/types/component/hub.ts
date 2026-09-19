@@ -1,6 +1,15 @@
 import type { ReactNode } from "react"
 
-export type ServiceId = 'cluster' | 'traffic' | 'autoscaling' | 'backup' | 'features' | 'audit' | 'setup' | 'events' | 'configs'
+export type ServiceId = 'cluster'
+    | 'traffic'
+    | 'autoscaling'
+    | 'backup'
+    | 'features'
+    | 'audit'
+    | 'setup'
+    | 'events'
+    | 'configs'
+    | 'health'
 
 export interface ServiceItem {
     id: ServiceId
