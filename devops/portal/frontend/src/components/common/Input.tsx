@@ -2,7 +2,7 @@ import { useState } from "react"
 import type { InputProps } from "../../types/component/common/inputProps"
 import { Eye, EyeOff } from "lucide-react"
 
-export const Input = ({ label, icon, helperText, error, value, onChange, type = "text", placeholder, disabled = false, accentColor = "teal", className = "", }: InputProps) => {
+export const Input = ({ label, icon, helperText, error, value, onChange, type = "text", placeholder, disabled = false, accentColor = "teal", className = "", min, max }: InputProps) => {
     const [showPassword, setShowPassword] = useState(false)
 
     const isPassword = type === "password"
@@ -43,6 +43,8 @@ export const Input = ({ label, icon, helperText, error, value, onChange, type = 
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder}
                     disabled={disabled}
+                    min={min}
+                    max={max}
                     className={`w-full py-2 rounded-lg bg-slate-950/80 border border-slate-800 text-sm text-slate-100 font-mono transition-all disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 ${ringColors[accentColor]
                         } ${icon ? "pl-9.5 pr-3.5" : "px-3.5"} ${isPassword ? "pr-10" : ""
                         } ${error ? "border-cud-vermillon/80 focus:ring-cud-vermillon/50" : ""}`}
