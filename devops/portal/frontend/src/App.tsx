@@ -17,6 +17,7 @@ import { AutoscalingTab } from './view/AutoscalingTab'
 import { SetupTab } from './view/SetupTab'
 import { ConfigTab } from './view/ConfigTab'
 import { HealthcheckTab } from './view/HealthcheckTab'
+import { DeploymentsTab } from './view/DeploymentsTab'
 
 function App() {
   const [activeView, setActiveView] = useState<ServiceId | 'hub'>('hub')
@@ -115,6 +116,8 @@ function App() {
                 <ConfigTab />
               ) : activeView === 'health' ? (
                 <HealthcheckTab />
+              ) : activeView === 'deployments' ? (
+                <DeploymentsTab />
               ) : (
                 <Card
                   title={currentService?.label}
