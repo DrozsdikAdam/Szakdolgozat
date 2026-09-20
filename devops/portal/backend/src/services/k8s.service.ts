@@ -2,6 +2,7 @@ import { K8sWorkloadService } from "./k8s/k8s-workload.service.js";
 import { K8sConfigService } from "./k8s/k8s-config.service.js";
 import { K8sHealthService } from "./k8s/k8s-health.service.js";
 import { K8sDeploymentService } from "./k8s/k8s-deployment.service.js";
+import { K8sTelemetryService } from "./k8s/k8s-telemetry.service.js";
 import type { JobTriggerResponseDto } from "../dtos/backup.dto.js";
 import type {
     ClusterOverviewDto,
@@ -31,6 +32,12 @@ import type {
     UpdateDeploymentStrategyDto,
     RollbackDeploymentDto
 } from "../dtos/deployment.dto.js";
+import type {
+    TelemetryOverViewDto,
+    TelemetryTimeRange,
+    WorkloadMetricDto,
+    GrafanaDashboardDto
+} from "../dtos/telemetry.dto.js";
 import type { DatabaseEngine, DatabaseMode, InstanceSize } from "../types/setup.types.js";
 
 export class K8sService {
@@ -38,12 +45,14 @@ export class K8sService {
     private configService: K8sConfigService;
     private healthService: K8sHealthService;
     private deploymentService: K8sDeploymentService;
+    private telemetryService: K8sTelemetryService;
 
     constructor() {
         this.workloadService = new K8sWorkloadService();
         this.configService = new K8sConfigService();
         this.healthService = new K8sHealthService();
         this.deploymentService = new K8sDeploymentService();
+        this.telemetryService = new K8sTelemetryService();
     }
 
     getClusterOverView = async (): Promise<ClusterOverviewDto> => {
@@ -181,5 +190,17 @@ export class K8sService {
 
     rollbackDeployment = async (dto: RollbackDeploymentDto): Promise<WorkloadDeploymentDto> => {
         return this.deploymentService.rollbackDeployment(dto);
+    };
+
+    getTelemetryOverview = async (timeRange?: TelemetryTimeRange): Promise<TelemetryOverViewDto> => {
+        return this.telemetryService.getOverview(timeRange);
+    };
+
+    getTelemetryWorkloads = async (namespace?: string): Promise<WorkloadMetricDto[]> => {
+        return this.telemetryService.getWorkloadMetrics(namespace);
+    };
+
+    getTelemetryDashboards = (): GrafanaDashboardDto[] => {
+        return this.telemetryService.getDashboards();
     };
 }

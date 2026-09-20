@@ -3,6 +3,7 @@ import { K8sController } from "../controllers/k8s.controller.js";
 import configRoutes from "./config.routes.js";
 import healthcheckRoutes from "./healthcheck.routes.js";
 import deploymentRoutes from "./deployment.routes.js";
+import telemetryRoutes from "./telemetry.routes.js";
 
 const router = Router();
 const controller = new K8sController();
@@ -20,5 +21,6 @@ router.put("/vpa", controller.updateVpa);
 router.use("/", configRoutes);
 router.use("/", healthcheckRoutes);
 router.use("/", deploymentRoutes);
+router.use("/", telemetryRoutes);
 
 export default router;

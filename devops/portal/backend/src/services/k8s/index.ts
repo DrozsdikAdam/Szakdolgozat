@@ -4,3 +4,4 @@ export * from "./k8s-config.service.js";
 export * from "./k8s-health.service.js";
 export * from "./k8s-workload.service.js";
 export * from "./k8s-deployment.service.js";
+export * from "./k8s-telemetry.service.js";
