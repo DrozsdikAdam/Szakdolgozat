@@ -1,4 +1,4 @@
-import { Activity, Archive, Cpu, HeartPulse, KeyRound, Rocket, Server, ShieldAlert, Terminal, ToggleRight, Wrench } from "lucide-react";
+import { Activity, Archive, Cpu, HeartPulse, KeyRound, LineChart, Rocket, Server, ShieldAlert, Terminal, ToggleRight, Wrench } from "lucide-react";
 import type { ServiceItem } from "../types/component/hub";
 import type { FeatureFlagName, PlatformStatusResponse } from "../types/platform";
 import type { ClusterOverviewDto } from "../types/k8s";
@@ -134,6 +134,18 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         badgeVariant: 'orange',
         isConfigured: true,
         statusLabel: "Rollout és visszaállítás kész",
+        statusVariant: 'teal'
+    },
+    {
+        id: 'telemetry',
+        accentColor: 'skyblue',
+        label: "Megfigyelhetőség & Metrikák",
+        description: "Prometheus és Grafana telemetria, Golden Signals, erőforrás metrikák és beágyazott dashboardok.",
+        iconName: <LineChart className="w-6 h-6" />,
+        badgeText: "Prometheus & Grafana",
+        badgeVariant: 'skyblue',
+        isConfigured: true,
+        statusLabel: "Telemetria adatgyűjtés aktív",
         statusVariant: 'teal'
     }
 ]
@@ -313,6 +325,17 @@ export const computeDynamicServices = (
                     badgeVariant: isClusterHealthy ? 'teal' : 'vermillon',
                     isConfigured: isClusterHealthy,
                     statusLabel: isClusterHealthy ? "Rollout és visszaállítás kész" : "Klaszter nem érhető el",
+                    statusVariant: isClusterHealthy ? 'teal' : 'vermillon'
+                };
+            }
+
+            case 'telemetry': {
+                return {
+                    ...service,
+                    badgeText: isClusterHealthy ? "Metrikák aktívak" : "Nem elérhető",
+                    badgeVariant: isClusterHealthy ? 'teal' : 'vermillon',
+                    isConfigured: isClusterHealthy,
+                    statusLabel: isClusterHealthy ? "Prometheus & Grafana kapcsolat él" : "Kapcsolat megszakadt",
                     statusVariant: isClusterHealthy ? 'teal' : 'vermillon'
                 };
             }
