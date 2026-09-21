@@ -5,8 +5,14 @@ import { Card } from "../../common/Card";
 import { Badge } from "../../common/Badge";
 import { Button } from "../../common/Button";
 
-export const GrafanaDashboardEmbed = ({ dashboards, activeDashboardId, onSelectDashboard }: GrafanaDashboardEmbedProps) => {
+export const GrafanaDashboardEmbed = ({
+    dashboards,
+    activeDashboardId,
+    onSelectDashboard,
+    isOnline = false
+}: GrafanaDashboardEmbedProps) => {
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+    const [forceShowIframe, setForceShowIframe] = useState<boolean>(false);
 
     if (dashboards.length === 0) return null;
 
@@ -24,6 +30,8 @@ export const GrafanaDashboardEmbed = ({ dashboards, activeDashboardId, onSelectD
                 return "neutral";
         }
     };
+
+    const shouldRenderIframe = isOnline || forceShowIframe;
 
     return (
         <Card
@@ -97,15 +105,50 @@ export const GrafanaDashboardEmbed = ({ dashboards, activeDashboardId, onSelectD
                 </span>
             </div>
 
-            <div className={`relative w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950/90 ${isFullscreen ? "flex-1 min-h-0" : "h-145"
-                }`}>
-                <iframe
-                    src={activeDashboard.embedUrl}
-                    title={activeDashboard.title}
-                    className="w-full h-full border-0"
-                    loading="lazy"
-                />
-            </div>
+            {shouldRenderIframe ? (
+                <div className={`relative w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950/90 ${isFullscreen ? "flex-1 min-h-0" : "h-145"}`}>
+                    <iframe
+                        src={activeDashboard.embedUrl}
+                        title={activeDashboard.title}
+                        className="w-full h-full border-0"
+                        loading="lazy"
+                    />
+                </div>
+            ) : (
+                <div className={`relative w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950/60 flex flex-col items-center justify-center p-8 text-center ${isFullscreen ? "flex-1 min-h-0" : "h-145"}`}>
+                    <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700 text-cud-orange mb-3 shadow-inner">
+                        <LayoutDashboard className="w-8 h-8" />
+                    </div>
+                    <h4 className="text-base font-bold text-slate-100">
+                        Grafana szolgáltatás telepítésre / indításra vár
+                    </h4>
+                    <p className="text-xs text-slate-400 max-w-md mt-1.5 mb-5 leading-relaxed">
+                        A beágyazott dashboard automatikusan megjelenik, amint a Grafana pod elindul a klaszterben (a K8s manifesztek telepítése után).
+                    </p>
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setForceShowIframe(true)}
+                        >
+                            Iframe betöltése mindenképp
+                        </Button>
+                        <a
+                            href={activeDashboard.externalUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+                        >
+                            <span>Közvetlen link</span>
+                            <ExternalLink className="w-3.5 h-3.5 text-cud-skyblue" />
+                        </a>
+                    </div>
+                    <p className="text-[11px] font-mono text-slate-600 mt-4">
+                        Cél URL: {activeDashboard.embedUrl}
+                    </p>
+                </div>
+            )}
         </Card>
     );
 };
+

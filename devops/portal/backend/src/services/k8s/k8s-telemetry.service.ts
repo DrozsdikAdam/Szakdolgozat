@@ -121,8 +121,13 @@ export class K8sTelemetryService {
     };
 
     public getDashboards = (): GrafanaDashboardDto[] => {
-        return [...DEFAULT_GRAFANA_DASHBOARD];
+        return DEFAULT_GRAFANA_DASHBOARD.map((d) => ({
+            ...d,
+            embedUrl: d.embedUrl.replace(/http:\/\/localhost:\d+/, this.grafanaUrl),
+            externalUrl: d.externalUrl.replace(/http:\/\/localhost:\d+/, this.grafanaUrl)
+        }));
     };
+
 
     private collectWorkloadMetrics = async (multiplier: number): Promise<WorkloadMetricDto[]> => {
         const workloads: WorkloadMetricDto[] = [];
