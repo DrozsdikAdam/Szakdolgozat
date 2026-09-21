@@ -28,6 +28,16 @@ export class K8sClientService {
             }
         }
 
+        if (process.env.K8S_SERVER_HOST) {
+            this.kubeConfig.clusters.forEach((c) => {
+                const mutableCluster = c as { server: string; skipTLSVerify?: boolean };
+                mutableCluster.server = mutableCluster.server
+                    .replace('127.0.0.1', process.env.K8S_SERVER_HOST!)
+                    .replace('localhost', process.env.K8S_SERVER_HOST!);
+                mutableCluster.skipTLSVerify = true;
+            });
+        }
+
         this.coreApi = this.kubeConfig.makeApiClient(k8s.CoreV1Api);
         this.appsApi = this.kubeConfig.makeApiClient(k8s.AppsV1Api);
         this.networkApi = this.kubeConfig.makeApiClient(k8s.NetworkingV1Api);
