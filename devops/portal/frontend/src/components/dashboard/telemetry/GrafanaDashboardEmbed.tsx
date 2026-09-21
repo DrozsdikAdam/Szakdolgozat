@@ -5,6 +5,8 @@ import { Card } from "../../common/Card";
 import { Badge } from "../../common/Badge";
 import { Button } from "../../common/Button";
 
+import { ErrorState } from "../../common/ErrorState";
+
 export const GrafanaDashboardEmbed = ({
     dashboards,
     activeDashboardId,
@@ -115,40 +117,33 @@ export const GrafanaDashboardEmbed = ({
                     />
                 </div>
             ) : (
-                <div className={`relative w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950/60 flex flex-col items-center justify-center p-8 text-center ${isFullscreen ? "flex-1 min-h-0" : "h-145"}`}>
-                    <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700 text-cud-orange mb-3 shadow-inner">
-                        <LayoutDashboard className="w-8 h-8" />
-                    </div>
-                    <h4 className="text-base font-bold text-slate-100">
-                        Grafana szolgáltatás telepítésre / indításra vár
-                    </h4>
-                    <p className="text-xs text-slate-400 max-w-md mt-1.5 mb-5 leading-relaxed">
-                        A beágyazott dashboard automatikusan megjelenik, amint a Grafana pod elindul a klaszterben (a K8s manifesztek telepítése után).
-                    </p>
-                    <div className="flex items-center gap-3">
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setForceShowIframe(true)}
-                        >
-                            Iframe betöltése mindenképp
-                        </Button>
-                        <a
-                            href={activeDashboard.externalUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
-                        >
-                            <span>Közvetlen link</span>
-                            <ExternalLink className="w-3.5 h-3.5 text-cud-skyblue" />
-                        </a>
-                    </div>
-                    <p className="text-[11px] font-mono text-slate-600 mt-4">
-                        Cél URL: {activeDashboard.embedUrl}
-                    </p>
+                <div className={`relative w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950/40 flex items-center justify-center p-6 ${isFullscreen ? "flex-1 min-h-0" : "min-h-145"}`}>
+                    <ErrorState
+                        type="connection-refused"
+                        targetService="Grafana"
+                        targetUrl={activeDashboard.embedUrl}
+                        errorCode="ERR_CONNECTION_REFUSED"
+                        title="A Grafana kapcsolat visszautasítva"
+                        message="A beágyazott dashboard eléréséhez a Grafana K8s pod elindítása szükséges. Mivel a manifesztek még nincsenek élesítve, a kapcsolat helyileg visszautasításra került."
+                        troubleshootingSteps={[
+                            "Ellenőrizd a Grafana pod állapotát: kubectl get pods -n platform-infra",
+                            "Port-forward beállítása: kubectl port-forward -n platform-infra svc/grafana 3001:80",
+                            "Győződj meg a Grafana manifestek és ConfigMap-ek sikeres telepítéséről"
+                        ]}
+                        action={
+                            <Button
+                                variant="secondary"
+                                size="md"
+                                onClick={() => setForceShowIframe(true)}
+                            >
+                                Iframe betöltése mindenképp
+                            </Button>
+                        }
+                    />
                 </div>
             )}
         </Card>
     );
 };
+
 

@@ -238,6 +238,15 @@ export class ConfigService {
                 }
             } else if (request.name === 'hpa_scaling') {
                 if (request.enabled) {
+                    await FeatureFlag.update({ enabled: false }, { where: { name: 'vpa_scaling' } });
+                    await this.k8sService.updateVpa({
+                        minAllowedCpu: '100m',
+                        maxAllowedCpu: '1000m',
+                        minAllowedMemory: '128Mi',
+                        maxAllowedMemory: '2Gi',
+                        updateMode: 'Off'
+                    });
+
                     await this.k8sService.updateHpa({
                         minReplicas: Number(mergedParams.minReplicas ?? 2),
                         maxReplicas: Number(mergedParams.maxReplicas ?? 6),
@@ -247,6 +256,10 @@ export class ConfigService {
                     await this.k8sService.scaleDeployment('mes-backend', 'app-mes', 1);
                 }
             } else if (request.name === 'vpa_scaling') {
+                if (request.enabled) {
+                    await FeatureFlag.update({ enabled: false }, { where: { name: 'hpa_scaling' } });
+                    await this.k8sService.scaleDeployment('mes-backend', 'app-mes', 1);
+                }
                 await this.k8sService.updateVpa({
                     minAllowedCpu: String(mergedParams.minAllowedCpu ?? '100m'),
                     maxAllowedCpu: String(mergedParams.maxAllowedCpu ?? '1000m'),

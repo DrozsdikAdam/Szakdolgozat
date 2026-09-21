@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
+import { Routes, Route, useNavigate, useLocation, Outlet } from 'react-router-dom'
 import type { ServiceId, ServiceItem } from './types/component/hub'
 import { DEFAULT_SERVICES, computeDynamicServices } from './constants/services'
 import { Navbar } from './components/layout/navbar'
 import { ServiceGrid } from './components/service/grid'
-import { Card } from './components/common/Card'
 import { Button } from './components/common/Button'
 import { ArrowLeft } from 'lucide-react'
 import { PlatformApi } from './client/api/platform'
@@ -19,13 +19,57 @@ import { ConfigTab } from './view/ConfigTab'
 import { HealthcheckTab } from './view/HealthcheckTab'
 import { DeploymentsTab } from './view/DeploymentsTab'
 import { TelemetryTab } from './view/TelemetryTab'
+import { ErrorState } from './components/common/ErrorState'
+
+function ServiceLayout() {
+  const navigate = useNavigate()
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={<ArrowLeft className="w-4 h-4" />}
+          onClick={() => navigate('/')}
+          className="hover:bg-slate-800/80 text-slate-300 hover:text-slate-100"
+        >
+          Vissza a szolgáltatásokhoz
+        </Button>
+      </div>
+      <Outlet />
+    </div>
+  )
+}
+
+function NotFoundPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  return (
+    <div className="py-6">
+      <ErrorState
+        type="not-found"
+        title="Az oldal vagy nézet nem található"
+        message="A megadott URL cím nem feleltethető meg egyetlen ismert portál szolgáltatásnak vagy nézetnek sem. Lehetséges, hogy elgépelted a címet, vagy a kért komponens még nem érhető el."
+        errorCode="404 NOT_FOUND"
+        targetUrl={location.pathname}
+        onBack={() => navigate('/')}
+        troubleshootingSteps={[
+          "Ellenőrizd a böngésző címsorába beírt útvonal helyességét",
+          "Kattints a fenti 'Vissza a szolgáltatásokhoz' gombra a kezdőlap eléréséhez",
+          "Közvetlenül elérhető érvényes útvonalak: /telemetry, /cluster, /deployments, /audit, /traffic, /backup"
+        ]}
+      />
+    </div>
+  )
+}
 
 function App() {
-  const [activeView, setActiveView] = useState<ServiceId | 'hub'>('hub')
+  const navigate = useNavigate()
   const [services, setService] = useState<ServiceItem[]>(DEFAULT_SERVICES)
   const [isClusterHealthy, setIsClusterHealthy] = useState<boolean>(true)
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
-  const currentService = services.find(s => s.id === activeView)
 
   const platformApi = useMemo(() => new PlatformApi(), [])
   const k8sApi = useMemo(() => new K8sApi(), [])
@@ -57,12 +101,7 @@ function App() {
   }, [platformApi, k8sApi])
 
   const handleSelectService = (id: ServiceId) => {
-    setActiveView(id)
-  }
-
-  const handleBackToHub = () => {
-    setActiveView('hub')
-    loadPortalData()
+    navigate(`/${id}`)
   }
 
   const handleRefresh = () => {
@@ -77,72 +116,46 @@ function App() {
     <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-sans">
       <Navbar isClusterHealthy={isClusterHealthy} onRefresh={handleRefresh} isRefreshing={isRefreshing} />
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {
-          activeView === 'hub' ? <div>
-            <h1 className='text-4xl font-bold mb-2'>DevOps & PaaS Szolgáltatáskatalógus</h1>
-            <h2 className='text-lg text-slate-400 mb-8'>Válaszd ki a monitorozni vagy konfigurálni kívánt platform komponenst az alábbi csempék közül.</h2>
-            <ServiceGrid services={services} onSelectService={handleSelectService} />
-          </div>
-            :
-            <div className="flex flex-col gap-4">
+        <Routes>
+          <Route
+            path="/"
+            element={
               <div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon={<ArrowLeft className="w-4 h-4" />}
-                  onClick={handleBackToHub}
-                  className="hover:bg-slate-800/80 text-slate-300 hover:text-slate-100"
-                >
-                  Vissza a szolgáltatásokhoz
-                </Button>
+                <h1 className="text-4xl font-bold mb-2">DevOps & PaaS Szolgáltatáskatalógus</h1>
+                <h2 className="text-lg text-slate-400 mb-8">
+                  Válaszd ki a monitorozni vagy konfigurálni kívánt platform komponenst az alábbi csempék közül.
+                </h2>
+                <ServiceGrid services={services} onSelectService={handleSelectService} />
               </div>
+            }
+          />
 
-              {activeView === 'cluster' ? (
-                <ClusterOverviewTab />
-              ) : activeView === 'events' ? (
-                <ClusterOverviewTab initialView="events" />
-              ) : activeView === 'features' ? (
-                <FlagsTab onNavigate={handleSelectService} />
-              ) : activeView === 'audit' ? (
-                <AuditTab />
-              ) : activeView === 'backup' ? (
-                <BackupTab />
-              ) : activeView === 'traffic' ? (
-                <TrafficTab />
-              ) : activeView === 'autoscaling' ? (
-                <AutoscalingTab />
-              ) : activeView === 'setup' ? (
-                <SetupTab onComplete={() => { handleRefresh(); handleBackToHub(); }} />
-              ) : activeView === 'configs' ? (
-                <ConfigTab />
-              ) : activeView === 'health' ? (
-                <HealthcheckTab />
-              ) : activeView === 'deployments' ? (
-                <DeploymentsTab />
-              ) : activeView === 'telemetry' ? (
-                <TelemetryTab />
-              ) : (
-                <Card
-                  title={currentService?.label}
-                  subtitle={currentService?.description}
-                  hoverEffect={false}
-                >
-                  <div className="py-12 flex flex-col items-center justify-center text-center">
-                    <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 text-cud-skyblue mb-4">
-                      {currentService?.iconName}
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-100">
-                      {currentService?.label} vezérlőpult
-                    </h3>
-                    <p className="text-sm text-slate-400 mt-2 max-w-md">
-                      A szolgáltatás részletes konfigurációs és monitorozási felülete a következő lépésben épül fel.
-                    </p>
-                  </div>
-                </Card>
-              )}
-            </div>
-        }
-
+          <Route element={<ServiceLayout />}>
+            <Route path="/cluster" element={<ClusterOverviewTab />} />
+            <Route path="/events" element={<ClusterOverviewTab initialView="events" />} />
+            <Route path="/features" element={<FlagsTab onNavigate={handleSelectService} />} />
+            <Route path="/audit" element={<AuditTab />} />
+            <Route path="/backup" element={<BackupTab />} />
+            <Route path="/traffic" element={<TrafficTab />} />
+            <Route path="/autoscaling" element={<AutoscalingTab />} />
+            <Route
+              path="/setup"
+              element={
+                <SetupTab
+                  onComplete={() => {
+                    handleRefresh()
+                    navigate('/')
+                  }}
+                />
+              }
+            />
+            <Route path="/configs" element={<ConfigTab />} />
+            <Route path="/health" element={<HealthcheckTab />} />
+            <Route path="/deployments" element={<DeploymentsTab />} />
+            <Route path="/telemetry" element={<TelemetryTab />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+        </Routes>
       </main>
     </div>
   )

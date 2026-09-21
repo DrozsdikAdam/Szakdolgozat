@@ -70,34 +70,47 @@ export const FlagsTab = ({ onNavigate }: FlagsTabProps) => {
     const [selectedCategory, setSelectedCategory] = useState<"all" | FeatureCategory>("all")
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
-    const loadPlatformStatus = () => {
-        setLoading(true)
-        new PlatformApi()
-            .getStatus()
-            .then((res) => {
-                if (res.activeFeatures)
-                    setFlags(res.activeFeatures)
-                if (res.featureParams)
-                    setFeatureParams(res.featureParams)
-                if (res.inactivationStrategy)
-                    setInactivationStrategy(res.inactivationStrategy)
-                setLastUpdated(new Date())
-            })
-            .catch((err) => {
-                console.warn("Nem sikerült lekérni a platform státuszt:", err)
-            })
-            .finally(() => {
-                setLoading(false)
-            })
+    const isCardToggling = (key: FeatureFlagName) => {
+        if (togglingKey === key) return true
+        if ((key === 'hpa_scaling' || key === 'vpa_scaling') && (togglingKey === 'hpa_scaling' || togglingKey === 'vpa_scaling')) {
+            return true
+        }
+        return false
+    }
+
+    const loadPlatformStatus = async () => {
+        try {
+            const res = await new PlatformApi().getStatus()
+            if (res.activeFeatures)
+                setFlags(res.activeFeatures)
+            if (res.featureParams)
+                setFeatureParams(res.featureParams)
+            if (res.inactivationStrategy)
+                setInactivationStrategy(res.inactivationStrategy)
+            setLastUpdated(new Date())
+        } catch (err) {
+            console.warn("Nem sikerült lekérni a platform státuszt:", err)
+        } finally {
+            setLoading(false)
+        }
     }
 
     useEffect(() => {
+        setLoading(true)
         loadPlatformStatus()
     }, [])
 
     const handleToggle = async (key: FeatureFlagName, nextState: boolean) => {
+        if (togglingKey) return
+
         setTogglingKey(key)
-        setFlags((prev) => ({ ...prev, [key]: nextState }))
+
+        setFlags((prev) => {
+            const updated = { ...prev, [key]: nextState }
+            if (key === 'hpa_scaling' && nextState) updated.vpa_scaling = false
+            else if (key === 'vpa_scaling' && nextState) updated.hpa_scaling = false
+            return updated
+        })
 
         try {
             await new PlatformApi().toggleFeature({
@@ -105,10 +118,10 @@ export const FlagsTab = ({ onNavigate }: FlagsTabProps) => {
                 enabled: nextState,
                 strategy: inactivationStrategy
             })
-            loadPlatformStatus()
+            await loadPlatformStatus()
         } catch (err) {
             console.error("Hiba a feature flag módosításakor:", err)
-            setFlags((prev) => ({ ...prev, [key]: !nextState }))
+            await loadPlatformStatus()
         } finally {
             setTogglingKey(null)
         }
@@ -244,7 +257,7 @@ export const FlagsTab = ({ onNavigate }: FlagsTabProps) => {
                             key={feature.key}
                             feature={feature}
                             enabled={Boolean(flags[feature.key])}
-                            isToggling={togglingKey === feature.key}
+                            isToggling={isCardToggling(feature.key)}
                             strategy={inactivationStrategy}
                             params={featureParams[feature.key]}
                             onNavigate={onNavigate}

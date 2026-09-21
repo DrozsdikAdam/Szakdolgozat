@@ -10,7 +10,7 @@ export class TelemetryApiClient {
         }
 
         const response: ApiResponse<TelemetryOverViewDto> = await apiClient("/api/k8s/telemetry/overview" + (params.toString() && "?" + params.toString()), "GET")
-        return response.data;
+        return response.data!;
     }
 
     getWorkloads = async (namespace?: string): Promise<WorkloadMetricDto[]> => {
@@ -19,11 +19,11 @@ export class TelemetryApiClient {
             params.append("namespace", namespace);
         }
         const response: ApiResponse<WorkloadMetricDto[]> = await apiClient("/api/k8s/telemetry/workloads" + (params.toString() && "?" + params.toString()), "GET")
-        return response.data;
+        return response.data!;
     }
 
     getDashboards = async (): Promise<GrafanaDashboardDto[]> => {
         const response: ApiResponse<GrafanaDashboardDto[]> = await apiClient("/api/k8s/telemetry/dashboards", "GET")
-        return response.data;
+        return response.data!;
     }
 }

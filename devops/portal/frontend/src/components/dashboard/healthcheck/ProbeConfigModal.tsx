@@ -182,7 +182,7 @@ export const ProbeConfigModal = ({ isOpen, onClose, workload, onSave, isSaving =
                             {(currentProbe.type === "httpGet" || currentProbe.type === "tcpSocket") && (
                                 <Input
                                     label="Port (Szám vagy Elnevezés)"
-                                    value={currentProbe.port}
+                                    value={currentProbe.port ?? ""}
                                     onChange={(port) => updateCurrentProbe({ port })}
                                     placeholder="pl. 8080 vagy http"
                                     disabled={isSaving}
@@ -193,7 +193,7 @@ export const ProbeConfigModal = ({ isOpen, onClose, workload, onSave, isSaving =
                         {currentProbe.type === "httpGet" && (
                             <Input
                                 label="HTTP Elérési Út (Endpoint)"
-                                value={currentProbe.httpPath}
+                                value={currentProbe.httpPath ?? ""}
                                 onChange={(httpPath) => updateCurrentProbe({ httpPath })}
                                 placeholder="pl. /actuator/health/liveness"
                                 disabled={isSaving}
@@ -220,7 +220,7 @@ export const ProbeConfigModal = ({ isOpen, onClose, workload, onSave, isSaving =
                                     type="number"
                                     label="Kezdeti késleltetés (s)"
                                     accentColor="teal"
-                                    value={currentProbe.initialDelaySeconds}
+                                    value={currentProbe.initialDelaySeconds ?? 0}
                                     onChange={(val) => updateCurrentProbe({ initialDelaySeconds: Number(val) })}
                                     disabled={isSaving}
                                     min={0}
@@ -232,7 +232,7 @@ export const ProbeConfigModal = ({ isOpen, onClose, workload, onSave, isSaving =
                                     type="number"
                                     label="Gyakoriság (s)"
                                     accentColor="teal"
-                                    value={currentProbe.periodSeconds}
+                                    value={currentProbe.periodSeconds ?? 10}
                                     onChange={(val) => updateCurrentProbe({ periodSeconds: Number(val) })}
                                     disabled={isSaving}
                                     min={1}
@@ -244,7 +244,7 @@ export const ProbeConfigModal = ({ isOpen, onClose, workload, onSave, isSaving =
                                     type="number"
                                     label="Időtúllépés (s)"
                                     accentColor="teal"
-                                    value={currentProbe.timeoutSeconds}
+                                    value={currentProbe.timeoutSeconds ?? 1}
                                     onChange={(val) => updateCurrentProbe({ timeoutSeconds: Number(val) })}
                                     disabled={isSaving}
                                     min={1}
@@ -256,7 +256,7 @@ export const ProbeConfigModal = ({ isOpen, onClose, workload, onSave, isSaving =
                                     type="number"
                                     label="Hibatűrés (küszöb)"
                                     accentColor="teal"
-                                    value={currentProbe.failureThreshold}
+                                    value={currentProbe.failureThreshold ?? 3}
                                     onChange={(val) => updateCurrentProbe({ failureThreshold: Number(val) })}
                                     disabled={isSaving}
                                     min={1}
