@@ -1,0 +1,73 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-restore
+  namespace: platform-infra
+spec:
+  schedule: "0 0 1 1 *"
+  suspend: true
+  concurrencyPolicy: "Forbid"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 300
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: db-restore
+        spec:
+          initContainers:
+            - name: fetch-backup
+              image: quay.io/minio/mc:latest
+              envFrom:
+                - secretRef:
+                    name: backup-secret
+                - configMapRef:
+                    name: backup-config
+              env:
+                - name: TARGET_BACKUP
+                  value: "latest"
+              volumeMounts:
+                - name: staging-volume
+                  mountPath: /staging
+              command: ["/bin/sh", "-c"]
+              args:
+                - >
+                  set -e;
+                  mc alias set remote $S3_ENDPOINT $S3_ACCESS_KEY $S3_SECRET_KEY;
+                  if [ -n "$TARGET_BACKUP" ] && [ "$TARGET_BACKUP" != "latest" ] && mc stat remote/$S3_BUCKET/archive/$TARGET_BACKUP >/dev/null 2>&1; then
+                    echo "Fetching target backup from archive: $TARGET_BACKUP";
+                    mc cp remote/$S3_BUCKET/archive/$TARGET_BACKUP /staging/restore_target.sql.gz;
+                  elif [ -f /staging/latest.sql.gz ]; then
+                    echo "Using latest local staging backup";
+                    cp /staging/latest.sql.gz /staging/restore_target.sql.gz;
+                  else
+                    echo "Fetching latest backup from S3 bucket";
+                    mc cp remote/$S3_BUCKET/latest.sql.gz /staging/restore_target.sql.gz;
+                  fi;
+          containers:
+            - name: postgres-restore
+              image: bitnami/postgresql:latest
+              envFrom:
+                - secretRef:
+                    name: backup-secret
+                - configMapRef:
+                    name: backup-config
+              volumeMounts:
+                - name: staging-volume
+                  mountPath: /staging
+              command: ["/bin/sh", "-c"]
+              args:
+                - >
+                  set -e;
+                  gunzip -c /staging/restore_target.sql.gz | PGPASSWORD=$DB_PASSWORD psql -h $DB_PRIMARY_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME;
+                  PGPASSWORD=$DB_PASSWORD psql -h $DB_PRIMARY_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "INSERT INTO backup_catalog (filename, size_bytes, status) VALUES ('RESTORE_COMPLETED', $(stat -c%s /staging/restore_target.sql.gz), 'RESTORE_SUCCESS');";
+                  echo "Database restore completed successfully.";
+                  rm -f /staging/restore_target.sql.gz;
+          restartPolicy: OnFailure
+          volumes:
+            - name: staging-volume
+              persistentVolumeClaim:
+                claimName: backup-staging-pvc
