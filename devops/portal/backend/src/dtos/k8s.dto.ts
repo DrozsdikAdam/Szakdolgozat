@@ -11,10 +11,15 @@ export interface UpdateRateLimitDto {
     burst?: number;
 }
 
+export interface RateLimitResponseDto {
+    rps: number;
+    burst: number;
+}
+
 export interface UpdateHpaDto {
     minReplicas: number;
     maxReplicas: number;
-    currentReplicas: number;
+    currentReplicas?: number;
     targetCpuUtil: number;
     currentCpuPercent?: number;
     currentMemoryUsage?: number;
@@ -38,4 +43,27 @@ export interface UpdateVpaDto {
     minAllowedMemory: string;
     maxAllowedCpu: string;
     maxAllowedMemory: string;
+}
+
+export interface K8sEventDto {
+    id: string;
+    type: 'Normal' | 'Warning';
+    reason: string;
+    message: string;
+    involvedObjectName: string;
+    involvedObjectKind: string;
+    namespace: string;
+    count: number;
+    firstTimestamp?: string | undefined;
+    lastTimestamp: string;
+    sourceComponent?: string | undefined;
+}
+
+export interface PodLogsResponseDto {
+    podName: string;
+    namespace: string;
+    containerName: string;
+    lines: string[];
+    totalLines: number;
+    timestamp: string;
 }

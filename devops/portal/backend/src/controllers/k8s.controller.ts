@@ -3,6 +3,9 @@ import { K8sService } from "../services/k8s.service.js";
 import type { ApiResponse } from "../dtos/common.dto.js";
 import type {
     ClusterOverviewDto,
+    K8sEventDto,
+    PodLogsResponseDto,
+    RateLimitResponseDto,
     UpdateHpaDto,
     UpdateRateLimitDto,
     UpdateVpaDto,
@@ -38,11 +41,11 @@ export class K8sController {
             const namespace = (req.query.namespace as string) || "app-mes";
             const ingressName = (req.query.ingressName as string) || "mes-ingress";
 
-            const rps = await this.k8sService.getRateLimit(namespace, ingressName);
+            const rateLimit = await this.k8sService.getRateLimit(namespace, ingressName);
 
-            const response: ApiResponse<{ rps: number }> = {
+            const response: ApiResponse<RateLimitResponseDto> = {
                 success: true,
-                data: { rps },
+                data: rateLimit,
                 timestamp: new Date().toISOString(),
             };
 
@@ -138,6 +141,46 @@ export class K8sController {
             const response: ApiResponse<void> = {
                 success: true,
                 message: "VPA settings updated successfully",
+                timestamp: new Date().toISOString(),
+            };
+
+            res.status(200).json(response);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getPodLogs = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const namespace = String(req.params.namespace || "platform-infra");
+            const podName = String(req.params.podName || "");
+            const tail = req.query.tail ? Number(req.query.tail) : 150;
+            const container = req.query.container ? String(req.query.container) : undefined;
+
+            const logs = await this.k8sService.getPodLogs(namespace, podName, tail, container);
+
+            const response: ApiResponse<PodLogsResponseDto> = {
+                success: true,
+                data: logs,
+                timestamp: new Date().toISOString(),
+            };
+
+            res.status(200).json(response);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getEvents = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const namespace = req.query.namespace as string | undefined;
+            const podName = req.query.podName as string | undefined;
+
+            const events = await this.k8sService.getClusterEvents(namespace, podName);
+
+            const response: ApiResponse<K8sEventDto[]> = {
+                success: true,
+                data: events,
                 timestamp: new Date().toISOString(),
             };
 

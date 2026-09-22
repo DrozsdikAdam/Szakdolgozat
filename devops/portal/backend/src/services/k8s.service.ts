@@ -1,295 +1,206 @@
-import * as k8s from "@kubernetes/client-node";
-import { K8sMapper } from "../mappers/k8s.mapper.js";
+import { K8sWorkloadService } from "./k8s/k8s-workload.service.js";
+import { K8sConfigService } from "./k8s/k8s-config.service.js";
+import { K8sHealthService } from "./k8s/k8s-health.service.js";
+import { K8sDeploymentService } from "./k8s/k8s-deployment.service.js";
+import { K8sTelemetryService } from "./k8s/k8s-telemetry.service.js";
 import type { JobTriggerResponseDto } from "../dtos/backup.dto.js";
-import type { ClusterOverviewDto, UpdateHpaDto, UpdateRateLimitDto, UpdateVpaDto, VpaOverviewDto } from "../dtos/k8s.dto.js";
+import type {
+    ClusterOverviewDto,
+    K8sEventDto,
+    PodLogsResponseDto,
+    RateLimitResponseDto,
+    UpdateHpaDto,
+    UpdateRateLimitDto,
+    UpdateVpaDto,
+    VpaOverviewDto,
+} from "../dtos/k8s.dto.js";
+import type {
+    ConfigMapDto,
+    SecretDto,
+    SecretRevealDto,
+    SaveConfigDto,
+    RestartWorkloadDto
+} from "../dtos/config.dto.js";
+import type {
+    WorkloadHealthDto,
+    UpdateProbeDto,
+    ProbeTestResultDto
+} from "../dtos/healthcheck.dto.js";
+import type {
+    DeploymentsOverviewDto,
+    WorkloadDeploymentDto,
+    UpdateDeploymentStrategyDto,
+    RollbackDeploymentDto
+} from "../dtos/deployment.dto.js";
+import type {
+    TelemetryOverViewDto,
+    TelemetryTimeRange,
+    WorkloadMetricDto,
+    GrafanaDashboardDto
+} from "../dtos/telemetry.dto.js";
+import type { DatabaseEngine, DatabaseMode, InstanceSize } from "../types/setup.types.js";
 
 export class K8sService {
-
-    private k8sApi: k8s.KubeConfig;
-    private mapper: K8sMapper;
-    private coreApi: k8s.CoreV1Api;
-    private networkApi: k8s.NetworkingV1Api;
-    private autoscalingApi: k8s.AutoscalingV1Api;
-    private batchApi: k8s.BatchV1Api;
-    private customObjectsApi: k8s.CustomObjectsApi;
+    private workloadService: K8sWorkloadService;
+    private configService: K8sConfigService;
+    private healthService: K8sHealthService;
+    private deploymentService: K8sDeploymentService;
+    private telemetryService: K8sTelemetryService;
 
     constructor() {
-        this.k8sApi = new k8s.KubeConfig();
-        this.mapper = new K8sMapper();
-
-        try {
-            this.k8sApi.loadFromCluster();
-        } catch (error) {
-            this.k8sApi.loadFromDefault();
-        }
-
-        this.coreApi = this.k8sApi.makeApiClient(k8s.CoreV1Api);
-        this.networkApi = this.k8sApi.makeApiClient(k8s.NetworkingV1Api);
-        this.autoscalingApi = this.k8sApi.makeApiClient(k8s.AutoscalingV1Api);
-        this.batchApi = this.k8sApi.makeApiClient(k8s.BatchV1Api);
-        this.customObjectsApi = this.k8sApi.makeApiClient(k8s.CustomObjectsApi);
+        this.workloadService = new K8sWorkloadService();
+        this.configService = new K8sConfigService();
+        this.healthService = new K8sHealthService();
+        this.deploymentService = new K8sDeploymentService();
+        this.telemetryService = new K8sTelemetryService();
     }
 
     getClusterOverView = async (): Promise<ClusterOverviewDto> => {
+        return this.workloadService.getClusterOverView();
+    };
 
-        const platformPods = await this.coreApi.listNamespacedPod({ namespace: 'platform-infra' });
-        const appPods = await this.coreApi.listNamespacedPod({ namespace: 'app-mes' });
-
-        const platPodInfo = this.mapper.toPodInfos(platformPods.items ?? [])
-        const appPodInfo = this.mapper.toPodInfos(appPods.items ?? [])
-
-        return {
-            platformPods: platPodInfo,
-            appPods: appPodInfo,
-            timestamp: new Date().toISOString()
-        };
-    }
-
-    getRateLimit = async (namespace = 'app-mes', ingressName = 'mes-ingress'): Promise<number> => {
-        try {
-
-            const ingress = await this.networkApi.readNamespacedIngress({ name: ingressName, namespace });
-
-            const annotation = ingress.metadata?.annotations?.['nginx.ingress.kubernetes.io/limit-rps']
-
-            return annotation ? Number(annotation) : 20;
-
-        } catch (error) {
-            console.error('Error getting rate limit:', error);
-            throw error;
-        }
-    }
+    getRateLimit = async (namespace = 'app-mes', ingressName = 'mes-ingress'): Promise<RateLimitResponseDto> => {
+        return this.workloadService.getRateLimit(namespace, ingressName);
+    };
 
     updateRateLimit = async (request: UpdateRateLimitDto, namespace = 'app-mes', ingressName = 'mes-ingress'): Promise<void> => {
-        try {
-            const ingress = await this.networkApi.readNamespacedIngress({
-                name: ingressName,
-                namespace,
-            });
+        return this.workloadService.updateRateLimit(request, namespace, ingressName);
+    };
 
-            if (!ingress.metadata) ingress.metadata = {};
-            if (!ingress.metadata.annotations) ingress.metadata.annotations = {};
-
-            ingress.metadata.annotations['nginx.ingress.kubernetes.io/limit-rps'] = String(request.rps);
-
-            await this.networkApi.replaceNamespacedIngress({
-                name: ingressName,
-                namespace,
-                body: ingress
-            });
-
-        } catch (error) {
-            console.error('Error updating rate limit:', error);
-            throw error;
-        }
-    }
+    setMaintenanceMode = async (enabled: boolean, namespace = 'app-mes', ingressName = 'mes-ingress'): Promise<{ success: boolean; message: string }> => {
+        return this.workloadService.setMaintenanceMode(enabled, namespace, ingressName);
+    };
 
     triggerBackupJob = async (namespace = 'platform-infra', cronjob = 'db-backup'): Promise<JobTriggerResponseDto> => {
-        try {
-            const cronJob = await this.batchApi.readNamespacedCronJob({ name: cronjob, namespace });
-
-            if (!cronJob.spec?.jobTemplate?.spec)
-                throw new Error("Invalid cronjob spec");
-
-            const name = `manual-backup-${Date.now()}`;
-
-            const job: k8s.V1Job = {
-                metadata: {
-                    name,
-                    labels: {
-                        app: "db-backup"
-                    }
-                },
-                spec: {
-                    ...cronJob.spec?.jobTemplate?.spec || {},
-                    ttlSecondsAfterFinished: 300
-                }
-            };
-
-            await this.batchApi.createNamespacedJob({ namespace, body: job });
-
-            const response: JobTriggerResponseDto = {
-                jobName: name,
-                message: "Backup job triggered successfully"
-            }
-
-            return response;
-        } catch (error) {
-            console.error('Error triggering backup job:', error);
-            throw error;
-        }
-    }
+        return this.workloadService.triggerBackupJob(namespace, cronjob);
+    };
 
     triggerRestore = async (targetBackup = 'latest', namespace = 'platform-infra', cronjob = 'db-restore'): Promise<JobTriggerResponseDto> => {
-        try {
-            const cronJob = await this.batchApi.readNamespacedCronJob({ name: cronjob, namespace });
-
-            if (!cronJob.spec?.jobTemplate?.spec)
-                throw new Error("Invalid restore cronjob spec");
-
-            const name = `manual-restore-${Date.now()}`;
-            const jobSpec = JSON.parse(JSON.stringify(cronJob.spec.jobTemplate.spec)) as k8s.V1JobSpec;
-            const initContainers = jobSpec.template.spec?.initContainers ?? [];
-            const fetchContainer = initContainers.find(c => c.name === 'fetch-backup');
-
-            if (!fetchContainer)
-                throw new Error("Fetch container not found");
-
-            if (!fetchContainer.env) fetchContainer.env = [];
-
-            const targetEnv = fetchContainer.env.find(e => e.name === 'TARGET_BACKUP');
-
-            if (targetEnv)
-                targetEnv.value = targetBackup;
-            else
-                fetchContainer.env.push({ name: 'TARGET_BACKUP', value: targetBackup });
-
-            const job: k8s.V1Job = {
-                metadata: {
-                    name,
-                    labels: {
-                        app: "db-restore",
-                    },
-                },
-                spec: {
-                    ...jobSpec,
-                    ttlSecondsAfterFinished: 300,
-                },
-            };
-
-            await this.batchApi.createNamespacedJob({ namespace, body: job });
-
-            const response: JobTriggerResponseDto = {
-                jobName: name,
-                message: "Database restore job triggered successfully",
-            }
-
-            return response;
-        } catch (error) {
-            console.error('Error triggering restore job:', error);
-            throw error;
-        }
-    }
+        return this.workloadService.triggerRestore(targetBackup, namespace, cronjob);
+    };
 
     getHpa = async (namespace = 'app-mes', name = 'mes-backend-hpa'): Promise<UpdateHpaDto> => {
-        try {
-            const hpa = await this.autoscalingApi.readNamespacedHorizontalPodAutoscaler({
-                name,
-                namespace,
-            });
-
-            const response: UpdateHpaDto = {
-                minReplicas: hpa.spec?.minReplicas ?? 1,
-                maxReplicas: hpa.spec?.maxReplicas ?? 1,
-                currentReplicas: hpa.status?.currentReplicas ?? 1,
-                targetCpuUtil: hpa.spec?.targetCPUUtilizationPercentage ?? 80,
-                currentCpuPercent: hpa.status?.currentCPUUtilizationPercentage ?? 0
-            }
-
-            return response;
-        } catch (error) {
-            console.error('Error getting HPA:', error);
-            throw error;
-        }
-    }
+        return this.workloadService.getHpa(namespace, name);
+    };
 
     updateHpa = async (request: UpdateHpaDto, namespace = 'app-mes', name = 'mes-backend-hpa'): Promise<void> => {
-        try {
-            const hpa = await this.autoscalingApi.readNamespacedHorizontalPodAutoscaler({ name, namespace });
-
-            if (!hpa.spec) throw new Error("Invalid HPA spec");
-
-            hpa.spec.minReplicas = request.minReplicas;
-            hpa.spec.maxReplicas = request.maxReplicas;
-            hpa.spec.targetCPUUtilizationPercentage = request.targetCpuUtil;
-
-            await this.autoscalingApi.replaceNamespacedHorizontalPodAutoscaler({
-                name,
-                namespace,
-                body: hpa
-            });
-
-        } catch (error) {
-            console.error('Error updating HPA:', error);
-            throw error;
-        }
-    }
+        return this.workloadService.updateHpa(request, namespace, name);
+    };
 
     getVpa = async (namespace = 'app-mes', name = 'mes-backend-vpa'): Promise<VpaOverviewDto> => {
-        try {
-            const vpa = await this.customObjectsApi.getNamespacedCustomObject({
-                group: 'autoscaling.k8s.io',
-                version: 'v1',
-                namespace: namespace,
-                plural: 'verticalpodautoscalers',
-                name: name
-            }) as any;
-
-            const updateMode = (vpa.spec?.updatePolicy?.updateMode ?? 'Off') as 'Auto' | 'Off';
-            const containerPolicy = vpa.spec?.resourcePolicy?.containerPolicies[0];
-            const min = containerPolicy?.minAllowed ?? { cpu: '0', memory: '0' };
-            const max = containerPolicy?.maxAllowed ?? { cpu: '0', memory: '0' };
-            const recommendation = vpa.status?.recommendation?.containerRecommendations[0]?.target;
-
-            const response: VpaOverviewDto = {
-                name,
-                updateMode: updateMode,
-                minAllowedCpu: min.cpu,
-                minAllowedMemory: min.memory,
-                maxAllowedCpu: max.cpu,
-                maxAllowedMemory: max.memory,
-                targetCpu: recommendation?.cpu,
-                targetMemory: recommendation?.memory
-            }
-
-            return response;
-        } catch (error) {
-            console.error('Error getting VPA:', error);
-            throw error;
-        }
-    }
+        return this.workloadService.getVpa(namespace, name);
+    };
 
     updateVpa = async (request: UpdateVpaDto, namespace = 'app-mes', name = 'mes-backend-vpa'): Promise<void> => {
-        try {
-            const vpa = await this.customObjectsApi.getNamespacedCustomObject({
-                group: 'autoscaling.k8s.io',
-                version: 'v1',
-                namespace: namespace,
-                plural: 'verticalpodautoscalers',
-                name: name
-            }) as any;
+        return this.workloadService.updateVpa(request, namespace, name);
+    };
 
-            if (!vpa.spec) throw new Error('Invalid VPA spec');
+    deployDatabaseEngine = async (engine: DatabaseEngine, mode: DatabaseMode): Promise<{ success: boolean; message: string }> => {
+        return this.workloadService.deployDatabaseEngine(engine, mode);
+    };
 
-            const policy = vpa.spec.resourcePolicy?.containerPolicies?.[0];
+    applyInstanceSize = async (size: InstanceSize, namespace = 'app-mes', deploymentName = 'mes-backend'): Promise<{ success: boolean; message: string }> => {
+        return this.workloadService.applyInstanceSize(size, namespace, deploymentName);
+    };
 
-            if (!policy) throw new Error('Invalid container policy');
+    scaleDeployment = async (name: string, namespace: string, replicas: number) => {
+        return this.workloadService.scaleDeployment(name, namespace, replicas);
+    };
 
-            policy.minAllowed = {
-                cpu: request.minAllowedCpu,
-                memory: request.minAllowedMemory
-            }
+    setCronJobSuspended = async (name: string, namespace: string, suspended: boolean) => {
+        return this.workloadService.setCronJobSuspended(name, namespace, suspended);
+    };
 
-            policy.maxAllowed = {
-                cpu: request.maxAllowedCpu,
-                memory: request.maxAllowedMemory
-            }
+    getPodLogs = async (
+        namespace: string,
+        podName: string,
+        tailLines = 150,
+        container?: string
+    ): Promise<PodLogsResponseDto> => {
+        return this.workloadService.getPodLogs(namespace, podName, tailLines, container);
+    };
 
-            vpa.spec.updatePolicy.updateMode = request.updateMode;
+    getClusterEvents = async (
+        namespace?: string,
+        podName?: string
+    ): Promise<K8sEventDto[]> => {
+        return this.workloadService.getClusterEvents(namespace, podName);
+    };
 
-            await this.customObjectsApi.replaceNamespacedCustomObject({
-                group: 'autoscaling.k8s.io',
-                version: 'v1',
-                namespace: namespace,
-                plural: 'verticalpodautoscalers',
-                name: name,
-                body: vpa
-            });
+    getConfigMaps = async (namespace?: string): Promise<ConfigMapDto[]> => {
+        return this.configService.getConfigMaps(namespace);
+    };
 
-        } catch (error) {
-            console.error('Error updating VPA:', error);
-            throw error;
-        }
-    }
+    getSecrets = async (namespace?: string): Promise<SecretDto[]> => {
+        return this.configService.getSecrets(namespace);
+    };
 
+    revealSecret = async (namespace: string, name: string): Promise<SecretRevealDto> => {
+        return this.configService.revealSecret(namespace, name);
+    };
+
+    saveConfigMap = async (dto: SaveConfigDto): Promise<ConfigMapDto> => {
+        return this.configService.saveConfigMap(dto);
+    };
+
+    deleteConfigMap = async (namespace: string, name: string): Promise<boolean> => {
+        return this.configService.deleteConfigMap(namespace, name);
+    };
+
+    saveSecret = async (dto: SaveConfigDto): Promise<SecretDto> => {
+        return this.configService.saveSecret(dto);
+    };
+
+    deleteSecret = async (namespace: string, name: string): Promise<boolean> => {
+        return this.configService.deleteSecret(namespace, name);
+    };
+
+    restartWorkload = async (namespace: string, workloadNames: string[]): Promise<RestartWorkloadDto> => {
+        return this.configService.restartWorkload(namespace, workloadNames);
+    };
+
+    getWorkloadHealth = async (namespace?: string): Promise<WorkloadHealthDto[]> => {
+        return this.healthService.getWorkloadHealth(namespace);
+    };
+
+    updateWorkloadProbe = async (dto: UpdateProbeDto): Promise<WorkloadHealthDto> => {
+        return this.healthService.updateWorkloadProbe(dto);
+    };
+
+    testProbeEndpoint = async (
+        namespace: string,
+        deploymentName: string,
+        path: string = '/actuator/health',
+        port: number | string = 8080
+    ): Promise<ProbeTestResultDto> => {
+        return this.healthService.testProbeEndpoint(namespace, deploymentName, path, port);
+    };
+
+    getDeploymentsOverview = async (namespace?: string): Promise<DeploymentsOverviewDto> => {
+        return this.deploymentService.getDeploymentsOverview(namespace);
+    };
+
+    syncGitOps = async (): Promise<DeploymentsOverviewDto> => {
+        return this.deploymentService.syncGitOps();
+    };
+
+    updateDeploymentStrategy = async (dto: UpdateDeploymentStrategyDto): Promise<WorkloadDeploymentDto> => {
+        return this.deploymentService.updateDeploymentStrategy(dto);
+    };
+
+    rollbackDeployment = async (dto: RollbackDeploymentDto): Promise<WorkloadDeploymentDto> => {
+        return this.deploymentService.rollbackDeployment(dto);
+    };
+
+    getTelemetryOverview = async (timeRange?: TelemetryTimeRange): Promise<TelemetryOverViewDto> => {
+        return this.telemetryService.getOverview(timeRange);
+    };
+
+    getTelemetryWorkloads = async (namespace?: string): Promise<WorkloadMetricDto[]> => {
+        return this.telemetryService.getWorkloadMetrics(namespace);
+    };
+
+    getTelemetryDashboards = (): GrafanaDashboardDto[] => {
+        return this.telemetryService.getDashboards();
+    };
 }

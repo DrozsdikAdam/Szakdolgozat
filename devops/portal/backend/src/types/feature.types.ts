@@ -5,3 +5,5 @@ export type FeatureFlagName = 'rate_limiting'
     | 'hpa_scaling'
     | 'maintenance_mode'
     | 'vpa_scaling';
+
+export type InactivationStrategy = 'hot_standby' | 'scale_to_zero';
