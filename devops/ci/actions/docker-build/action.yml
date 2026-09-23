@@ -1,0 +1,28 @@
+name: docker-build
+description: "Sets up Docker Buildx and builds Backend and Frontend container images"
+
+runs:
+  using: composite
+  steps:
+    - name: "Set up Docker Buildx"
+      uses: docker/setup-buildx-action@v3
+
+    - name: "Build Backend Docker Image"
+      uses: docker/build-push-action@v6
+      with:
+        context: ./Backend
+        file: ./Backend/Dockerfile
+        push: false
+        tags: |
+          mes-backend:latest
+          mes-backend:${{ github.sha }}
+
+    - name: "Build Frontend Docker Image"
+      uses: docker/build-push-action@v6
+      with:
+        context: ./Frontend
+        file: ./Frontend/Dockerfile
+        push: false
+        tags: |
+          mes-frontend:latest
+          mes-frontend:${{ github.sha }}

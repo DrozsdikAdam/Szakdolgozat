@@ -1,0 +1,27 @@
+name: frontend-test
+description: "Sets up Node.js 20 and runs frontend unit tests"
+
+runs:
+  using: composite
+  steps:
+    - name: "Set up node"
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: npm
+        cache-dependency-path: Frontend/package-lock.json
+
+    - name: "Install dependencies"
+      shell: bash
+      working-directory: ./Frontend
+      run: npm ci
+
+    - name: "Run Frontend Tests"
+      shell: bash
+      working-directory: ./Frontend
+      run: npm test
+
+    - name: "Checking types"
+      shell: bash
+      working-directory: ./Frontend
+      run: npm run build
