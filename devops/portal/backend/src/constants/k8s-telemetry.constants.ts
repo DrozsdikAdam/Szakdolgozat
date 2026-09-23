@@ -9,27 +9,27 @@ export const DEFAULT_TELEMETRY_CONFIG = {
 export const DEFAULT_GRAFANA_DASHBOARD: GrafanaDashboardDto[] = [
     {
         id: 'cluster-overview',
-        title: 'Kubernetes Klaszter Áttekintés',
+        title: 'Kubernetes Klaszter',
         description: 'Csomópontonkénti CPU, memória, lemezterület és pod eloszlás valós időben.',
         category: 'Cluster',
-        embedUrl: 'http://localhost:3001/d/k8s-cluster/kubernetes-cluster-overview?kiosk=tv',
-        externalUrl: 'http://localhost:3001/d/k8s-cluster/kubernetes-cluster-overview',
+        embedUrl: 'http://localhost:3001/d/k8s-cluster?kiosk=tv',
+        externalUrl: 'http://localhost:3001/d/k8s-cluster',
     },
     {
         id: 'ingress-traffic',
-        title: 'NGINX Ingress & Forgalomelemzés',
-        description: 'Bejövő kérésszám, p50/ p95 / p99 válaszidők és HTTP 2xx / 4xx / 5xx hibarány eloszlás.',
+        title: 'NGINX Ingress Forgalom',
+        description: 'Éles üzemű L7 RED telemetria: HTTP kérésszám (RPS), hibakódok (2xx/3xx/4xx/5xx), p99 válaszidők és SSL állapot.',
         category: 'Network',
-        embedUrl: 'http://localhost:3001/d/nginx-ingress/nginx-ingress-controller?kiosk=tv',
-        externalUrl: 'http://localhost:3001/d/nginx-ingress/nginx-ingress-controller',
+        embedUrl: 'http://localhost:3001/d/nginx-ingress-l7?kiosk=tv',
+        externalUrl: 'http://localhost:3001/d/nginx-ingress-l7',
     },
     {
         id: 'database-performance',
-        title: 'PostgreSQL & PgBouncer Teljesítmény',
+        title: 'PostgreSQL & PgBouncer',
         description: 'Adatbázis kapcsolat pool kihasználtság, tranzakciós ráta és várakozási idők.',
         category: 'Database',
-        embedUrl: 'http://localhost:3001/d/postgresql-ha/postgresql-and-pgbouncer?kiosk=tv',
-        externalUrl: 'http://localhost:3001/d/postgresql-ha/postgresql-and-pgbouncer',
+        embedUrl: 'http://localhost:3001/d/postgresql-ha?kiosk=tv',
+        externalUrl: 'http://localhost:3001/d/postgresql-ha',
     }
 ]
 

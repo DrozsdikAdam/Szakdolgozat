@@ -35,12 +35,14 @@ export class K8sTelemetryService {
     private client: K8sClientService;
     private prometheusUrl: string;
     private grafanaUrl: string;
+    private grafanaPublicUrl: string;
     private scrapeIntervalSeconds: number;
 
     constructor(client?: K8sClientService) {
         this.client = client || K8sClientService.getInstance();
         this.prometheusUrl = process.env["PROMETHEUS_URL"] || DEFAULT_TELEMETRY_CONFIG.prometheusUrl;
         this.grafanaUrl = process.env["GRAFANA_URL"] || DEFAULT_TELEMETRY_CONFIG.grafanaUrl;
+        this.grafanaPublicUrl = process.env["GRAFANA_PUBLIC_URL"] || "http://localhost:3001";
         this.scrapeIntervalSeconds = DEFAULT_TELEMETRY_CONFIG.scrapeIntervalSeconds;
     }
 
@@ -123,8 +125,8 @@ export class K8sTelemetryService {
     public getDashboards = (): GrafanaDashboardDto[] => {
         return DEFAULT_GRAFANA_DASHBOARD.map((d) => ({
             ...d,
-            embedUrl: d.embedUrl.replace(/http:\/\/localhost:\d+/, this.grafanaUrl),
-            externalUrl: d.externalUrl.replace(/http:\/\/localhost:\d+/, this.grafanaUrl)
+            embedUrl: d.embedUrl.replace(/http:\/\/localhost:\d+/, this.grafanaPublicUrl),
+            externalUrl: d.externalUrl.replace(/http:\/\/localhost:\d+/, this.grafanaPublicUrl)
         }));
     };
 

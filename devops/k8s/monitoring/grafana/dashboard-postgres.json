@@ -1,0 +1,61 @@
+{
+  "dashboard": {
+    "uid": "postgresql-ha",
+    "title": "PostgreSQL & PgBouncer Teljesítmény",
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "version": 2,
+    "refresh": "5s",
+    "time": {
+      "from": "now-15m",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": { "h": 9, "w": 12, "x": 0, "y": 0 },
+        "type": "timeseries",
+        "title": "PostgreSQL Podok CPU Kihasználtsága",
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+          {
+            "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+            "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace='platform-infra',pod=~'postgres.*|pgbouncer.*'}[1m]))",
+            "legendFormat": "{{pod}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "gridPos": { "h": 9, "w": 12, "x": 12, "y": 0 },
+        "type": "timeseries",
+        "title": "PostgreSQL & PgBouncer Memóriahasználat",
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+          {
+            "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+            "expr": "sum by (pod) (container_memory_working_set_bytes{namespace='platform-infra',pod=~'postgres.*|pgbouncer.*'}) / 1048576",
+            "legendFormat": "{{pod}} (MB)",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "gridPos": { "h": 6, "w": 24, "x": 0, "y": 9 },
+        "type": "stat",
+        "title": "Platform Adatbázis Konténerek Állapota",
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+          {
+            "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+            "expr": "count(container_last_seen{namespace='platform-infra'})",
+            "refId": "A"
+          }
+        ]
+      }
+    ]
+  },
+  "overwrite": true
+}
