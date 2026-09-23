@@ -1,0 +1,171 @@
+{
+  "dashboard": {
+    "uid": "nginx-ingress-l7",
+    "title": "NGINX Ingress (Production L7 RED)",
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "version": 1,
+    "refresh": "5s",
+    "time": {
+      "from": "now-15m",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "type": "timeseries",
+        "title": "HTTP Kérésszám és Terhelés (RPS)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PBFA97CFB590B2093"
+            },
+            "expr": "sum(rate(nginx_ingress_controller_requests[1m])) or clamp_min(sum(rate(nginx_ingress_controller_nginx_process_requests_total[1m])), 0)",
+            "legendFormat": "Összes kérés / sec",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "type": "timeseries",
+        "title": "HTTP Státuszkódok Megoszlása (RED Errors)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PBFA97CFB590B2093"
+            },
+            "expr": "sum by (status) (rate(nginx_ingress_controller_requests[1m]))",
+            "legendFormat": "HTTP {{status}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
+        "type": "timeseries",
+        "title": "Válaszidő Latencia (RED Duration - p99 / ms)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PBFA97CFB590B2093"
+            },
+            "expr": "clamp_min(histogram_quantile(0.99, sum(rate(nginx_ingress_controller_request_duration_seconds_bucket[1m])) by (le)) * 1000, 0)",
+            "legendFormat": "p99 latencia (ms)",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        },
+        "type": "timeseries",
+        "title": "Aktív NGINX Kapcsolatok és Állapotok",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PBFA97CFB590B2093"
+            },
+            "expr": "sum by (state) (nginx_ingress_controller_nginx_process_connections)",
+            "legendFormat": "Kapcsolat ({{state}})",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        },
+        "type": "stat",
+        "title": "Kiszolgált Ingress Kérések Száma",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PBFA97CFB590B2093"
+            },
+            "expr": "sum(nginx_ingress_controller_requests) or sum(nginx_ingress_controller_nginx_process_requests_total)",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        },
+        "type": "stat",
+        "title": "TLS/SSL Tanúsítvány Hátralévő Érvényesség (Nap)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PBFA97CFB590B2093"
+            },
+            "expr": "round(min(nginx_ingress_controller_ssl_expire_time_seconds - time()) / 86400)",
+            "refId": "A"
+          }
+        ]
+      }
+    ]
+  },
+  "overwrite": true
+}
