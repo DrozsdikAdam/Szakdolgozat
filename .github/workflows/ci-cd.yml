@@ -16,6 +16,11 @@ on:
     branches:
       - "main"
       - "develop"
+      - "developdevops"
+      - "developDevops"
+      - "developDevOps"
+      - "develop*"
+      - "Develop*"
     paths-ignore:
       - "*.md"
       - "docs/**"
