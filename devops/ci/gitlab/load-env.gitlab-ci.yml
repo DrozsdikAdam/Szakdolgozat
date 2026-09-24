@@ -1,0 +1,8 @@
+load-env:
+  stage: load-env
+  image: alpine:latest
+  script:
+    - grep -v '^#' ./devops/ci/pipeline.env | grep -v '^$' > deploy.env
+  artifacts:
+    reports:
+      dotenv: deploy.env
