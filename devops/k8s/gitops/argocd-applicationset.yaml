@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: mes-applicationset
+  namespace: platform-infra
+  labels:
+    app.kubernetes.io/part-of: mes-platform
+spec:
+  generators:
+    - list:
+        elements:
+          - env: staging
+            branch: develop
+            autoSync: true
+            selfHeal: true
+          - env: production
+            branch: main
+            autoSync: false
+            selfHeal: false
+  template:
+    metadata:
+      name: "mes-{{env}}"
+      namespace: platform-infra
+      labels:
+        app.kubernetes.io/name: "mes-{{env}}"
+        environment: "{{env}}"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      source:
+        repoURL: "${GIT_REPO_URL:-https://github.com/DrozsdikAdam/Szakdolgozat.git}"
+        targetRevision: "{{branch}}"
+        path: "devops/k8s/overlays/{{env}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "${APP_NAMESPACE:-app-mes}"
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+          - ApplyOutOfSyncOnly=true
