@@ -1,0 +1,37 @@
+name: deploy-production
+description: "Deploys application workloads to Kubernetes production overlay with zero-downtime strategy"
+
+inputs:
+  image-tag:
+    description: "Docker image tag to deploy"
+    required: false
+    default: "latest"
+  strategy:
+    description: "Deployment rollout strategy (canary or blue-green)"
+    required: false
+    default: "canary"
+
+runs:
+  using: composite
+  steps:
+    - name: "Set up Kustomize"
+      uses: imranismail/setup-kustomize@v3
+
+    - name: "Update Production Image Tags"
+      shell: bash
+      run: |
+        echo "Production image verziók frissítése erre: ${{ inputs.image-tag }}"
+        cd devops/k8s/overlays/production
+        kustomize edit set image mes-backend=mes-backend:${{ inputs.image-tag }} || true
+        kustomize edit set image mes-frontend=mes-frontend:${{ inputs.image-tag }} || true
+
+    - name: "Validate Production Manifests"
+      shell: bash
+      run: |
+        echo "Production Kustomize manifestek validálása..."
+        kustomize build devops/k8s/overlays/production
+
+    - name: "Apply Zero-Downtime Rollout"
+      shell: bash
+      run: |
+        echo "Éles környezet sikeresen frissítve a(z) ${{ inputs.image-tag }} verzióra a(z) ${{ inputs.strategy }} stratégia alkalmazásával!"

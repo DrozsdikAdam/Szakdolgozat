@@ -1,4 +1,8 @@
 name: "CI/CD Pipeline"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   pull_request:
     paths-ignore:
@@ -22,6 +26,26 @@ on:
   workflow_dispatch:
 
 jobs:
+  load-env:
+    name: "Load Environment Configuration"
+    runs-on: "ubuntu-latest"
+    outputs:
+      TARGET_ENV: ${{ steps.read-env.outputs.TARGET_ENV }}
+      STAGING_ENV: ${{ steps.read-env.outputs.STAGING_ENV }}
+      TARGET_URL: ${{ steps.read-env.outputs.TARGET_URL }}
+      STAGING_URL: ${{ steps.read-env.outputs.STAGING_URL }}
+      BACKEND_IMAGE: ${{ steps.read-env.outputs.BACKEND_IMAGE }}
+      FRONTEND_IMAGE: ${{ steps.read-env.outputs.FRONTEND_IMAGE }}
+      DEFAULT_STRATEGY: ${{ steps.read-env.outputs.DEFAULT_STRATEGY }}
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+
+      - name: "Read pipeline.env"
+        id: read-env
+        run: |
+          grep -v '^#' ./devops/ci/pipeline.env | grep -v '^$' >> $GITHUB_OUTPUT
+
   test-backend:
     name: "Backend Unit & Integration Tests"
     runs-on: "ubuntu-latest"
@@ -45,10 +69,47 @@ jobs:
   build-and-push:
     name: "Build Docker Containers"
     runs-on: "ubuntu-latest"
-    needs: [test-backend, test-frontend]
+    needs: [load-env, test-backend, test-frontend]
     steps:
       - name: "Checkout repository"
         uses: actions/checkout@v4
 
       - name: "Build All Container Images"
         uses: ./devops/ci/actions/docker-build
+        with:
+          backend-image: ${{ needs.load-env.outputs.BACKEND_IMAGE || 'mes-backend' }}
+          frontend-image: ${{ needs.load-env.outputs.FRONTEND_IMAGE || 'mes-frontend' }}
+
+  deploy-staging:
+    name: "Deploy to Staging"
+    runs-on: "ubuntu-latest"
+    needs: [load-env, build-and-push]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    environment:
+      name: ${{ needs.load-env.outputs.STAGING_ENV || 'staging' }}
+      url: ${{ needs.load-env.outputs.STAGING_URL || 'http://staging.mes.localhost' }}
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+      - name: "Deploy Staging Overlays"
+        uses: ./devops/ci/actions/deploy-staging
+        with:
+          image-tag: ${{ github.sha }}
+
+  deploy-production:
+    name: "Deploy to Production (Approval Gate)"
+    runs-on: "ubuntu-latest"
+    needs: [load-env, deploy-staging]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: ${{ needs.load-env.outputs.TARGET_ENV || 'production' }}
+      url: ${{ needs.load-env.outputs.TARGET_URL || 'http://mes.localhost' }}
+
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+      - name: "Deploy Production Overlays"
+        uses: ./devops/ci/actions/deploy-production
+        with:
+          image-tag: ${{ github.sha }}
+          strategy: ${{ needs.load-env.outputs.DEFAULT_STRATEGY || 'canary' }}

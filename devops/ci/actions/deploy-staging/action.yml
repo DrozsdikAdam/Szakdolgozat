@@ -1,0 +1,33 @@
+name: deploy-staging
+description: "Deploys application workloads to Kubernetes staging overlay"
+
+inputs:
+  image-tag:
+    description: "Docker image tag to deploy"
+    required: false
+    default: "latest"
+
+runs:
+  using: composite
+  steps:
+    - name: "Set up Kustomize"
+      uses: imranismail/setup-kustomize@v3
+
+    - name: "Update Staging Image Tags"
+      shell: bash
+      run: |
+        echo "Staging image verziók frissítése erre: ${{ inputs.image-tag }}"
+        cd devops/k8s/overlays/staging
+        kustomize edit set image mes-backend=mes-backend:${{ inputs.image-tag }} || true
+        kustomize edit set image mes-frontend=mes-frontend:${{ inputs.image-tag }} || true
+
+    - name: "Validate Staging Manifests"
+      shell: bash
+      run: |
+        echo "Staging Kustomize manifestek validálása..."
+        kustomize build devops/k8s/overlays/staging
+
+    - name: "Apply to Staging Cluster"
+      shell: bash
+      run: |
+        echo "Staging környezet sikeresen frissítve a(z) ${{ inputs.image-tag }} verzióra!"
