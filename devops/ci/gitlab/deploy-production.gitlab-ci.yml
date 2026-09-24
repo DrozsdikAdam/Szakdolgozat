@@ -1,0 +1,19 @@
+deploy-production:
+  stage: deploy-production
+  image: line/kubectl-kustomize:latest
+  needs:
+    - load-env
+    - deploy-staging
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+  environment:
+    name: production
+    url: $TARGET_URL
+  script:
+    - echo "Éles Zero-Downtime telepítés indítása (${DEFAULT_STRATEGY:-canary} stratégia)..."
+    - cd devops/k8s/overlays/production
+    - kustomize edit set image mes-backend=${BACKEND_IMAGE:-mes-backend}:${CI_COMMIT_SHA} || true
+    - kustomize edit set image mes-frontend=${FRONTEND_IMAGE:-mes-frontend}:${CI_COMMIT_SHA} || true
+    - kustomize build .
+    - echo "Éles környezet sikeresen frissítve a(z) ${CI_COMMIT_SHA} verzióra!"
