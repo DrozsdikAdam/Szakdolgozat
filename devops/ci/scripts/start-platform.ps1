@@ -24,6 +24,9 @@ if (Test-Path $envFile) {
         $config[$key.Trim()] = $value.Trim()
         [System.Environment]::SetEnvironmentVariable($key.Trim(), $value.Trim(), "Process")
     }
+    $resolvedEnvPath = (Resolve-Path $envFile).Path
+    [System.Environment]::SetEnvironmentVariable("PIPELINE_ENV_PATH", $resolvedEnvPath, "Process")
+    $env:PIPELINE_ENV_PATH = $resolvedEnvPath
     Write-Host "Konfiguracio sikeresen betoltve!" -ForegroundColor Green
 } else {
     Write-Host "A kozponti konfiguracios fajl nem talalhato: $envFile" -ForegroundColor Red
@@ -74,9 +77,9 @@ if (-not $k8sOk) {
     Write-Host "Kubernetes furt aktiv es elerheto!" -ForegroundColor Green
 }
 
-# 2. FÁZIS 1: Lokális CI és Konténer Fordítás
+# 2. FÁZIS: Lokális CI és Konténer Fordítás
 if (-not $SkipBuild) {
-    Write-Host "`n[2/4] FAZIS 1: Lokalis CI tesztek es Docker kontener forditas..." -ForegroundColor Yellow
+    Write-Host "`n[2/4] FAZIS 2: Lokalis CI tesztek es Docker kontener forditas..." -ForegroundColor Yellow
     $ciScript = Join-Path $PSScriptRoot "run-local-ci.ps1"
     if (Test-Path $ciScript) {
         & powershell -ExecutionPolicy Bypass -File $ciScript
@@ -86,11 +89,11 @@ if (-not $SkipBuild) {
         }
     }
 } else {
-    Write-Host "`n[2/4] FAZIS 1: Kontener forditas kihagyva (-SkipBuild kapcsolo)." -ForegroundColor DarkGray
+    Write-Host "`n[2/4] FAZIS 2: Kontener forditas kihagyva (-SkipBuild kapcsolo)." -ForegroundColor DarkGray
 }
 
-# 3. FÁZIS 2: Klaszter Bootstrap és Infrastruktúra felkészítés
-Write-Host "`n[3/4] FAZIS 2: Klaszter felkeszites (Nevterek, DBaaS, ArgoCD, MinIO)..." -ForegroundColor Yellow
+# 3. FÁZIS: Klaszter Bootstrap és Infrastruktúra felkészítés
+Write-Host "`n[3/4] FAZIS 3: Klaszter felkeszites (Nevterek, DBaaS, ArgoCD, MinIO)..." -ForegroundColor Yellow
 $bootstrapScript = Join-Path $PSScriptRoot "deploy-remote-cluster.ps1"
 $bootstrapArgs = @()
 if ($DryRun) { $bootstrapArgs += "-DryRun" }
@@ -105,8 +108,8 @@ if (Test-Path $bootstrapScript) {
     }
 }
 
-# 4. FÁZIS 3: GitOps Stratégiák és Rollout szinkronizáció
-Write-Host "`n[4/4] FAZIS 3: GitOps manifestek es Rollout strategiak ervenyesitese..." -ForegroundColor Yellow
+# 4. FÁZIS: GitOps Stratégiák és Rollout szinkronizáció
+Write-Host "`n[4/4] FAZIS 4: GitOps manifestek es Rollout strategiak ervenyesitese..." -ForegroundColor Yellow
 $gitopsScript = Join-Path $PSScriptRoot "apply-local-gitops.ps1"
 $gitopsArgs = @()
 if ($DryRun) { $gitopsArgs += "-DryRun" }
