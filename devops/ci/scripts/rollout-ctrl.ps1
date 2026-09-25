@@ -33,16 +33,16 @@ $targetRollout = if ($RolloutName) { $RolloutName } else { $defaultRollout }
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "   MES PAAS - ROLLOUT CONTROLLER (ARGO ROLLOUTS)         " -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "Cél Rollout: $targetRollout" -ForegroundColor Yellow
-Write-Host "Névtér:      $activeNamespace" -ForegroundColor Yellow
-Write-Host "Művelet:     $Action" -ForegroundColor Yellow
-Write-Host "Stratégia:   $activeStrategy" -ForegroundColor Yellow
+Write-Host "Cel Rollout: $targetRollout" -ForegroundColor Yellow
+Write-Host "Nevter:      $activeNamespace" -ForegroundColor Yellow
+Write-Host "Muvelet:     $Action" -ForegroundColor Yellow
+Write-Host "Strategia:   $activeStrategy" -ForegroundColor Yellow
 Write-Host "----------------------------------------------------------" -ForegroundColor DarkGray
 
 # 2. Ellenőrzés: Létezik-e a Rollout erőforrás?
 $exists = kubectl get rollout $targetRollout -n $activeNamespace --ignore-not-found -o name
 if (-not $exists) {
-    Write-Error "A(z) '$targetRollout' nevű Rollout nem található a(z) '$activeNamespace' névtérben!"
+    Write-Error "A(z) '$targetRollout' nevu Rollout nem talalhato a(z) '$activeNamespace' nevterben!"
     exit 1
 }
 
@@ -58,18 +58,18 @@ try {
 # 4. Műveletek végrehajtása
 switch ($Action) {
     "status" {
-        Write-Host "`n[+] Rollout státusz lekérdezése..." -ForegroundColor Cyan
+        Write-Host "`n[+] Rollout statusz lekerdezese..." -ForegroundColor Cyan
         if ($hasArgoPlugin) {
             kubectl argo rollouts get rollout $targetRollout -n $activeNamespace
         } else {
             kubectl get rollout $targetRollout -n $activeNamespace -o wide
-            Write-Host "`nPodok részletei:" -ForegroundColor DarkGray
+            Write-Host "`nPodok reszletei:" -ForegroundColor DarkGray
             kubectl get pods -n $activeNamespace -l "app=$targetRollout" -o wide
         }
     }
 
     "promote" {
-        Write-Host "`n[+] Rollout léptetése (Promote)..." -ForegroundColor Cyan
+        Write-Host "`n[+] Rollout leptetese (Promote)..." -ForegroundColor Cyan
         if ($hasArgoPlugin) {
             $flag = if ($Full) { "--full" } else { "" }
             kubectl argo rollouts promote $targetRollout -n $activeNamespace $flag
@@ -78,33 +78,33 @@ switch ($Action) {
             $patch = '{"spec":{"paused":false}}'
             kubectl patch rollout $targetRollout -n $activeNamespace --type=merge -p $patch
         }
-        Write-Host "A léptetési parancs sikeresen átadva a vezérlőnek!" -ForegroundColor Green
+        Write-Host "A leptetesi parancs sikeresen atadva a vezerlonek!" -ForegroundColor Green
     }
 
     "pause" {
-        Write-Host "`n[+] Rollout szüneteltetése (Pause)..." -ForegroundColor Cyan
+        Write-Host "`n[+] Rollout szuneltetese (Pause)..." -ForegroundColor Cyan
         if ($hasArgoPlugin) {
             kubectl argo rollouts pause $targetRollout -n $activeNamespace
         } else {
             $patch = '{"spec":{"paused":true}}'
             kubectl patch rollout $targetRollout -n $activeNamespace --type=merge -p $patch
         }
-        Write-Host "A Rollout szüneteltetve!" -ForegroundColor Yellow
+        Write-Host "A Rollout szuneltetve!" -ForegroundColor Yellow
     }
 
     "resume" {
-        Write-Host "`n[+] Rollout folytatása (Resume)..." -ForegroundColor Cyan
+        Write-Host "`n[+] Rollout folytatasa (Resume)..." -ForegroundColor Cyan
         if ($hasArgoPlugin) {
             kubectl argo rollouts resume $targetRollout -n $activeNamespace
         } else {
             $patch = '{"spec":{"paused":false}}'
             kubectl patch rollout $targetRollout -n $activeNamespace --type=merge -p $patch
         }
-        Write-Host "A Rollout folytatása elindítva!" -ForegroundColor Green
+        Write-Host "A Rollout folytatasa elinditva!" -ForegroundColor Green
     }
 
     "abort" {
-        Write-Host "`n[!] VÉSZLEÁLLÍTÁS: Rollout megszakítása (Abort)..." -ForegroundColor Red
+        Write-Host "`n[!] VESZLEALLITAS: Rollout megszakitasa (Abort)..." -ForegroundColor Red
         if ($hasArgoPlugin) {
             kubectl argo rollouts abort $targetRollout -n $activeNamespace
         } else {
@@ -112,31 +112,31 @@ switch ($Action) {
             $patch = '{"status":{"abort":true}}'
             kubectl patch rollout $targetRollout -n $activeNamespace --type=merge --subresource=status -p $patch
         }
-        Write-Host "Rollout megszakítva! A forgalom visszatért a stabil verzióra." -ForegroundColor Red
+        Write-Host "Rollout megszakitva! A forgalom visszater a stabil verziora." -ForegroundColor Red
     }
 
     "rollback" {
-        Write-Host "`n[+] Visszagörgetés a korábbi stabil revízióra (Undo)..." -ForegroundColor Cyan
+        Write-Host "`n[+] Visszagorgetes a korabbi stabil reviziora (Undo)..." -ForegroundColor Cyan
         if ($hasArgoPlugin) {
             kubectl argo rollouts undo $targetRollout -n $activeNamespace
         } else {
             kubectl rollout undo rollout/$targetRollout -n $activeNamespace
         }
-        Write-Host "Visszagörgetés elindítva az előző stabil verzióra!" -ForegroundColor Green
+        Write-Host "Visszagorgetes elinditva az elozo stabil verziora!" -ForegroundColor Green
     }
 
     "retry" {
-        Write-Host "`n[+] Megszakított Rollout újraindítása (Retry)..." -ForegroundColor Cyan
+        Write-Host "`n[+] Megszakitott Rollout ujrainditasa (Retry)..." -ForegroundColor Cyan
         if ($hasArgoPlugin) {
             kubectl argo rollouts retry rollout $targetRollout -n $activeNamespace
         } else {
             $patch = '{"status":{"abort":false}}'
             kubectl patch rollout $targetRollout -n $activeNamespace --type=merge --subresource=status -p $patch
         }
-        Write-Host "Újrapróbálkozás aktiválva!" -ForegroundColor Green
+        Write-Host "Ujraprobalas aktivalva!" -ForegroundColor Green
     }
 }
 
 Write-Host "`n==========================================================" -ForegroundColor Green
-Write-Host " Művelet sikeresen befejeződött!" -ForegroundColor Green
+Write-Host " Muvelet sikeresen befejezodott!" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green

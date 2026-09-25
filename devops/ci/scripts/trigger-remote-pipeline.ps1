@@ -9,7 +9,7 @@ param (
 $ErrorActionPreference = "Stop"
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "   MES PLATFORM - TÁVOLI CI/CD PIPELINE INDÍTÓ            " -ForegroundColor Cyan
+Write-Host "   MES PLATFORM - TAVOLI CI/CD PIPELINE INDITO            " -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 # 1. pipeline.env teljes és dinamikus beolvasása
@@ -17,21 +17,21 @@ $envFile = Join-Path $PSScriptRoot "..\pipeline.env"
 $config = @{}
 
 if (Test-Path $envFile) {
-    Write-Host "`n[1/3] Konfiguráció betöltése a pipeline.env fájlból..." -ForegroundColor Yellow
+    Write-Host "`n[1/3] Konfiguracio betoltese a pipeline.env fajlbol..." -ForegroundColor Yellow
     Get-Content $envFile | Where-Object { $_ -match '^[^#].*=' } | ForEach-Object {
         $key, $value = $_.Split('=', 2)
         $config[$key.Trim()] = $value.Trim()
     }
-    Write-Host "Konfiguráció sikeresen beolvasva!" -ForegroundColor Green
+    Write-Host "Konfiguracio sikeresen beolvasva!" -ForegroundColor Green
 } else {
-    Write-Error "Nem található a központi konfigurációs fájl: $envFile"
+    Write-Error "Nem talalhato a kozponti konfiguracios fajl: $envFile"
     exit 1
 }
 
 # Paraméterek dinamikus feloldása a pipeline.env-ből
 $repoUrl = $config["GIT_REPO_URL"]
 if (-not $repoUrl) {
-    Write-Error "A GIT_REPO_URL változó nincs definiálva a pipeline.env-ben!"
+    Write-Error "A GIT_REPO_URL valtozo nincs definialva a pipeline.env-ben!"
     exit 1
 }
 
@@ -48,22 +48,22 @@ if ($repoUrl -match 'github\.com[/:]([^/]+)/([^/\.]+)') {
     $owner = $Matches[1]
     $repo = $Matches[2]
 } else {
-    Write-Error "Nem sikerült feloldani a GitHub repót a pipeline.env-ben lévő URL-ből: $repoUrl"
+    Write-Error "Nem sikerult feloldani a GitHub repot a pipeline.env-ben levo URL-bol: $repoUrl"
     exit 1
 }
 
-Write-Host "`nCél repository: $owner/$repo (forrás: pipeline.env)" -ForegroundColor Cyan
-Write-Host "Cél ág:        $targetBranch" -ForegroundColor Cyan
-Write-Host "Workflow fájl: $Workflow" -ForegroundColor Cyan
+Write-Host "`nCel repository: $owner/$repo (forras: pipeline.env)" -ForegroundColor Cyan
+Write-Host "Cel ag:        $targetBranch" -ForegroundColor Cyan
+Write-Host "Workflow fajl: $Workflow" -ForegroundColor Cyan
 
 # 3. GitHub Token feloldása
 $ghToken = if ($Token) { $Token } else { $env:GITHUB_TOKEN }
 if (-not $ghToken) {
-    Write-Host "`nFigyelem: Nem található GITHUB_TOKEN környezeti változó!" -ForegroundColor DarkYellow
-    Write-Host "Az indításhoz hozz létre egy Personal Access Tokent a GitHubon." -ForegroundColor DarkYellow
-    $ghToken = Read-Host "Add meg a GitHub Personal Access Token-t (vagy nyomj Entert a megszakításhoz)"
+    Write-Host "`nFigyelem: Nem talalhato GITHUB_TOKEN kornyezeti valtozo!" -ForegroundColor DarkYellow
+    Write-Host "Az inditashoz hozz letre egy Personal Access Tokent a GitHubon." -ForegroundColor DarkYellow
+    $ghToken = Read-Host "Add meg a GitHub Personal Access Token-t (vagy nyomj Entert a megszakitashoz)"
     if (-not $ghToken) {
-        Write-Error "A workflow indítása megszakítva token hiányában."
+        Write-Error "A workflow inditasa megszakitva token hianyaban."
         exit 1
     }
 }
@@ -79,25 +79,25 @@ $body = @{
     "ref" = $targetBranch
 } | ConvertTo-Json
 
-Write-Host "`n[2/3] Pipeline indítása a GitHub REST API-n keresztül..." -ForegroundColor Yellow
+Write-Host "`n[2/3] Pipeline inditasa a GitHub REST API-n keresztul..." -ForegroundColor Yellow
 
 try {
     $response = Invoke-RestMethod -Uri $apiUrl -Method Post -Headers $headers -Body $body
-    Write-Host "A workflow_dispatch kérés sikeresen elküldve!" -ForegroundColor Green
+    Write-Host "A workflow_dispatch keres sikeresen elkuldve!" -ForegroundColor Green
 } catch {
-    Write-Error "Hiba a GitHub Actions indításakor: $($_.Exception.Message)"
+    Write-Error "Hiba a GitHub Actions inditasakor: $($_.Exception.Message)"
     if ($_.ErrorDetails.Message) {
-        Write-Host "Részletek: $($_.ErrorDetails.Message)" -ForegroundColor Red
+        Write-Host "Reszletek: $($_.ErrorDetails.Message)" -ForegroundColor Red
     }
     exit 1
 }
 
 # 5. Eredmény megjelenítése és közvetlen link
-Write-Host "`n[3/3] Indítás ellenőrzése..." -ForegroundColor Yellow
+Write-Host "`n[3/3] Inditas ellenorzese..." -ForegroundColor Yellow
 Start-Sleep -Seconds 3
 
 Write-Host "`n==========================================================" -ForegroundColor Green
-Write-Host " SIKER: A CI/CD Pipeline elindult a GitHub felhőben!" -ForegroundColor Green
-Write-Host " Követés és élő naplók a böngészőben:" -ForegroundColor Cyan
+Write-Host " SIKER: A CI/CD Pipeline elindult a GitHub felhoben!" -ForegroundColor Green
+Write-Host " Kovetes es elo naplok a bongeszoben:" -ForegroundColor Cyan
 Write-Host " https://github.com/$owner/$repo/actions/workflows/$Workflow" -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Green
