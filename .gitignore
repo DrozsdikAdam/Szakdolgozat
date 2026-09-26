@@ -1,0 +1,40 @@
+# BIZTONSÁG ÉS KULCSOK (SECRETS & PRIVATE KEYS)
+devops/k8s/gitops/argocd-repo-secret.yaml
+*.key
+*.pem
+*.pub
+id_*
+.secrets/
+.deploy_keys/
+.env
+.env.local
+.env.*.local
+
+# Kivételek a verziókövetéshez (ezek maradhatnak Gitben):
+!devops/ci/pipeline.env
+!devops/k8s/gitops/*.template.yaml
+
+# BACKEND (Java / Spring Boot / Maven)
+Backend/target/
+Backend/*.jar
+Backend/*.war
+*.class
+
+# FRONTEND (React / Vite / Node.js)
+Frontend/node_modules/
+Frontend/dist/
+Frontend/dist-ssr/
+Frontend/.vite/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE ÉS OPERÁCIÓS RENDSZER
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.DS_Store
+Thumbs.db

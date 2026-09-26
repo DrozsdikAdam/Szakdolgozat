@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mes-production
+  namespace: platform-infra
+  labels:
+    app.kubernetes.io/name: mes-production
+    environment: production
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+
+spec:
+  project: default
+  source:
+    repoURL: "${GIT_REPO_URL:-https://github.com/DrozsdikAdam/Szakdolgozat.git}"
+    targetRevision: "${PRODUCTION_BRANCH:-main}"
+    path: devops/k8s/overlays/production
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: "${APP_NAMESPACE:-app-mes}"
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

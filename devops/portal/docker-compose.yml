@@ -14,9 +14,11 @@ services:
       - K8S_SERVER_HOST=host.docker.internal
       - PROMETHEUS_URL=http://host.docker.internal:9090
       - GRAFANA_URL=http://host.docker.internal:3001
+      - PIPELINE_ENV_PATH=/app/ci/pipeline.env
     volumes:
       - portal-data:/app/data
       - ~/.kube/config:/app/.kube/config:ro
+      - ../ci/pipeline.env:/app/ci/pipeline.env:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

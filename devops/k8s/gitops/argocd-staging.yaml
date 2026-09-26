@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mes-staging
+  namespace: platform-infra
+  labels:
+    app.kubernetes.io/name: mes-staging
+    environment: staging
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+
+spec:
+  project: default
+  source:
+    repoURL: "${GIT_REPO_URL:-https://github.com/DrozsdikAdam/Szakdolgozat.git}"
+    targetRevision: "${STAGING_BRANCH:-develop}"
+    path: devops/k8s/overlays/staging
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: "${APP_NAMESPACE:-app-mes}"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true

@@ -8,13 +8,9 @@ import type {
     GitRepoConfig
 } from "../types/deployments";
 import type { StrategyFilterType } from "../types/component/deployments/strategyFilterTabsProps";
+import type { ToastMessage } from "../types/component/common";
 
 export type { StrategyFilterType };
-
-export interface ToastMessage {
-    text: string;
-    type: "success" | "error";
-}
 
 export const useDeployments = () => {
     const [overview, setOverview] = useState<DeploymentsOverviewDto | null>(null);

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import type { TelemetryOverViewDto, TelemetryTimeRange } from "../types/telemetry"
-import type { ToastMessage } from "./useHealthchecks";
 import { TelemetryApiClient } from "../client/api/telemetry";
+import type { ToastMessage } from "../types/component/common";
 
 export const useTelemetry = () => {
     const [overView, setOverView] = useState<TelemetryOverViewDto | null>(null);

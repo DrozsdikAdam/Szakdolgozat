@@ -5,8 +5,10 @@ import {
     AlertTriangle
 } from "lucide-react";
 import { useDeployments } from "../hooks/useDeployments";
+import { usePipelineCenter } from "../hooks/usePipelineCenter";
 import { GitOpsSourceBanner } from "../components/dashboard/deployments/GitOpsSourceBanner";
 import { GitOpsPipelineFlow } from "../components/dashboard/deployments/GitOpsPipelineFlow";
+import { PipelineStatusCenter } from "../components/dashboard/deployments/PipelineStatusCenter";
 import { StrategyFilterTabs } from "../components/dashboard/deployments/StrategyFilterTabs";
 import { WorkloadDeploymentCard } from "../components/dashboard/deployments/WorkloadDeploymentCard";
 import { DeploymentStrategyModal } from "../components/dashboard/deployments/DeploymentStrategyModal";
@@ -51,6 +53,8 @@ export const DeploymentsTab = () => {
         handleQuickPromote
     } = useDeployments();
 
+    const pipelineCenter = usePipelineCenter();
+
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -81,6 +85,8 @@ export const DeploymentsTab = () => {
             />
 
             <GitOpsPipelineFlow gitRepo={gitRepo} />
+
+            <PipelineStatusCenter pipelineCenter={pipelineCenter} />
 
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
                 <div className="w-full lg:w-72">
