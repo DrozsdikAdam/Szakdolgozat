@@ -6,8 +6,8 @@ export interface PipelineStage {
     name: string
     status: PipelineStageStatus
     durationSeconds: number
-    startedAt?: string
-    completedAt?: string
+    startedAt?: string | undefined
+    completedAt?: string | undefined
 }
 
 export interface PipelineRun {
