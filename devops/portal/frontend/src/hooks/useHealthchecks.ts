@@ -1,15 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { HealthcheckApi } from "../client/api/healthcheck";
 import type { WorkloadHealthDto, UpdateProbeDto, ProbeTestResultDto } from "../types/healthcheck";
+import type { ToastMessage } from "../types/component/common";
 
 export interface ActiveTestResult {
     deployment: string;
     result: ProbeTestResultDto;
-}
-
-export interface ToastMessage {
-    text: string;
-    type: "success" | "error";
 }
 
 export const useHealthchecks = () => {
