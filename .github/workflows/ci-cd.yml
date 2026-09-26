@@ -89,7 +89,7 @@ jobs:
     name: "Deploy to Staging"
     runs-on: "ubuntu-latest"
     needs: [load-env, build-and-push]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/develop') || startsWith(github.ref, 'refs/heads/Develop')
     environment:
       name: ${{ needs.load-env.outputs.STAGING_ENV || 'staging' }}
       url: ${{ needs.load-env.outputs.STAGING_URL || 'http://staging.mes.localhost' }}
