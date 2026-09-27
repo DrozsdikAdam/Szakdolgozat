@@ -2,6 +2,7 @@ stages:
   - load-env
   - test
   - build
+  - security-scan
   - deploy-staging
   - deploy-production
 
@@ -10,5 +11,6 @@ include:
   - local: "devops/ci/gitlab/backend-test.gitlab-ci.yml"
   - local: "devops/ci/gitlab/frontend-test.gitlab-ci.yml"
   - local: "devops/ci/gitlab/docker-build.gitlab-ci.yml"
+  - local: "devops/ci/gitlab/security-scan.gitlab-ci.yml"
   - local: "devops/ci/gitlab/deploy-staging.gitlab-ci.yml"
   - local: "devops/ci/gitlab/deploy-production.gitlab-ci.yml"
