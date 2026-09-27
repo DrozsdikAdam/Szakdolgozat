@@ -14,7 +14,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: create-bucket
-          image: minio/mc:latest
+          image: cgr.dev/chainguard/minio-client:latest
           command: [
               "/bin/sh",
               "-c",

@@ -20,7 +20,7 @@ spec:
         spec:
           initContainers:
             - name: fetch-backup
-              image: quay.io/minio/mc:latest
+              image: cgr.dev/chainguard/minio-client:latest
               envFrom:
                 - secretRef:
                     name: backup-secret

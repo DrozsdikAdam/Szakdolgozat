@@ -44,6 +44,11 @@ try {
 Write-Host "`n[3/4] Frontend tesztek es tipusellenorzes (npm)..." -ForegroundColor Yellow
 Push-Location (Join-Path $PSScriptRoot "..\..\..\Frontend")
 try {
+    if (-not (Test-Path "node_modules")) {
+        Write-Host "Frontend fuggosegek hianyoznak, telepites (npm ci)..." -ForegroundColor Yellow
+        npm ci
+        if ($LASTEXITCODE -ne 0) { throw "npm ci sikertelen!" }
+    }
     npm test
     if ($LASTEXITCODE -ne 0) { throw "Frontend tesztek elbuktak!" }
     npm run build

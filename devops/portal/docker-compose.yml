@@ -17,7 +17,7 @@ services:
       - PIPELINE_ENV_PATH=/app/ci/pipeline.env
     volumes:
       - portal-data:/app/data
-      - ~/.kube/config:/app/.kube/config:ro
+      - ~/.kube:/app/.kube:ro
       - ../ci/pipeline.env:/app/ci/pipeline.env:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
