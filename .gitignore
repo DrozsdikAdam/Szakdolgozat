@@ -1,5 +1,6 @@
 # BIZTONSÁG ÉS KULCSOK (SECRETS & PRIVATE KEYS)
 devops/k8s/gitops/argocd-repo-secret.yaml
+devops/k8s/base/ingress/tls-secret.yaml
 *.key
 *.pem
 *.pub
@@ -10,9 +11,9 @@ id_*
 .env.local
 .env.*.local
 
-# Kivételek a verziókövetéshez (ezek maradhatnak Gitben):
+# Kivételek a verziókövetéshez:
 !devops/ci/pipeline.env
-!devops/k8s/gitops/*.template.yaml
+!devops/k8s/**/*.template.yaml
 
 # BACKEND (Java / Spring Boot / Maven)
 Backend/target/

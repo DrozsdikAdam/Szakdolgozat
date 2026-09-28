@@ -5,10 +5,14 @@ metadata:
   labels:
     app.kubernetes.io/name: mes-ingress
   annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/limit-rps: "20"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - mes.localhost
+      secretName: mes-tls-secret
   rules:
     - host: mes.localhost
       http:
