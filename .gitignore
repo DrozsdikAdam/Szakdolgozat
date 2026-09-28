@@ -1,6 +1,7 @@
 # BIZTONSÁG ÉS KULCSOK (SECRETS & PRIVATE KEYS)
 devops/k8s/gitops/argocd-repo-secret.yaml
 devops/k8s/base/ingress/tls-secret.yaml
+devops/k8s/portal/portal-auth-secret.yaml
 *.key
 *.pem
 *.pub
