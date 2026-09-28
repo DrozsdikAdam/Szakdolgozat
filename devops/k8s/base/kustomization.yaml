@@ -8,3 +8,5 @@ resources:
   - frontend/frontend-service.yaml
   - backend/backend-hpa.yaml
   - ingress/ingress.yaml
+  - security/backend-network-policy.yaml
+  - security/frontend-network-policy.yaml
