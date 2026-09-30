@@ -32,16 +32,7 @@ export const BASELINE_VULNERABILITIES: VulnerabilityItem[] = [
         description: "Spring Web UriComponentsBuilder URL parsing parsing vulnerability leading to open redirect or SSRF.",
         url: "https://nvd.nist.gov/vuln/detail/CVE-2024-22243"
     },
-    {
-        cveId: "CVE-2024-21626",
-        packageName: "runc",
-        packageVersion: "1.1.11-r0",
-        fixedVersion: "1.1.12-r0",
-        severity: "CRITICAL",
-        source: "backend-container",
-        description: "Container breakout through file descriptor leak in runc process initialization.",
-        url: "https://nvd.nist.gov/vuln/detail/CVE-2024-21626"
-    },
+
     {
         cveId: "CVE-2023-45853",
         packageName: "zlib",
