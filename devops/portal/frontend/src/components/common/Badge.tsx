@@ -19,7 +19,7 @@ export const Badge = ({ variant, text, pulse, size = 'sm' }: BadgeProps) => {
     }
 
     return (
-        <span className={`border rounded-full inline-flex items-center gap-1.5 font-medium ${variantStyles[variant]} ${sizeStyles[size]}`}>
+        <span className={`border rounded-full inline-flex items-center gap-1.5 font-medium shrink-0 whitespace-nowrap ${variantStyles[variant]} ${sizeStyles[size]}`}>
             {pulse && (
                 <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse-subtle" />
             )}

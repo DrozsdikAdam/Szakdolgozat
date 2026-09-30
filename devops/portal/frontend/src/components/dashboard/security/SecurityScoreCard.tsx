@@ -22,32 +22,29 @@ export const SecurityScoreCard = ({ overallScore, scoreGrade, criticalCount, hig
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            <Card hoverEffect={false} className={`lg:col-span-1 p-5 border ${gradeInfo.borderClass} ${gradeInfo.bgClass}`}>
+            <Card
+                hoverEffect={false}
+                className={`lg:col-span-1 p-4 border ${gradeInfo.borderClass} ${gradeInfo.bgClass}`}
+            >
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                            Biztonsági Index
-                        </p>
-                        <div className="flex items-baseline gap-2 mt-1">
-                            <span className={`text-4xl font-extrabold ${gradeInfo.textClass}`}>
+                        <div className="flex items-center gap-2">
+                            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                Biztonsági Index
+                            </p>
+                            <Badge variant={gradeInfo.badgeVariant} text={`Grade ${scoreGrade}`} size="sm" />
+                        </div>
+                        <div className="flex items-baseline gap-1 mt-1">
+                            <h4 className={`text-2xl font-bold ${gradeInfo.textClass}`}>
                                 {overallScore}
-                            </span>
-                            <span className="text-sm font-medium text-slate-400">/ 100</span>
+                            </h4>
+                            <span className="text-xs font-medium text-slate-400">/ 100</span>
                         </div>
                     </div>
 
-                    <div className="flex flex-col items-center">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-extrabold text-2xl border ${gradeInfo.borderClass} ${gradeInfo.bgClass} ${gradeInfo.textClass}`}>
-                            {scoreGrade}
-                        </div>
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-extrabold text-xl border ${gradeInfo.borderClass} bg-slate-900/80 ${gradeInfo.textClass} shadow-sm shrink-0`}>
+                        {scoreGrade}
                     </div>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-slate-800/60">
-                    <Badge variant={gradeInfo.badgeVariant} text={`Grade ${scoreGrade}`} size="sm" />
-                    <span className="text-xs text-slate-400 truncate text-right">
-                        {gradeInfo.description}
-                    </span>
                 </div>
             </Card>
 
