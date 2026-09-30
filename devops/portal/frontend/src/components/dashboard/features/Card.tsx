@@ -1,27 +1,9 @@
 import { AlertTriangle, ArrowUpRight } from "lucide-react"
 import { Badge } from "../../common/Badge"
 import { Toggle } from "../../common/Toggle"
-import type { FeatureCardProps, FeatureCategory } from "../../../types/component/features/featureCardProps"
+import type { FeatureCardProps } from "../../../types/component/features/featureCardProps"
 import type { FeatureFlagName } from "../../../types/platform"
-
-const CARD_BORDER_STYLE: Record<"true" | "false", string> = {
-    true: "border-cud-vermillon/60 bg-cud-vermillon/5 shadow-lg shadow-cud-vermillon/5",
-    false: "border-slate-800/80 bg-slate-900/60 hover:border-slate-700/80"
-}
-
-const CATEGORY_CONFIG: Record<FeatureCategory, { label: string; variant: "skyblue" | "teal" | "purple" | "orange" }> = {
-    traffic: { label: "Forgalom", variant: "skyblue" },
-    database: { label: "Adatbázis", variant: "teal" },
-    scaling: { label: "Skálázás", variant: "purple" },
-    operations: { label: "Üzemeltetés", variant: "orange" }
-}
-
-const NAVIGATION_TARGETS: Partial<Record<FeatureFlagName, { target: string; label: string }>> = {
-    rate_limiting: { target: "traffic", label: "Beállítások a Forgalom oldalon" },
-    hpa_scaling: { target: "autoscaling", label: "Finomhangolás a Skálázás oldalon" },
-    vpa_scaling: { target: "autoscaling", label: "Finomhangolás a Skálázás oldalon" },
-    cronjob_backup: { target: "backup", label: "Mentési napló a Mentések oldalon" }
-}
+import { CARD_BORDER_STYLE, CATEGORY_CONFIG, NAVIGATION_TARGETS } from "../../../constants/featureFlags"
 
 const getParamSummary = (key: FeatureFlagName, params?: Record<string, any>): string | null => {
     if (!params) return null

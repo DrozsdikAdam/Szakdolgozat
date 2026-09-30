@@ -53,3 +53,50 @@ export const FeatureConfigs: Record<FeatureFlagName, {
         isCritical: true
     }
 }
+
+export const CARD_BORDER_STYLE: Record<"true" | "false", string> = {
+    true: "border-cud-vermillon/60 bg-cud-vermillon/5 shadow-lg shadow-cud-vermillon/5",
+    false: "border-slate-800/80 bg-slate-900/60 hover:border-slate-700/80"
+}
+
+export const CATEGORY_CONFIG: Record<
+    "traffic" | "database" | "scaling" | "operations",
+    { label: string; variant: "skyblue" | "teal" | "purple" | "orange" }
+> = {
+    traffic: { label: "Forgalom", variant: "skyblue" },
+    database: { label: "Adatbázis", variant: "teal" },
+    scaling: { label: "Skálázás", variant: "purple" },
+    operations: { label: "Üzemeltetés", variant: "orange" }
+}
+
+export const NAVIGATION_TARGETS: Partial<Record<FeatureFlagName, { target: string; label: string }>> = {
+    rate_limiting: { target: "traffic", label: "Beállítások a Forgalom oldalon" },
+    hpa_scaling: { target: "autoscaling", label: "Finomhangolás a Skálázás oldalon" },
+    vpa_scaling: { target: "autoscaling", label: "Finomhangolás a Skálázás oldalon" },
+    cronjob_backup: { target: "backup", label: "Mentési napló a Mentések oldalon" }
+}
+
+export const CATEGORY_TABS: { id: "all" | "traffic" | "database" | "scaling" | "operations"; label: string }[] = [
+    { id: "all", label: "Összes" },
+    { id: "traffic", label: "Forgalom" },
+    { id: "database", label: "Adatbázis" },
+    { id: "scaling", label: "Skálázás" },
+    { id: "operations", label: "Üzemeltetés" }
+]
+
+export const INACTIVATION_PRESETS = [
+    {
+        id: "scale_to_zero",
+        label: "Scale-to-Zero",
+        badge: "0 Pod / 0 MB RAM",
+        description: "Inaktív állapotban a podok 0 példányra állnak le (0 MB RAM / 0 CPU). Reaktiváláskor hidegindítás (~5-10 mp).",
+        value: "scale_to_zero" as const
+    },
+    {
+        id: "hot_standby",
+        label: "Hot-Standby",
+        badge: "1 Pod / 0s késleltetés",
+        description: "1 minimális replika folyamatosan fut (alacsony RAM), azonnali válaszidő reaktiváláskor.",
+        value: "hot_standby" as const
+    }
+]

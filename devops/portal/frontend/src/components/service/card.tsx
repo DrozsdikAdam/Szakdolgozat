@@ -1,17 +1,10 @@
 import { ArrowRight, CheckCircle2, AlertCircle } from "lucide-react"
 import type { ServiceCardProps } from "../../types/component/service/serviceCardProps"
+import { HOVER_ACCENT_STYLES } from "../../constants/services"
 import { Badge } from "../common/Badge"
 
 export const ServiceCard = ({ service, onSelect, isSelected = false }: ServiceCardProps) => {
     if (!service) return null
-
-    const hoverAccentStyles: Record<typeof service.badgeVariant, string> = {
-        teal: "hover:border-cud-teal-border hover:shadow-[0_0_20px_var(--cud-teal-bg)]",
-        vermillon: "hover:border-cud-vermillon-border hover:shadow-[0_0_20px_var(--cud-vermillon-bg)]",
-        orange: "hover:border-cud-orange-border hover:shadow-[0_0_20px_var(--cud-orange-bg)]",
-        skyblue: "hover:border-cud-skyblue-border hover:shadow-[0_0_20px_var(--cud-skyblue-bg)]",
-        purple: "hover:border-cud-purple-border hover:shadow-[0_0_20px_var(--cud-purple-bg)]"
-    }
 
     const selectedBorder = isSelected
         ? "border-cud-skyblue shadow-[0_0_24px_var(--cud-skyblue-bg)] bg-slate-800/90"
@@ -28,7 +21,7 @@ export const ServiceCard = ({ service, onSelect, isSelected = false }: ServiceCa
                     onSelect(service.id)
                 }
             }}
-            className={`group relative flex flex-col justify-between p-6 rounded-2xl border backdrop-blur-md transition-all duration-300 cursor-pointer hover:-translate-y-1.5 focus:outline-none focus:ring-2 focus:ring-cud-skyblue/50 ${selectedBorder} ${hoverAccentStyles[service.badgeVariant]}`}
+            className={`group relative flex flex-col justify-between p-6 rounded-2xl border backdrop-blur-md transition-all duration-300 cursor-pointer hover:-translate-y-1.5 focus:outline-none focus:ring-2 focus:ring-cud-skyblue/50 ${selectedBorder} ${HOVER_ACCENT_STYLES[service.badgeVariant]}`}
         >
             <div>
                 <div className="flex items-center justify-between gap-3">

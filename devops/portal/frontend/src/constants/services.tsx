@@ -159,3 +159,12 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         statusVariant: 'teal'
     }
 ];
+
+export const HOVER_ACCENT_STYLES: Record<string, string> = {
+    teal: "hover:border-cud-teal-border hover:shadow-[0_0_20px_var(--cud-teal-bg)]",
+    vermillon: "hover:border-cud-vermillon-border hover:shadow-[0_0_20px_var(--cud-vermillon-bg)]",
+    orange: "hover:border-cud-orange-border hover:shadow-[0_0_20px_var(--cud-orange-bg)]",
+    skyblue: "hover:border-cud-skyblue-border hover:shadow-[0_0_20px_var(--cud-skyblue-bg)]",
+    purple: "hover:border-cud-purple-border hover:shadow-[0_0_20px_var(--cud-purple-bg)]"
+};
+

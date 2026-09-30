@@ -5,15 +5,7 @@ import { Modal } from "../../common/Modal"
 import { Input } from "../../common/Input"
 import { Button } from "../../common/Button"
 
-export const PasswordRotationModal = ({
-    isOpen,
-    onClose,
-    onSubmit,
-    password,
-    onPasswordChange,
-    isRotating,
-    error
-}: PasswordRotationModalProps) => {
+export const PasswordRotationModal = ({ isOpen, onClose, onSubmit, password, onPasswordChange, isRotating, error }: PasswordRotationModalProps) => {
     const rules = PASSWORD_ROTATION_RULES.map((rule) => ({
         id: rule.id,
         label: rule.label,

@@ -1,23 +1,13 @@
 import { Archive, RefreshCw } from "lucide-react";
 import type { BackupTableProps } from "../../../types/component/backup/backupTableProps";
+import { BACKUP_STATUS_BADGES } from "../../../constants/backup";
 import { Card } from "../../common/Card";
 import { EmptyState } from "../../common/EmptyState";
 import { useMemo } from "react";
 import { Badge } from "../../common/Badge";
 import { Button } from "../../common/Button";
-import type { BackupStatus } from "../../../types/backup";
-import type { BadgeProps } from "../../../types/component/badgeProps";
 
 export const BackupTable = ({ backups, isLoading, searchQuery, onSelectRestore }: BackupTableProps) => {
-
-    const badgeObject: Record<BackupStatus, BadgeProps> = {
-        SYNCED: { text: "S3 Szinkronizálva", variant: "teal", pulse: false },
-        STAGED_LOCALLY: { text: "Helyi mentés", variant: "skyblue", pulse: false },
-        FAILED: { text: "Sikertelen", variant: "vermillon", pulse: false },
-        RESTORE_COMPLETED: { text: "Visszaállítás lefutott", variant: "orange", pulse: false },
-        RESTORE_SUCCESS: { text: "Sikeresen visszatöltve", variant: "purple", pulse: true },
-    }
-
     const filteredBackups = useMemo(() => {
         if (!searchQuery) return backups
         return backups.filter((backup) => backup.filename.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -80,9 +70,9 @@ export const BackupTable = ({ backups, isLoading, searchQuery, onSelectRestore }
                                     </td>
                                     <td className="py-3.5 px-4 whitespace-nowrap">
                                         <Badge
-                                            variant={badgeObject[backup.status].variant}
-                                            text={badgeObject[backup.status].text}
-                                            pulse={badgeObject[backup.status].pulse}
+                                            variant={BACKUP_STATUS_BADGES[backup.status].variant}
+                                            text={BACKUP_STATUS_BADGES[backup.status].text}
+                                            pulse={BACKUP_STATUS_BADGES[backup.status].pulse}
                                             size="sm"
                                         />
                                     </td>

@@ -5,11 +5,7 @@ import { Card } from "../../common/Card"
 import { Badge } from "../../common/Badge"
 import { Skeleton } from "../../common/Skeleton"
 
-export const InfrastructureSecurityCards = ({
-    tlsCertificates,
-    secretCompliance,
-    isLoading = false
-}: InfrastructureSecurityCardsProps) => {
+export const InfrastructureSecurityCards = ({ tlsCertificates, secretCompliance, isLoading = false }: InfrastructureSecurityCardsProps) => {
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -21,7 +17,6 @@ export const InfrastructureSecurityCards = ({
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* TLS / SSL Tanúsítványok kártya */}
             <Card hoverEffect={false} className="p-5 border border-slate-800">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                     <div className="flex items-center gap-2.5">
@@ -85,7 +80,6 @@ export const InfrastructureSecurityCards = ({
                 </div>
             </Card>
 
-            {/* Secret & Jelszó Megfelelőség kártya */}
             <Card hoverEffect={false} className="p-5 border border-slate-800">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                     <div className="flex items-center gap-2.5">
