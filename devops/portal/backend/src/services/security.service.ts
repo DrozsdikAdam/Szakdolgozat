@@ -97,7 +97,13 @@ export class SecurityService {
             const match = content.match(/-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/);
             if (!match?.[0]) return null;
 
-            return this.parseX509Certificate("mes.localhost", "mes-tls-secret", match[0]);
+            const cleanPem = match[0]
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean)
+                .join("\n");
+
+            return this.parseX509Certificate("mes.localhost", "mes-tls-secret", cleanPem);
         } catch (localErr) {
             console.warn("[SecurityService] Hiba a lokális tanúsítvány vizsgálatakor:", localErr);
             return null;
@@ -372,10 +378,20 @@ export class SecurityService {
 
     private loadReportVulnerabilities = (): VulnerabilityItem[] => {
         try {
-            const reportDir = this.resolveWorkspacePath("devops/ci/reports");
-            if (!reportDir || !fs.existsSync(reportDir)) return [];
+            const candidatePaths = [
+                this.resolveWorkspacePath("security-reports"),
+                this.resolveWorkspacePath("devops/ci/reports"),
+                this.resolveWorkspacePath("devops/ci/security-reports")
+            ];
 
-            return this.loadVulnerabilitiesFromReports(reportDir);
+            for (const reportDir of candidatePaths) {
+                if (reportDir && fs.existsSync(reportDir)) {
+                    const items = this.loadVulnerabilitiesFromReports(reportDir);
+                    if (items.length > 0) return items;
+                }
+            }
+
+            return [];
         } catch (fileErr) {
             console.warn("[SecurityService] Nem sikerült a jelentésfájlok beolvasása:", fileErr);
             return [];
