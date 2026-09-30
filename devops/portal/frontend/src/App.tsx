@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Routes, Route, useNavigate, useLocation, Outlet } from 'react-router-dom'
 import type { ServiceId, ServiceItem } from './types/component/hub'
-import { DEFAULT_SERVICES, computeDynamicServices } from './constants/services'
+import { DEFAULT_SERVICES } from './constants/services'
 import { Navbar } from './components/layout/navbar'
 import { ServiceGrid } from './components/service/grid'
 import { Button } from './components/common/Button'
@@ -20,6 +20,7 @@ import { HealthcheckTab } from './view/HealthcheckTab'
 import { DeploymentsTab } from './view/DeploymentsTab'
 import { TelemetryTab } from './view/TelemetryTab'
 import { ErrorState } from './components/common/ErrorState'
+import { computeDynamicServices } from './constants/serviceStatus'
 
 function ServiceLayout() {
   const navigate = useNavigate()
