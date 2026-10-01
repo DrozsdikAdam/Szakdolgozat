@@ -4,8 +4,9 @@ deploy-staging:
   needs:
     - load-env
     - build-and-push
+    - security-scan
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH =~ /^develop.*/i'
   environment:
     name: staging
     url: $STAGING_URL

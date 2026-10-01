@@ -4,6 +4,7 @@ import k8sRoutes from "./k8s.routes.js";
 import backupRoutes from "./backup.routes.js";
 import auditRoutes from "./audit.routes.js";
 import pipelineRoutes from "./pipeline.routes.js";
+import securityRoutes from "./security.routes.js";
 
 const apiRouter = Router();
 
@@ -12,5 +13,6 @@ apiRouter.use("/k8s", k8sRoutes);
 apiRouter.use("/backups", backupRoutes);
 apiRouter.use("/audit", auditRoutes);
 apiRouter.use("/pipelines", pipelineRoutes);
+apiRouter.use("/security", securityRoutes);
 
 export default apiRouter;

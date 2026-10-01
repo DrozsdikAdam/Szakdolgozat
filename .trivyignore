@@ -1,0 +1,15 @@
+# -----------------------------------------------------------------------------
+# MES DevOps Platform - Trivy Vulnerability Scanner Ignore File
+# -----------------------------------------------------------------------------
+# Ez a fájl a False-Positive (téves riasztás) vagy üzletileg elfogadott,
+# kockázatelemzésen átesett sérülékenységek (CVE-k) kihagyására szolgál.
+#
+# Formátum:
+# CVE-ID # [Lejárat / Indoklás / Felelős]
+# -----------------------------------------------------------------------------
+
+# Példa: ismert alacsony kockázatú, nem kihasználható tranzakciós parser hiba
+# CVE-2023-45853
+
+# Példa: ideiglenesen elfogadott sérülékenység javítás kiadásáig
+# exp:2026-12-31 CVE-2024-00001 # Függőségi frissítésre vár a következő sprintben

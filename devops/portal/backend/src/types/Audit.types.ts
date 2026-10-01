@@ -23,4 +23,5 @@ export type AuditAction =
     | 'ROLLBACK_DEPLOYMENT'
     | 'PIPELINE_TRIGGER'
     | 'PIPELINE_APPROVAL'
-    | 'ROLLOUT_ACTION';
+    | 'ROLLOUT_ACTION'
+    | 'LOGIN_ATTEMPT';

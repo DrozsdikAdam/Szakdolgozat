@@ -1,22 +1,10 @@
 import { useMemo } from "react"
 import { FileText, RefreshCw } from "lucide-react"
 import type { auditTableProps } from "../../../types/component/audit/auditTableProps"
+import { AUDIT_ACTION_CONFIG } from "../../../constants/audit"
 import { Badge } from "../../common/Badge"
 import { Card } from "../../common/Card"
 import { EmptyState } from "../../common/EmptyState"
-
-const ACTION_CONFIG: Record<
-    string,
-    { label: string; variant: "skyblue" | "purple" | "teal" | "orange" | "vermillon" | "neutral" }
-> = {
-    TOGGLE_FEATURE: { label: "Funkció Kapcsolás", variant: "skyblue" },
-    SETUP_WIZARD: { label: "Rendszer Inicializálás", variant: "purple" },
-    UPDATE_RATE_LIMIT: { label: "Rate Limit Módosítás", variant: "teal" },
-    UPDATE_HPA: { label: "HPA Skálázás", variant: "orange" },
-    UPDATE_VPA: { label: "VPA Skálázás", variant: "orange" },
-    TRIGGER_BACKUP: { label: "Mentés Indítás", variant: "teal" },
-    TRIGGER_RESTORE: { label: "Helyreállítás", variant: "vermillon" }
-}
 
 export const AuditTable = ({ logs, loading, searchQuery }: auditTableProps) => {
     const filteredLogs = useMemo(() => {
@@ -33,7 +21,7 @@ export const AuditTable = ({ logs, loading, searchQuery }: auditTableProps) => {
     }, [logs, searchQuery])
 
     const getActionBadge = (action: string) => {
-        const config = ACTION_CONFIG[action] ?? { label: action, variant: "neutral" as const }
+        const config = AUDIT_ACTION_CONFIG[action] ?? { label: action, variant: "neutral" as const }
         return <Badge variant={config.variant} text={config.label} size="sm" />
     }
 

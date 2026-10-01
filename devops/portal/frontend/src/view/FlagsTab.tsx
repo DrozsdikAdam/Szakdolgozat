@@ -3,8 +3,7 @@ import { RefreshCw, Sliders, Search, AlertTriangle } from "lucide-react"
 import { PlatformApi } from "../client/api/platform"
 import type { FeatureFlagName, InactivationStrategy } from "../types/platform"
 import type { FeatureMetaItem, FeatureCategory } from "../types/component/features/featureCardProps"
-import type { PresetItem } from "../types/component/common/presetGroupProps"
-import { FeatureConfigs } from "../constants/featureFlags"
+import { CATEGORY_TABS, FeatureConfigs, INACTIVATION_PRESETS } from "../constants/featureFlags"
 import { FeatureStats } from "../components/dashboard/features/Stats"
 import { FeatureCard } from "../components/dashboard/features/Card"
 import { PresetGroup } from "../components/common/PresetGroup"
@@ -22,31 +21,6 @@ const ALL_FEATURES: FeatureMetaItem[] = (Object.keys(FeatureConfigs) as FeatureF
         isCritical: FeatureConfigs[key].isCritical
     })
 )
-
-const CATEGORY_TABS: { id: "all" | FeatureCategory; label: string }[] = [
-    { id: "all", label: "Összes" },
-    { id: "traffic", label: "Forgalom" },
-    { id: "database", label: "Adatbázis" },
-    { id: "scaling", label: "Skálázás" },
-    { id: "operations", label: "Üzemeltetés" }
-]
-
-const INACTIVATION_PRESETS: PresetItem<InactivationStrategy>[] = [
-    {
-        id: "scale_to_zero",
-        label: "Scale-to-Zero",
-        badge: "0 Pod / 0 MB RAM",
-        description: "Inaktív állapotban a podok 0 példányra állnak le (0 MB RAM / 0 CPU). Reaktiváláskor hidegindítás (~5-10 mp).",
-        value: "scale_to_zero"
-    },
-    {
-        id: "hot_standby",
-        label: "Hot-Standby",
-        badge: "1 Pod / 0s késleltetés",
-        description: "Inaktív állapotban a pod a háttérben futva marad (1 Pod), a routing kikerüli. Reaktiválás azonnali (0 mp).",
-        value: "hot_standby"
-    }
-]
 
 interface FlagsTabProps {
     onNavigate?: (serviceId: any) => void

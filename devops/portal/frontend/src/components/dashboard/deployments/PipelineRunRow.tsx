@@ -12,40 +12,8 @@ import {
 } from "lucide-react";
 import { Button } from "../../common/Button";
 import type { PipelineRunRowProps } from "../../../types/component/deployments/pipelineRunRowProps";
-import type { PipelineStage, PipelineStageStatus, PipelineStatus } from "../../../types/pipeline";
-
-const statusConfig: Record<PipelineStatus, { label: string; bg: string; text: string; border: string }> = {
-    success: {
-        label: "Sikeres",
-        bg: "bg-emerald-500/15",
-        text: "text-emerald-400",
-        border: "border-emerald-500/30"
-    },
-    in_progress: {
-        label: "Folyamatban",
-        bg: "bg-sky-500/15",
-        text: "text-sky-400",
-        border: "border-sky-500/30"
-    },
-    waiting_approval: {
-        label: "Jóváhagyásra vár",
-        bg: "bg-amber-500/20",
-        text: "text-amber-300",
-        border: "border-amber-500/40"
-    },
-    failed: {
-        label: "Meghiúsult",
-        bg: "bg-rose-500/15",
-        text: "text-rose-400",
-        border: "border-rose-500/30"
-    },
-    cancelled: {
-        label: "Visszavonva",
-        bg: "bg-slate-700/30",
-        text: "text-slate-400",
-        border: "border-slate-700"
-    }
-};
+import type { PipelineStage, PipelineStageStatus } from "../../../types/pipeline";
+import { PIPELINE_STATUS_CONFIG } from "../../../constants/deployments";
 
 const renderStageIcon = (status: PipelineStageStatus) => {
     switch (status) {
@@ -72,7 +40,7 @@ const formatDuration = (seconds?: number): string => {
 };
 
 export const PipelineRunRow = ({ run, onApproveClick }: PipelineRunRowProps) => {
-    const statusMeta = statusConfig[run.status] ?? statusConfig.cancelled;
+    const statusMeta = PIPELINE_STATUS_CONFIG[run.status] ?? PIPELINE_STATUS_CONFIG.cancelled;
     const isWaitingApproval = run.status === "waiting_approval";
 
     return (
