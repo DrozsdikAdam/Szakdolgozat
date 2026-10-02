@@ -232,6 +232,16 @@ if (Test-Path (Join-Path $portalDir "paas-portal-pvc.yaml")) {
     Write-Host "PaaS Portal PVC letrehozva!" -ForegroundColor Green
 }
 
+# Reziliencia & Terhelesiteszt RBAC es JMeter forgatokonyvtar
+$resilienceScript = Join-Path $PSScriptRoot "apply-resilience.ps1"
+if (Test-Path $resilienceScript) {
+    $resilienceArgs = @()
+    if ($DryRun) { $resilienceArgs += "-DryRun" }
+    if ($KubeConfig) { $resilienceArgs += @("-KubeConfig", $KubeConfig) }
+    if ($Context) { $resilienceArgs += @("-Context", $Context) }
+    & powershell -ExecutionPolicy Bypass -File $resilienceScript @resilienceArgs
+}
+
 # MinIO S3 Backup
 if (-not $SkipStorage) {
     $backupDir = Join-Path $PSScriptRoot "..\..\k8s\storage\backup"

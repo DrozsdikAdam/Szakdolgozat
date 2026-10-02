@@ -1,0 +1,102 @@
+﻿apiVersion: v1
+data:
+  baseline-test.jmx: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<jmeterTestPlan
+    version=\"1.2\" properties=\"5.0\" jmeter=\"5.5\">\r\n    <hashTree>\r\n        <TestPlan
+    guiclass=\"TestPlanGui\" testclass=\"TestPlan\" testname=\"Baseline Test\"\r\n
+    \           enabled=\"true\">\r\n            <boolProp name=\"TestPlan.functional_mode\">false</boolProp>\r\n
+    \           <boolProp name=\"TestPlan.serialize_threadgroups\">false</boolProp>\r\n
+    \           <elementProp name=\"TestPlan.user_defined_variables\" elementType=\"Arguments\">\r\n
+    \               <collectionProp name=\"Arguments.arguments\" />\r\n            </elementProp>\r\n
+    \       </TestPlan>\r\n        <hashTree>\r\n            <ThreadGroup guiclass=\"ThreadGroupGui\"
+    testclass=\"ThreadGroup\" testname=\"Users\"\r\n                enabled=\"true\">\r\n
+    \               <stringProp name=\"ThreadGroup.num_threads\">${__P(THREADS,10)}</stringProp>\r\n
+    \               <stringProp name=\"ThreadGroup.ramp_time\">5</stringProp>\r\n
+    \               <boolProp name=\"ThreadGroup.scheduler\">true</boolProp>\r\n                <stringProp
+    name=\"ThreadGroup.duration\">${__P(DURATION,60)}</stringProp>\r\n                <elementProp
+    name=\"ThreadGroup.main_controller\" elementType=\"LoopController\">\r\n                    <boolProp
+    name=\"LoopController.continue_forever\">false</boolProp>\r\n                    <intProp
+    name=\"LoopController.loops\">-1</intProp>\r\n                </elementProp>\r\n
+    \           </ThreadGroup>\r\n            <hashTree>\r\n                <HTTPSamplerProxy
+    guiclass=\"HttpTestSampleGui\" testclass=\"HTTPSamplerProxy\"\r\n                    testname=\"GET
+    Workloads\" enabled=\"true\">\r\n                    <elementProp name=\"HTTPsampler.Arguments\"
+    elementType=\"Arguments\">\r\n                        <collectionProp name=\"Arguments.arguments\"
+    />\r\n                    </elementProp>\r\n                    <stringProp name=\"HTTPSampler.domain\">${__P(TARGET_HOST,localhost)}</stringProp>\r\n
+    \                   <stringProp name=\"HTTPSampler.port\">${__P(TARGET_PORT,3000)}</stringProp>\r\n
+    \                   <stringProp name=\"HTTPSampler.protocol\">http</stringProp>\r\n
+    \                   <stringProp name=\"HTTPSampler.path\">/api/k8s/overview</stringProp>\r\n
+    \                   <stringProp name=\"HTTPSampler.method\">GET</stringProp>\r\n
+    \               </HTTPSamplerProxy>\r\n                <hashTree />\r\n            </hashTree>\r\n
+    \       </hashTree>\r\n    </hashTree>\r\n</jmeterTestPlan>"
+  failover-test.jmx: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<jmeterTestPlan
+    version=\"1.2\" properties=\"5.0\" jmeter=\"5.5\">\r\n    <hashTree>\r\n        <TestPlan
+    guiclass=\"TestPlanGui\" testclass=\"TestPlan\" testname=\"Failover Write Test\"\r\n
+    \           enabled=\"true\">\r\n            <boolProp name=\"TestPlan.functional_mode\">false</boolProp>\r\n
+    \           <elementProp name=\"TestPlan.user_defined_variables\" elementType=\"Arguments\">\r\n
+    \               <collectionProp name=\"Arguments.arguments\" />\r\n            </elementProp>\r\n
+    \       </TestPlan>\r\n        <hashTree>\r\n            <ThreadGroup guiclass=\"ThreadGroupGui\"
+    testclass=\"ThreadGroup\" testname=\"Writers\"\r\n                enabled=\"true\">\r\n
+    \               <stringProp name=\"ThreadGroup.num_threads\">${__P(THREADS,15)}</stringProp>\r\n
+    \               <stringProp name=\"ThreadGroup.ramp_time\">2</stringProp>\r\n
+    \               <boolProp name=\"ThreadGroup.scheduler\">true</boolProp>\r\n                <stringProp
+    name=\"ThreadGroup.duration\">${__P(DURATION,45)}</stringProp>\r\n                <elementProp
+    name=\"ThreadGroup.main_controller\" elementType=\"LoopController\">\r\n                    <boolProp
+    name=\"LoopController.continue_forever\">false</boolProp>\r\n                    <intProp
+    name=\"LoopController.loops\">-1</intProp>\r\n                </elementProp>\r\n
+    \           </ThreadGroup>\r\n            <hashTree>\r\n                <HTTPSamplerProxy
+    guiclass=\"HttpTestSampleGui\" testclass=\"HTTPSamplerProxy\"\r\n                    testname=\"POST
+    Transaction\" enabled=\"true\">\r\n                    <boolProp name=\"HTTPSampler.postBodyRaw\">true</boolProp>\r\n
+    \                   <elementProp name=\"HTTPsampler.Arguments\" elementType=\"Arguments\">\r\n
+    \                       <collectionProp name=\"Arguments.arguments\" />\r\n                    </elementProp>\r\n
+    \                   <stringProp name=\"HTTPSampler.domain\">${__P(TARGET_HOST,localhost)}</stringProp>\r\n
+    \                   <stringProp name=\"HTTPSampler.port\">${__P(TARGET_PORT,3000)}</stringProp>\r\n
+    \                   <stringProp name=\"HTTPSampler.protocol\">http</stringProp>\r\n
+    \                   <stringProp name=\"HTTPSampler.path\">/api/k8s/overview</stringProp>\r\n
+    \                   <stringProp name=\"HTTPSampler.method\">POST</stringProp>\r\n
+    \               </HTTPSamplerProxy>\r\n                <hashTree />\r\n            </hashTree>\r\n
+    \       </hashTree>\r\n    </hashTree>\r\n</jmeterTestPlan>"
+  run-test.sh: |-
+    #!/bin/bash
+        set -e
+        SCENARIO="${1:-baseline}"
+        TARGET_HOST="${TARGET_HOST:-paas-portal-backend.platform-infra.svc.cluster.local}"
+        TARGET_PORT="${TARGET_PORT:-3000}"
+        DURATION="${DURATION:-60}"
+        THREADS="${THREADS:-10}"
+        mkdir -p /results
+        echo "=== JMeter Terhel├ęsteszt Indul: ${SCENARIO} ==="
+        echo "C├ęlpont: http://${TARGET_HOST}:${TARGET_PORT}, Id┼Ĺtartam: ${DURATION}s, Sz├ílak: ${THREADS}"
+        jmeter -n \
+          -t "/scenarios/${SCENARIO}-test.jmx" \
+          -JTARGET_HOST="${TARGET_HOST}" \
+          -JTARGET_PORT="${TARGET_PORT}" \
+          -JDURATION="${DURATION}" \
+          -JTHREADS="${THREADS}" \
+          -l "/results/${SCENARIO}-result.jtl"
+        echo "=== Teszt Sikeresen Befejez┼Ĺd├Âtt! ==="
+  spike-test.jmx: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<jmeterTestPlan version=\"1.2\"
+    properties=\"5.0\" jmeter=\"5.5\">\r\n    <hashTree>\r\n        <TestPlan guiclass=\"TestPlanGui\"
+    testclass=\"TestPlan\" testname=\"Spike Test\" enabled=\"true\">\r\n            <boolProp
+    name=\"TestPlan.functional_mode\">false</boolProp>\r\n            <elementProp
+    name=\"TestPlan.user_defined_variables\" elementType=\"Arguments\">\r\n                <collectionProp
+    name=\"Arguments.arguments\" />\r\n            </elementProp>\r\n        </TestPlan>\r\n
+    \       <hashTree>\r\n            <ThreadGroup guiclass=\"ThreadGroupGui\" testclass=\"ThreadGroup\"
+    testname=\"Spike Users\"\r\n                enabled=\"true\">\r\n                <stringProp
+    name=\"ThreadGroup.num_threads\">${__P(THREADS,50)}</stringProp>\r\n                <stringProp
+    name=\"ThreadGroup.ramp_time\">1</stringProp>\r\n                <boolProp name=\"ThreadGroup.scheduler\">true</boolProp>\r\n
+    \               <stringProp name=\"ThreadGroup.duration\">${__P(DURATION,30)}</stringProp>\r\n
+    \               <elementProp name=\"ThreadGroup.main_controller\" elementType=\"LoopController\">\r\n
+    \                   <boolProp name=\"LoopController.continue_forever\">false</boolProp>\r\n
+    \                   <intProp name=\"LoopController.loops\">-1</intProp>\r\n                </elementProp>\r\n
+    \           </ThreadGroup>\r\n            <hashTree>\r\n                <HTTPSamplerProxy
+    guiclass=\"HttpTestSampleGui\" testclass=\"HTTPSamplerProxy\"\r\n                    testname=\"GET
+    Spike RateLimit\" enabled=\"true\">\r\n                    <stringProp name=\"HTTPSampler.domain\">${__P(TARGET_HOST,localhost)}</stringProp>\r\n
+    \                   <stringProp name=\"HTTPSampler.port\">${__P(TARGET_PORT,3000)}</stringProp>\r\n
+    \                   <stringProp name=\"HTTPSampler.protocol\">http</stringProp>\r\n
+    \                   <stringProp name=\"HTTPSampler.path\">/api/k8s/overview</stringProp>\r\n
+    \                   <stringProp name=\"HTTPSampler.method\">GET</stringProp>\r\n
+    \               </HTTPSamplerProxy>\r\n                <hashTree />\r\n            </hashTree>\r\n
+    \       </hashTree>\r\n    </hashTree>\r\n</jmeterTestPlan>"
+kind: ConfigMap
+metadata:
+  name: jmeter-scenarios
+  namespace: platform-infra
