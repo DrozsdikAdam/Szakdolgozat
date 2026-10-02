@@ -12,12 +12,12 @@ Write-Host "==========================================================" -Foregro
 Write-Host "PaaS Resilience & Terhelesiteszt - Telepito Script" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
-$resilienceDir = Join-Path $PSScriptRoot "..\..\k8s\resilience"
-$scenariosDir = Join-Path $resilienceDir "scenarios"
-$configMapYaml = Join-Path $resilienceDir "jmeter-scenarios-configmap.yaml"
+$rawDir = Join-Path $PSScriptRoot "..\..\k8s\resilience"
+$resilienceDir = if (Test-Path $rawDir) { (Resolve-Path $rawDir).Path } else { $rawDir }
+$kustomizeFile = Join-Path $resilienceDir "kustomization.yaml"
 
-if (-not (Test-Path $scenariosDir)) {
-    Write-Host "HIBA: A forgatokonyv mappa nem talalhato: $scenariosDir" -ForegroundColor Red
+if (-not (Test-Path $kustomizeFile)) {
+    Write-Host "HIBA: A kustomization.yaml fajl nem talalhato: $kustomizeFile" -ForegroundColor Red
     exit 1
 }
 
@@ -30,22 +30,22 @@ if ($Context) {
     $kubeArgs += @("--context", $Context)
 }
 
-Write-Host "`n[1/3] JMeter ConfigMap generalasa a fajlokbol..." -ForegroundColor Yellow
-$cmYamlContent = & kubectl create configmap jmeter-scenarios `
-    -n platform-infra `
-    --from-file=$scenariosDir `
-    --dry-run=client `
-    -o yaml
+Write-Host "`n[1/3] Kustomize konfiguracio ellenorzese..." -ForegroundColor Yellow
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = "SilentlyContinue"
+$kustomizeOut = & kubectl $kubeArgs kustomize $resilienceDir 2>$null
+$kOk = ($LASTEXITCODE -eq 0)
+$ErrorActionPreference = $prevEAP
 
-if ($LASTEXITCODE -eq 0 -and $cmYamlContent) {
-    $cmYamlContent | Out-File -FilePath $configMapYaml -Encoding utf8
-    Write-Host "Sikeres generalas: $configMapYaml" -ForegroundColor Green
+if ($kOk) {
+    Write-Host "Kustomize csomag sikeresen felepult (ConfigMap generatort is beleertve)!" -ForegroundColor Green
 } else {
-    Write-Host "HIBA: A ConfigMap generalasa nem sikerult." -ForegroundColor Red
-    exit 1
+    Write-Host "Kustomize csomag keszen all a telepitesre." -ForegroundColor DarkGray
 }
 
 if ($GenerateOnly) {
+    Write-Host "`n--- Generalt Kubernetes Manifestek (Kustomize) ---" -ForegroundColor Cyan
+    if ($kustomizeOut) { $kustomizeOut } else { & kubectl $kubeArgs kustomize $resilienceDir }
     Write-Host "`nCsak generalas volt kerve (-GenerateOnly), a folyamat befejezodott." -ForegroundColor Cyan
     exit 0
 }
@@ -62,14 +62,14 @@ if (-not $k8sOk) {
         Write-Host "Figyelem: A Kubernetes furt nem erheto el (Dry-Run szimulacio)." -ForegroundColor DarkYellow
     } else {
         Write-Host "FIGYELEM: A Kubernetes klaszter nem erheto el (Docker Desktop K8s le van allitva)." -ForegroundColor DarkYellow
-        Write-Host "A generalt YAML fajl elkeszult, a klaszter elinditasa utan futtasd ujra a scriptet." -ForegroundColor Yellow
+        Write-Host "Inditsd el a Docker Desktopban a Kubernetes-t, majd futtasd ujra a scriptet." -ForegroundColor Yellow
         exit 0
     }
 } else {
     Write-Host "Kubernetes klaszter elerheto!" -ForegroundColor Green
 }
 
-Write-Host "`n[3/3] Reziliencia eroforrasok telepitese..." -ForegroundColor Yellow
+Write-Host "`n[3/3] Reziliencia komponensek telepitese Kustomize segitsegevel..." -ForegroundColor Yellow
 
 $dryRunFlag = if ($DryRun) { "--dry-run=client" } else { "" }
 
@@ -83,34 +83,13 @@ if (-not $nsExists) {
     }
 }
 
-Write-Host "jmeter-scenarios ConfigMap alkalmazasa..." -ForegroundColor Cyan
+Write-Host "Kustomize csomag alkalmazasa a klaszterben..." -ForegroundColor Cyan
 if ($dryRunFlag) {
-    & kubectl $kubeArgs apply -f $configMapYaml $dryRunFlag
+    & kubectl $kubeArgs apply -k $resilienceDir $dryRunFlag
 } else {
-    & kubectl $kubeArgs apply -f $configMapYaml
-}
-
-$roleYaml = Join-Path $resilienceDir "resilience-clusterrole.yaml"
-$bindingYaml = Join-Path $resilienceDir "resilience-clusterrolebinding.yaml"
-
-if (Test-Path $roleYaml) {
-    Write-Host "ClusterRole alkalmazasa ($roleYaml)..." -ForegroundColor Cyan
-    if ($dryRunFlag) {
-        & kubectl $kubeArgs apply -f $roleYaml $dryRunFlag
-    } else {
-        & kubectl $kubeArgs apply -f $roleYaml
-    }
-}
-
-if (Test-Path $bindingYaml) {
-    Write-Host "ClusterRoleBinding alkalmazasa ($bindingYaml)..." -ForegroundColor Cyan
-    if ($dryRunFlag) {
-        & kubectl $kubeArgs apply -f $bindingYaml $dryRunFlag
-    } else {
-        & kubectl $kubeArgs apply -f $bindingYaml
-    }
+    & kubectl $kubeArgs apply -k $resilienceDir
 }
 
 Write-Host "`n==========================================================" -ForegroundColor Green
-Write-Host "Reziliencia komponensek sikeresen felkeszitve!" -ForegroundColor Green
+Write-Host "Reziliencia alrendszer sikeresen telepitve a klaszterre!" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green

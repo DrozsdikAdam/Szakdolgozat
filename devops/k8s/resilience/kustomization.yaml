@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: platform-infra
+
+resources:
+  - network/proxy-configmap.yaml
+  - network/proxy-deployment.yaml
+  - network/proxy-service.yaml
+  - jmeter/jmeter-loadtest-job.yaml
+  - rbac/resilience-clusterrole.yaml
+  - rbac/resilience-clusterrolebinding.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  - name: jmeter-scenarios
+    files:
+      - scenarios/run-test.sh
+      - scenarios/baseline-test.jmx
+      - scenarios/spike-test.jmx
+      - scenarios/failover-test.jmx
