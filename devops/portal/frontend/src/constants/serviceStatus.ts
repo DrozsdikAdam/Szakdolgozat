@@ -185,6 +185,15 @@ const resolveSecurityStatus = (service: ServiceItem, isClusterHealthy: boolean):
     statusVariant: isClusterHealthy ? 'teal' : 'vermillon'
 });
 
+const resolveResilienceStatus = (service: ServiceItem, isClusterHealthy: boolean): ServiceItem => ({
+    ...service,
+    badgeText: isClusterHealthy ? "Káosz & JMeter" : "Klaszter Offline",
+    badgeVariant: isClusterHealthy ? 'purple' : 'vermillon',
+    isConfigured: isClusterHealthy,
+    statusLabel: isClusterHealthy ? "Reziliencia tesztelő üzemkész" : "Klaszter nem érhető el",
+    statusVariant: isClusterHealthy ? 'teal' : 'vermillon'
+});
+
 export const computeDynamicServices = (status?: PlatformStatusResponse | null, clusterOverview?: ClusterOverviewDto | null, isClusterHealthy: boolean = true): ServiceItem[] => {
     if (!status) return DEFAULT_SERVICES;
 
@@ -214,6 +223,8 @@ export const computeDynamicServices = (status?: PlatformStatusResponse | null, c
                 return resolveDeploymentsStatus(service, isClusterHealthy);
             case 'telemetry':
                 return resolveTelemetryStatus(service, isClusterHealthy);
+            case 'resilience':
+                return resolveResilienceStatus(service, isClusterHealthy);
             case 'security':
                 return resolveSecurityStatus(service, isClusterHealthy);
             default:
