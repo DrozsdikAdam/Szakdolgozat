@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 export type ResilienceScenario = 'baseline' | 'spike' | 'failover';
 
 export type LoadTestJobStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'UNKNOWN';
@@ -5,6 +7,26 @@ export type LoadTestJobStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' |
 export type ChaosExperimentStatus = 'PENDING' | 'RUNNING' | 'RECOVERED' | 'FAILED';
 
 export type NetworkFaultMode = 'normal' | 'latency' | 'fault' | 'unavailable';
+
+export interface ScenarioOption {
+    id: ResilienceScenario;
+    title: string;
+    subtitle: string;
+    description: string;
+    icon: ReactNode;
+    accentBorder: string;
+    accentBg: string;
+    accentText: string;
+}
+
+export interface NetworkFaultModeOption {
+    mode: NetworkFaultMode;
+    title: string;
+    description: string;
+    icon: ReactNode;
+    badgeText: string;
+    colorClass: string;
+}
 
 export interface LoadTestItem {
     id: string;
@@ -39,18 +61,21 @@ export interface NetworkTestResult {
     timestamp: string;
 }
 
+export interface ProxyStatus {
+    available: boolean;
+    url: string;
+    lastChecked: string;
+}
+
 export interface ResilienceOverview {
-    proxyStatus: {
-        available: boolean;
-        url: string;
-        lastChecked: string;
-    };
+    proxyStatus: ProxyStatus;
     activeLoadTests: LoadTestItem[];
     recentLoadTests: LoadTestItem[];
     recentExperiments: KillPodResult[];
     averageRtoSeconds: number;
     totalTestsRun: number;
 }
+
 
 export interface StartLoadTestDto {
     scenario: ResilienceScenario;
