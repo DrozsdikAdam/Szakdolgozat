@@ -24,6 +24,10 @@ export const ChaosEngineeringCard = ({ isKillingPod, activeExperimentId, chaosTi
 
     const setQuickPod = (name: string) => {
         setPodName(name)
+        if (name === "coredns") {
+            setNamespace("kube-system")
+            return
+        }
         setNamespace(DEFAULT_RESILIENCE_NAMESPACE)
     }
 

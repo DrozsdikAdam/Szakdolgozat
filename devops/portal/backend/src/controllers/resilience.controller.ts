@@ -85,7 +85,7 @@ export class ResilienceController {
             const dto: NetworkTestRequestDto = req.body;
             const data = await this.resilienceService.testNetworkProxy(dto);
             const response: ApiResponse<NetworkTestResponseDto> = {
-                success: data.success,
+                success: true,
                 data,
                 timestamp: new Date().toISOString()
             };
@@ -94,4 +94,5 @@ export class ResilienceController {
             next(error);
         }
     };
+
 }

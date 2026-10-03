@@ -36,12 +36,15 @@ export const useResilience = () => {
             setActiveExperimentId(null);
 
         } catch {
-            setToastMessage({ type: 'error', text: "Nem sikerült betölteni az áttekintést." })
+            if (showLoading) {
+                setToastMessage({ type: 'error', text: "Nem sikerült betölteni az áttekintést." })
+            }
         } finally {
             setIsLoading(false)
             setIsRefreshing(false)
         }
     }, [api, activeExperimentId])
+
 
     const handleRefresh = async () => {
         setIsRefreshing(true)
@@ -96,8 +99,12 @@ export const useResilience = () => {
             setIsTestingProxy(true)
             const res = await api.testNetworkProxy(request)
             setLastProxyResult(res)
-            setToastMessage({ type: 'success', text: `Proxy teszt befejeződött (HTTP ${res.statusCode}, ${res.responseTimeMs} ms).` })
-        } catch {
+            setToastMessage({
+                type: 'success',
+                text: `Proxy teszt lefutott: HTTP ${res.statusCode} (${res.responseTimeMs} ms).`
+            })
+        } catch (error) {
+            console.error("Hálózati teszt hiba:", error)
             setToastMessage({ type: 'error', text: "Hiba történt a hálózati teszt futtatása során." })
         } finally {
             setIsTestingProxy(false)
@@ -127,6 +134,15 @@ export const useResilience = () => {
         }, 1000)
         return () => clearInterval(interval)
     }, [activeExperimentId])
+
+    useEffect(() => {
+        if (!toastMessage) return
+        const timer = setTimeout(() => {
+            setToastMessage(null)
+        }, 4000)
+        return () => clearTimeout(timer)
+    }, [toastMessage])
+
 
     return {
         overview,

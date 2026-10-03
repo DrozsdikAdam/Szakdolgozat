@@ -7,8 +7,10 @@ export const DEFAULT_TARGET_HOST = "paas-portal-backend.platform-infra.svc.clust
 export const DEFAULT_TARGET_PORT = 3000
 
 export const QUICK_POD_PRESETS = [
+    "paas-resilience-proxy",
     "paas-portal-backend",
-    "paas-resilience-proxy"
+    "paas-portal-frontend",
+    "coredns"
 ] as const
 
 export const RESILIENCE_SCENARIOS: ScenarioOption[] = [

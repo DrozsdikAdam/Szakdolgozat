@@ -7,11 +7,12 @@ metadata:
     app: resilience-proxy
     app.kubernetes.io/part-of: paas-resilience
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: resilience-proxy
   ports:
     - name: http
       port: 8080
       targetPort: 8080
+      nodePort: 30880
       protocol: TCP

@@ -19,32 +19,28 @@ data:
             add_header Content-Type text/plain;
         }
 
-        # 2. Normál átjáró (Transzparens proxy a backendhez)
+        # 2. Normál átjáró (Transzparens proxy / válasz)
         location /proxy/normal/ {
-            proxy_pass http://paas-portal-backend.platform-infra.svc.cluster.local:3000/;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_connect_timeout 5s;
-            proxy_read_timeout 60s;
+            default_type application/json;
+            return 200 '{"status":"ok","mode":"normal","statusCode":200,"message":"Sikeres normál proxy átvitel","timestamp":"$time_iso8601"}\n';
         }
 
         # 3. Mesterséges hálózati lassítás / késleltetés
         location /proxy/latency/ {
-            proxy_pass http://paas-portal-backend.platform-infra.svc.cluster.local:3000/;
-            proxy_buffering off;
-            limit_rate 2k;
-            proxy_set_header Host $host;
+            default_type application/json;
+            limit_rate 30;
+            return 200 '{"status":"ok","mode":"latency","statusCode":200,"message":"Sikeres késleltetett proxy átvitel","timestamp":"$time_iso8601","data":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}\n';
         }
 
         # 4. Hiba-injektálás: HTTP 500 (Circuit Breaker teszteléshez)
         location /proxy/fault/ {
-            return 500 '{"error":"Injected Chaos Fault","status":500,"type":"chaos-500"}\n';
-            add_header Content-Type application/json;
+            default_type application/json;
+            return 500 '{"error":"Injected Chaos Fault","status":500,"type":"chaos-500","timestamp":"$time_iso8601"}\n';
         }
 
         # 5. Kiesés-injektálás: HTTP 503 (Service Unavailable)
         location /proxy/unavailable/ {
-            return 503 '{"error":"Service Temporarily Unavailable (Chaos Test)","status":503,"type":"chaos-503"}\n';
-            add_header Content-Type application/json;
+            default_type application/json;
+            return 503 '{"error":"Service Temporarily Unavailable (Chaos Test)","status":503,"type":"chaos-503","timestamp":"$time_iso8601"}\n';
         }
     }

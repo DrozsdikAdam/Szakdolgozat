@@ -9,6 +9,8 @@ import { ConfigService } from "./services/config.service.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.set('trust proxy', 1);
+
 app.use(helmet());
 app.use(cors({
     origin: process.env.CORS_ORIGIN || "*",
@@ -19,9 +21,10 @@ app.use(express.json());
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 200,
+    max: 500,
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false }
 });
 app.use("/api", limiter);
 
