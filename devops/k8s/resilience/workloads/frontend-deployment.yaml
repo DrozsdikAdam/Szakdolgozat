@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paas-portal-frontend
+  namespace: platform-infra
+  labels:
+    app: paas-portal-frontend
+    app.kubernetes.io/part-of: paas-resilience
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: paas-portal-frontend
+  template:
+    metadata:
+      labels:
+        app: paas-portal-frontend
+        app.kubernetes.io/part-of: paas-resilience
+    spec:
+      containers:
+        - name: frontend
+          image: nginx:alpine
+          command:
+            - /bin/sh
+            - -c
+            - |
+              cat << 'EOF' > /etc/nginx/conf.d/default.conf
+              server {
+                  listen 80;
+                  location / {
+                      default_type text/html;
+                      return 200 '<!DOCTYPE html><html><head><title>PaaS Portal Frontend</title></head><body><h1>PaaS Portal Frontend (K8s Pod)</h1></body></html>\n';
+                  }
+                  location /healthz {
+                      default_type text/plain;
+                      return 200 "OK\n";
+                  }
+              }
+              EOF
+              nginx -g 'daemon off;'
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi

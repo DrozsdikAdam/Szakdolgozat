@@ -7,6 +7,10 @@ resources:
   - network/proxy-configmap.yaml
   - network/proxy-deployment.yaml
   - network/proxy-service.yaml
+  - workloads/backend-deployment.yaml
+  - workloads/backend-service.yaml
+  - workloads/frontend-deployment.yaml
+  - workloads/frontend-service.yaml
   - jmeter/jmeter-loadtest-job.yaml
   - rbac/resilience-clusterrole.yaml
   - rbac/resilience-clusterrolebinding.yaml

@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paas-portal-backend
+  namespace: platform-infra
+  labels:
+    app: paas-portal-backend
+    app.kubernetes.io/part-of: paas-resilience
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: paas-portal-backend
+  template:
+    metadata:
+      labels:
+        app: paas-portal-backend
+        app.kubernetes.io/part-of: paas-resilience
+    spec:
+      containers:
+        - name: backend
+          image: nginx:alpine
+          command:
+            - /bin/sh
+            - -c
+            - |
+              cat << 'EOF' > /etc/nginx/conf.d/default.conf
+              server {
+                  listen 3000;
+                  location / {
+                      default_type application/json;
+                      return 200 '{"status":"ok","service":"paas-portal-backend","version":"1.0.0"}\n';
+                  }
+                  location /healthz {
+                      default_type text/plain;
+                      return 200 "OK\n";
+                  }
+              }
+              EOF
+              nginx -g 'daemon off;'
+          ports:
+            - containerPort: 3000
+              name: http
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
