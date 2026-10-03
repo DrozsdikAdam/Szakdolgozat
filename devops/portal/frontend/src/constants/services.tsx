@@ -1,4 +1,4 @@
-import { Activity, Archive, Cpu, HeartPulse, KeyRound, LineChart, Rocket, Server, Shield, ShieldAlert, Terminal, ToggleRight, Wrench } from "lucide-react";
+import { Activity, Archive, Cpu, HeartPulse, KeyRound, LineChart, Rocket, Server, Shield, ShieldAlert, Terminal, ToggleRight, Wrench, Zap } from "lucide-react";
 import type { ServiceItem } from "../types/component/hub";
 
 export const DEFAULT_SERVICES: ServiceItem[] = [
@@ -144,6 +144,18 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         badgeVariant: 'skyblue',
         isConfigured: true,
         statusLabel: "Telemetria adatgyűjtés aktív",
+        statusVariant: 'teal'
+    },
+    {
+        id: 'resilience',
+        accentColor: 'purple',
+        label: "Reziliencia & Terhelésteszt",
+        description: "Pod Kill káoszkísérletek (RTO mérés), Apache JMeter terheléstesztek és NGINX hálózati proxy hibainjektálás.",
+        iconName: <Zap className="w-6 h-6" />,
+        badgeText: "Káosz & JMeter",
+        badgeVariant: 'purple',
+        isConfigured: true,
+        statusLabel: "Reziliencia tesztelő üzemkész",
         statusVariant: 'teal'
     },
     {

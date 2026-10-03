@@ -19,6 +19,7 @@ import { ConfigTab } from './view/ConfigTab'
 import { HealthcheckTab } from './view/HealthcheckTab'
 import { DeploymentsTab } from './view/DeploymentsTab'
 import { TelemetryTab } from './view/TelemetryTab'
+import { ResilienceTab } from './view/ResilienceTab'
 import { SecurityTab } from './view/SecurityTab'
 import { LoginTab } from './view/LoginTab'
 import { ProtectedRoute } from './components/auth'
@@ -63,7 +64,7 @@ function NotFoundPage() {
         troubleshootingSteps={[
           "Ellenőrizd a böngésző címsorába beírt útvonal helyességét",
           "Kattints a fenti 'Vissza a szolgáltatásokhoz' gombra a kezdőlap eléréséhez",
-          "Közvetlenül elérhető érvényes útvonalak: /telemetry, /cluster, /deployments, /audit, /traffic, /backup, /security"
+          "Közvetlenül elérhető érvényes útvonalak: /telemetry, /cluster, /deployments, /audit, /traffic, /backup, /resilience, /security"
         ]}
       />
     </div>
@@ -167,6 +168,7 @@ function App() {
               <Route path="/health" element={<HealthcheckTab />} />
               <Route path="/deployments" element={<DeploymentsTab />} />
               <Route path="/telemetry" element={<TelemetryTab />} />
+              <Route path="/resilience" element={<ResilienceTab />} />
               <Route path="/security" element={<SecurityTab />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
@@ -176,5 +178,6 @@ function App() {
     </div>
   )
 }
+
 
 export default App
