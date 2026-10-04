@@ -10,3 +10,8 @@ resources:
   - ingress/ingress.yaml
   - security/backend-network-policy.yaml
   - security/frontend-network-policy.yaml
+
+secretGenerator:
+  - name: backend-secret
+    envs:
+      - ../../platform.env

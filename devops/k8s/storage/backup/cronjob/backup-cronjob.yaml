@@ -24,11 +24,37 @@ spec:
           initContainers:
             - name: postgres-dump
               image: bitnami/postgresql:latest
-              envFrom:
-                - secretRef:
-                    name: backup-secret
-                - configMapRef:
-                    name: backup-config
+              env:
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: DB_HOST
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: DB_PORT
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: DB_USER
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: DB_PASSWORD
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: DB_NAME
+                - name: DB_PRIMARY_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: DB_HOST
               volumeMounts:
                 - name: staging-volume
                   mountPath: /staging
@@ -48,11 +74,27 @@ spec:
           containers:
             - name: s3-sync
               image: cgr.dev/chainguard/minio-client:latest
-              envFrom:
-                - secretRef:
-                    name: backup-secret
-                - configMapRef:
-                    name: backup-config
+              env:
+                - name: S3_ENDPOINT
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: S3_ENDPOINT
+                - name: S3_BUCKET
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: S3_BUCKET
+                - name: S3_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: S3_ACCESS_KEY
+                - name: S3_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: S3_SECRET_KEY
               volumeMounts:
                 - name: staging-volume
                   mountPath: /staging

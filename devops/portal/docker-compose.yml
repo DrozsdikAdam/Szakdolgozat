@@ -5,20 +5,18 @@ services:
       dockerfile: Dockerfile
     container_name: portal-backend
     restart: unless-stopped
+    env_file:
+      - ../platform.env
     ports:
       - "${PORTAL_BACKEND_PORT:-3002}:3000"
     environment:
-      - NODE_ENV=production
       - PORT=3000
       - KUBECONFIG=/app/.kube/config
-      - K8S_SERVER_HOST=host.docker.internal
-      - PROMETHEUS_URL=http://host.docker.internal:9090
-      - GRAFANA_URL=http://host.docker.internal:3001
-      - PIPELINE_ENV_PATH=/app/ci/pipeline.env
+      - PIPELINE_ENV_PATH=/app/platform.env
     volumes:
       - portal-data:/app/data
       - ~/.kube:/app/.kube:ro
-      - ../ci/pipeline.env:/app/ci/pipeline.env:ro
+      - ../platform.env:/app/platform.env:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -30,6 +28,8 @@ services:
       dockerfile: Dockerfile
     container_name: portal-frontend
     restart: unless-stopped
+    env_file:
+      - ../platform.env
     ports:
       - "${PORTAL_PORT:-8088}:80"
     depends_on:

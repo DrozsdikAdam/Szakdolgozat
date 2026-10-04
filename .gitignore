@@ -8,11 +8,13 @@ devops/k8s/portal/portal-auth-secret.yaml
 id_*
 .secrets/
 .deploy_keys/
+devops/platform.env
 .env
 .env.local
 .env.*.local
 
 # Kivételek a verziókövetéshez:
+!devops/platform.env.example
 !devops/ci/pipeline.env
 !devops/k8s/**/*.template.yaml
 
