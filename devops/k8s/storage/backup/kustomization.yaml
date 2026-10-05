@@ -6,6 +6,7 @@ resources:
   - minio-pvc.yaml
   - minio-deployment.yaml
   - minio-service.yaml
+  - config/backup-configmap.yaml
   - cronjob/backup-cronjob.yaml
   - cronjob/restore-cronjob.yaml
 

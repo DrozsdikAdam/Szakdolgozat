@@ -13,7 +13,7 @@ Write-Host "==========================================================" -Foregro
 Write-Host "MES PAAS PLATFORM - TELJES RENDSZER INDITO ES VEZERLO" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
-# 0. pipeline.env betöltése
+# pipeline.env betöltése
 $envFile = Join-Path $PSScriptRoot "..\pipeline.env"
 $config = @{}
 
@@ -28,7 +28,8 @@ if (Test-Path $envFile) {
     [System.Environment]::SetEnvironmentVariable("PIPELINE_ENV_PATH", $resolvedEnvPath, "Process")
     $env:PIPELINE_ENV_PATH = $resolvedEnvPath
     Write-Host "Konfiguracio sikeresen betoltve!" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "A kozponti konfiguracios fajl nem talalhato: $envFile" -ForegroundColor Red
     exit 1
 }
@@ -42,7 +43,7 @@ Write-Host "Celkornyezet:      $TargetEnv" -ForegroundColor Cyan
 Write-Host "Staging URL:       $stagingUrl" -ForegroundColor Cyan
 Write-Host "Production URL:    $prodUrl" -ForegroundColor Cyan
 
-# 1. Előfeltételek ellenőrzése (Docker és Kubernetes)...
+# Előfeltételek ellenőrzése (Docker és Kubernetes)...
 Write-Host "`n[1/4] Elofeltetelek ellenorzese (Docker es Kubernetes)..." -ForegroundColor Yellow
 $prevEAP = $ErrorActionPreference
 $ErrorActionPreference = "SilentlyContinue"
@@ -58,26 +59,30 @@ $ErrorActionPreference = $prevEAP
 if (-not $dockerOk) {
     if ($DryRun) {
         Write-Host "Figyelem: A Docker Daemon jelenleg nem fut (Dry-Run modban folytatjuk)." -ForegroundColor DarkYellow
-    } else {
+    }
+    else {
         Write-Host "A Docker Daemon nem fut! Kerlek, inditsd el a Docker Desktopot." -ForegroundColor Red
         exit 1
     }
-} else {
+}
+else {
     Write-Host "Docker Daemon aktiv!" -ForegroundColor Green
 }
 
 if (-not $k8sOk) {
     if ($DryRun) {
         Write-Host "Figyelem: A Kubernetes furt jelenleg nem erheto el (Dry-Run modban folytatjuk)." -ForegroundColor DarkYellow
-    } else {
+    }
+    else {
         Write-Host "A Kubernetes furt nem elerheto! Kapcsold be a K8s-t a Docker Desktopban." -ForegroundColor Red
         exit 1
     }
-} else {
+}
+else {
     Write-Host "Kubernetes furt aktiv es elerheto!" -ForegroundColor Green
 }
 
-# 2. FÁZIS: Lokális CI és Konténer Fordítás
+# Lokális CI és Konténer Fordítás
 if (-not $SkipBuild) {
     Write-Host "`n[2/4] FAZIS 2: Lokalis CI tesztek es Docker kontener forditas..." -ForegroundColor Yellow
     $ciScript = Join-Path $PSScriptRoot "run-local-ci.ps1"
@@ -88,11 +93,12 @@ if (-not $SkipBuild) {
             exit 1
         }
     }
-} else {
+}
+else {
     Write-Host "`n[2/4] FAZIS 2: Kontener forditas kihagyva (-SkipBuild kapcsolo)." -ForegroundColor DarkGray
 }
 
-# 3. FÁZIS: Klaszter Bootstrap és Infrastruktúra felkészítés
+# Klaszter Bootstrap és Infrastruktúra felkészítés
 Write-Host "`n[3/4] FAZIS 3: Klaszter felkeszites (Nevterek, DBaaS, ArgoCD, MinIO)..." -ForegroundColor Yellow
 $bootstrapScript = Join-Path $PSScriptRoot "deploy-remote-cluster.ps1"
 $bootstrapArgs = @()
@@ -108,7 +114,7 @@ if (Test-Path $bootstrapScript) {
     }
 }
 
-# 4. FÁZIS: GitOps Stratégiák és Rollout szinkronizáció
+# GitOps Stratégiák és Rollout szinkronizáció
 Write-Host "`n[4/4] FAZIS 4: GitOps manifestek es Rollout strategiak ervenyesitese..." -ForegroundColor Yellow
 $gitopsScript = Join-Path $PSScriptRoot "apply-local-gitops.ps1"
 $gitopsArgs = @()
@@ -123,6 +129,63 @@ if (Test-Path $gitopsScript) {
     }
 }
 
+# PaaS Portál Konténerek elindítása Docker Compose segítségével
+Write-Host "`nFAZIS 4.5: PaaS Portal webes iranyitopult elinditasa..." -ForegroundColor Yellow
+$portalCompose = Join-Path $PSScriptRoot "..\..\portal\docker-compose.yml"
+if (Test-Path $portalCompose) {
+    if (-not $DryRun) {
+        Write-Host "PaaS Portal kontenerek inditasa a hatterben (docker compose up -d)..." -ForegroundColor Cyan
+        docker compose -f $portalCompose up -d
+        Write-Host "PaaS Portal kontenerek aktivak es futnak!" -ForegroundColor Green
+    }
+    else {
+        Write-Host "[DRY-RUN] PaaS Portal docker compose inditasa szimulalva." -ForegroundColor Gray
+    }
+}
+
+# Telemetria és Vezérlősík Port-továbbítások automatikus indítása
+function Start-KubePortForward {
+    param (
+        [string]$Namespace,
+        [string]$Resource,
+        [int]$LocalPort,
+        [int]$RemotePort,
+        [string]$Name
+    )
+    $tcpClient = New-Object System.Net.Sockets.TcpClient
+    $isConnected = $false
+    try {
+        $asyncResult = $tcpClient.BeginConnect("127.0.0.1", $LocalPort, $null, $null)
+        $success = $asyncResult.AsyncWaitHandle.WaitOne(500, $false)
+        if ($success -and $tcpClient.Connected) {
+            $isConnected = $true
+        }
+    }
+    catch {
+        $isConnected = $false
+    }
+    finally {
+        $tcpClient.Close()
+    }
+
+    if (-not $isConnected) {
+        Write-Host "Port-forward inditasa ($Name): $LocalPort -> $RemotePort..." -ForegroundColor Cyan
+        Start-Process -FilePath "kubectl" -ArgumentList "port-forward", "-n", $Namespace, $Resource, "$LocalPort`:$RemotePort" -WindowStyle Hidden
+        Start-Sleep -Milliseconds 600
+        Write-Host "Port-forward aktiv ($Name - http://localhost:$LocalPort)!" -ForegroundColor Green
+    }
+    else {
+        Write-Host "Port-forward mar elerheto ($Name - http://localhost:$LocalPort)." -ForegroundColor DarkGray
+    }
+}
+
+if (-not $DryRun) {
+    Write-Host "`n[5/5] FAZIS 5: Telemetria es vezerlosik port-tovabbitasok elinditasa..." -ForegroundColor Yellow
+    Start-KubePortForward -Namespace "platform-monitoring" -Resource "svc/prometheus" -LocalPort 9090 -RemotePort 9090 -Name "Prometheus"
+    Start-KubePortForward -Namespace "platform-monitoring" -Resource "svc/grafana" -LocalPort 3001 -RemotePort 3000 -Name "Grafana"
+    Start-KubePortForward -Namespace "platform-infra" -Resource "svc/argocd-server" -LocalPort 8080 -RemotePort 443 -Name "ArgoCD"
+}
+
 # ÖSSZEGZŐ IRÁNYÍTÓPULT
 Write-Host "`n==========================================================" -ForegroundColor Green
 Write-Host "   SIKER: A MES PAAS PLATFORM TELJES EGESZEBEN ELINDULT!   " -ForegroundColor Green
@@ -131,11 +194,9 @@ Write-Host "==========================================================" -Foregro
 Write-Host "`nSzolgaltatasok es Vezerlo Vegpontok:" -ForegroundColor Cyan
 Write-Host "  * MES Portal (UI):        http://localhost:8088" -ForegroundColor Yellow
 Write-Host "  * MES Portal API:         http://localhost:3002" -ForegroundColor Yellow
-Write-Host "  * ArgoCD GitOps Dashboard:" -ForegroundColor Yellow
-Write-Host "    (Port-forward inditasa: kubectl port-forward svc/argocd-server -n platform-infra 8080:443)" -ForegroundColor DarkGray
-Write-Host "    Eleres:                 https://localhost:8080" -ForegroundColor DarkGray
-Write-Host "  * Prometheus Telemetria:  http://localhost:9090 (ha aktiv)" -ForegroundColor DarkGray
-Write-Host "  * Grafana Dashboardok:    http://localhost:3000 (admin / admin)" -ForegroundColor DarkGray
+Write-Host "  * Prometheus Telemetria:  http://localhost:9090 (Online)" -ForegroundColor Yellow
+Write-Host "  * Grafana Dashboardok:    http://localhost:3001 (Online - admin / admin)" -ForegroundColor Yellow
+Write-Host "  * ArgoCD GitOps Dashboard:https://localhost:8080 (Online - admin / titok)" -ForegroundColor Yellow
 
 Write-Host "`nHasznos vezerlo parancsok a fejleszteshez:" -ForegroundColor Cyan
 Write-Host "  - Rollout allapot kovetese:    .\devops\ci\scripts\rollout-ctrl.ps1 status" -ForegroundColor Yellow

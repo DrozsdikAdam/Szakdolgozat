@@ -5,6 +5,7 @@ metadata:
   labels:
     app.kubernetes.io/name: mes-ingress
   annotations:
+    cert-manager.io/cluster-issuer: "selfsigned-issuer"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/limit-rps: "20"
 spec:
