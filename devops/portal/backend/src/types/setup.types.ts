@@ -15,4 +15,12 @@ export type SystemConfigKey = 'is_initialized'
     | 's3_bucket'
     | 's3_bucket_size'
     | 'instance_size'
-    | 'inactivation_strategy';
+    | 'inactivation_strategy'
+    | 'db_host'
+    | 'db_port'
+    | 'db_name'
+    | 'db_user'
+    | 'db_replicas'
+    | 'db_pool_size'
+    | 'db_cutover_job'
+    | 'db_cutover_scheduled_at';
