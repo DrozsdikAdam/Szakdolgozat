@@ -21,6 +21,7 @@ import { DeploymentsTab } from './view/DeploymentsTab'
 import { TelemetryTab } from './view/TelemetryTab'
 import { ResilienceTab } from './view/ResilienceTab'
 import { SecurityTab } from './view/SecurityTab'
+import { DatabaseTab } from './view/DatabaseTab'
 import { LoginTab } from './view/LoginTab'
 import { ProtectedRoute } from './components/auth'
 import { useAuth } from './hooks/useAuth'
@@ -170,6 +171,7 @@ function App() {
               <Route path="/telemetry" element={<TelemetryTab />} />
               <Route path="/resilience" element={<ResilienceTab />} />
               <Route path="/security" element={<SecurityTab />} />
+              <Route path="/database" element={<DatabaseTab />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Route>

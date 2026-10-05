@@ -14,6 +14,7 @@ export type ServiceId = 'cluster'
     | 'telemetry'
     | 'security'
     | 'resilience'
+    | 'database'
 
 export interface ServiceItem {
     id: ServiceId

@@ -1,4 +1,4 @@
-import { Activity, Archive, Cpu, HeartPulse, KeyRound, LineChart, Rocket, Server, Shield, ShieldAlert, Terminal, ToggleRight, Wrench, Zap } from "lucide-react";
+import { Activity, Archive, Cpu, Database, HeartPulse, KeyRound, LineChart, Rocket, Server, Shield, ShieldAlert, Terminal, ToggleRight, Wrench, Zap } from "lucide-react";
 import type { ServiceItem } from "../types/component/hub";
 
 export const DEFAULT_SERVICES: ServiceItem[] = [
@@ -168,6 +168,18 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         badgeVariant: 'orange',
         isConfigured: true,
         statusLabel: "Biztonsági monitoring üzemkész",
+        statusVariant: 'teal'
+    },
+    {
+        id: 'database',
+        accentColor: 'teal',
+        label: "Adatbázis Menedzsment (DBaaS)",
+        description: "Relációs adatbázis motorok (PostgreSQL, MSSQL, Oracle), HA replikák skálázása és Zero-Downtime migráció.",
+        iconName: <Database className="w-6 h-6" />,
+        badgeText: "HA Klaszter Online",
+        badgeVariant: 'teal',
+        isConfigured: true,
+        statusLabel: "DBaaS üzemkész",
         statusVariant: 'teal'
     }
 ];

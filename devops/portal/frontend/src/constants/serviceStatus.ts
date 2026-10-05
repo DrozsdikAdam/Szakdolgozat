@@ -194,6 +194,18 @@ const resolveResilienceStatus = (service: ServiceItem, isClusterHealthy: boolean
     statusVariant: isClusterHealthy ? 'teal' : 'vermillon'
 });
 
+const resolveDatabaseStatus = (service: ServiceItem, status: PlatformStatusResponse, isClusterHealthy: boolean): ServiceItem => {
+    const engine = status.dbEngine ? status.dbEngine.toUpperCase() : "POSTGRESQL";
+    return {
+        ...service,
+        badgeText: isClusterHealthy ? `${engine} Online` : "Kapcsolat Offline",
+        badgeVariant: isClusterHealthy ? 'teal' : 'vermillon',
+        isConfigured: isClusterHealthy,
+        statusLabel: isClusterHealthy ? `${engine} HA klaszter aktív` : "Adatbázis nem elérhető",
+        statusVariant: isClusterHealthy ? 'teal' : 'vermillon'
+    };
+};
+
 export const computeDynamicServices = (status?: PlatformStatusResponse | null, clusterOverview?: ClusterOverviewDto | null, isClusterHealthy: boolean = true): ServiceItem[] => {
     if (!status) return DEFAULT_SERVICES;
 
@@ -227,6 +239,8 @@ export const computeDynamicServices = (status?: PlatformStatusResponse | null, c
                 return resolveResilienceStatus(service, isClusterHealthy);
             case 'security':
                 return resolveSecurityStatus(service, isClusterHealthy);
+            case 'database':
+                return resolveDatabaseStatus(service, status, isClusterHealthy);
             default:
                 return service;
         }
