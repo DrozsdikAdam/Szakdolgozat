@@ -1,10 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import { AuditService } from "../services/audit.service.js";
-import type { ApiResponse } from "../dtos/common.dto.js";
-import type { AuditResponseDto } from "../dtos/audit.dto.js";
+import { sendSuccess } from "../utils/response.util.js";
 
 export class AuditController {
-
     private auditService: AuditService;
 
     constructor() {
@@ -15,17 +13,9 @@ export class AuditController {
         try {
             const limit = Number(req.query.limit) || 50;
             const logs = await this.auditService.getAuditLogs(limit);
-
-            const response: ApiResponse<AuditResponseDto[]> = {
-                success: true,
-                data: logs,
-                timestamp: new Date().toISOString(),
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, logs);
         } catch (error) {
             next(error);
         }
     };
-
 }

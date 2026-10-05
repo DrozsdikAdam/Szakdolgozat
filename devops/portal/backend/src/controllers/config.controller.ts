@@ -1,13 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
 import { K8sService } from "../services/k8s.service.js";
 import { AuditService } from "../services/audit.service.js";
-import type { ApiResponse } from "../dtos/common.dto.js";
+import { sendSuccess, sendError } from "../utils/response.util.js";
 import type {
-    ConfigMapDto,
-    SecretDto,
-    SecretRevealDto,
-    SaveConfigDto,
-    RestartWorkloadDto
+    SaveConfigDto
 } from "../dtos/config.dto.js";
 
 export class ConfigController {
@@ -23,14 +19,7 @@ export class ConfigController {
         try {
             const namespace = typeof req.query.namespace === 'string' ? req.query.namespace : undefined;
             const configMaps = await this.k8sService.getConfigMaps(namespace);
-
-            const response: ApiResponse<ConfigMapDto[]> = {
-                success: true,
-                data: configMaps,
-                timestamp: new Date().toISOString(),
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, configMaps);
         } catch (error) {
             next(error);
         }
@@ -40,11 +29,7 @@ export class ConfigController {
         try {
             const dto = req.body as SaveConfigDto;
             if (!dto.name || !dto.namespace || !dto.data) {
-                res.status(400).json({
-                    success: false,
-                    message: "A név, névtér és kulcs-érték adatok megadása kötelező.",
-                    timestamp: new Date().toISOString()
-                });
+                sendError(res, "A név, névtér és kulcs-érték adatok megadása kötelező.", 400);
                 return;
             }
 
@@ -56,14 +41,7 @@ export class ConfigController {
                 'SUCCESS'
             );
 
-            const response: ApiResponse<ConfigMapDto> = {
-                success: true,
-                data: saved,
-                message: `ConfigMap '${dto.name}' sikeresen elmentve.`,
-                timestamp: new Date().toISOString(),
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, saved, `ConfigMap '${dto.name}' sikeresen elmentve.`);
         } catch (error) {
             await this.auditService.logAudit(
                 'CONFIG_MAP_UPDATE',
@@ -79,11 +57,7 @@ export class ConfigController {
             const namespace = String(req.params.namespace || '');
             const name = String(req.params.name || '');
             if (!namespace || !name) {
-                res.status(400).json({
-                    success: false,
-                    message: "A névtér és név megadása kötelező.",
-                    timestamp: new Date().toISOString()
-                });
+                sendError(res, "A névtér és név megadása kötelező.", 400);
                 return;
             }
 
@@ -95,13 +69,7 @@ export class ConfigController {
                 'SUCCESS'
             );
 
-            const response: ApiResponse<void> = {
-                success: true,
-                message: `ConfigMap '${name}' sikeresen törölve.`,
-                timestamp: new Date().toISOString(),
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, undefined, `ConfigMap '${name}' sikeresen törölve.`);
         } catch (error) {
             await this.auditService.logAudit(
                 'CONFIG_MAP_DELETE',
@@ -116,14 +84,7 @@ export class ConfigController {
         try {
             const namespace = typeof req.query.namespace === 'string' ? req.query.namespace : undefined;
             const secrets = await this.k8sService.getSecrets(namespace);
-
-            const response: ApiResponse<SecretDto[]> = {
-                success: true,
-                data: secrets,
-                timestamp: new Date().toISOString(),
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, secrets);
         } catch (error) {
             next(error);
         }
@@ -134,11 +95,7 @@ export class ConfigController {
             const namespace = String(req.params.namespace || '');
             const name = String(req.params.name || '');
             if (!namespace || !name) {
-                res.status(400).json({
-                    success: false,
-                    message: "A névtér és név megadása kötelező.",
-                    timestamp: new Date().toISOString()
-                });
+                sendError(res, "A névtér és név megadása kötelező.", 400);
                 return;
             }
 
@@ -150,13 +107,7 @@ export class ConfigController {
                 'SUCCESS'
             );
 
-            const response: ApiResponse<SecretRevealDto> = {
-                success: true,
-                data: revealed,
-                timestamp: new Date().toISOString(),
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, revealed);
         } catch (error) {
             next(error);
         }
@@ -166,11 +117,7 @@ export class ConfigController {
         try {
             const dto = req.body as SaveConfigDto;
             if (!dto.name || !dto.namespace || !dto.data) {
-                res.status(400).json({
-                    success: false,
-                    message: "A név, névtér és kulcs-érték adatok megadása kötelező.",
-                    timestamp: new Date().toISOString()
-                });
+                sendError(res, "A név, névtér és kulcs-érték adatok megadása kötelező.", 400);
                 return;
             }
 
@@ -182,14 +129,7 @@ export class ConfigController {
                 'SUCCESS'
             );
 
-            const response: ApiResponse<SecretDto> = {
-                success: true,
-                data: saved,
-                message: `Secret '${dto.name}' sikeresen elmentve.`,
-                timestamp: new Date().toISOString(),
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, saved, `Secret '${dto.name}' sikeresen elmentve.`);
         } catch (error) {
             await this.auditService.logAudit(
                 'SECRET_UPDATE',
@@ -205,11 +145,7 @@ export class ConfigController {
             const namespace = String(req.params.namespace || '');
             const name = String(req.params.name || '');
             if (!namespace || !name) {
-                res.status(400).json({
-                    success: false,
-                    message: "A névtér és név megadása kötelező.",
-                    timestamp: new Date().toISOString()
-                });
+                sendError(res, "A névtér és név megadása kötelező.", 400);
                 return;
             }
 
@@ -221,13 +157,7 @@ export class ConfigController {
                 'SUCCESS'
             );
 
-            const response: ApiResponse<void> = {
-                success: true,
-                message: `Secret '${name}' sikeresen törölve.`,
-                timestamp: new Date().toISOString(),
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, undefined, `Secret '${name}' sikeresen törölve.`);
         } catch (error) {
             await this.auditService.logAudit(
                 'SECRET_DELETE',
@@ -243,11 +173,7 @@ export class ConfigController {
             const namespace = String(req.body.namespace || '');
             const workloadNames = Array.isArray(req.body.workloadNames) ? (req.body.workloadNames as string[]) : [];
             if (!namespace || workloadNames.length === 0) {
-                res.status(400).json({
-                    success: false,
-                    message: "Névtér és legalább egy workload megadása kötelező az újraindításhoz.",
-                    timestamp: new Date().toISOString()
-                });
+                sendError(res, "Névtér és legalább egy workload megadása kötelező az újraindításhoz.", 400);
                 return;
             }
 
@@ -259,14 +185,7 @@ export class ConfigController {
                 'SUCCESS'
             );
 
-            const response: ApiResponse<RestartWorkloadDto> = {
-                success: true,
-                data: result,
-                message: result.message || "Workload újraindítás sikeresen kezdeményezve.",
-                timestamp: new Date().toISOString(),
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, result, result.message || "Workload újraindítás sikeresen kezdeményezve.");
         } catch (error) {
             await this.auditService.logAudit(
                 'WORKLOAD_RESTART',

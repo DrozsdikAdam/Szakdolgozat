@@ -1,12 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
 import { PipelineService } from "../services/pipeline.service.js";
 import { AuditService } from "../services/audit.service.js";
-import type { ApiResponse } from "../dtos/common.dto.js";
-import type { PipelineJobResponseDto } from "../dtos/pipeline.dto.js";
+import { sendSuccess } from "../utils/response.util.js";
 import type {
-    GitOpsDriftReport,
     ManualApprovalRequest,
-    PipelineRun,
     RolloutActionRequest
 } from "../types/pipeline.types.js";
 
@@ -22,14 +19,7 @@ export class PipelineController {
     getPipelineRuns = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const runs = await this.pipelineService.getPipelineRuns();
-
-            const response: ApiResponse<PipelineRun[]> = {
-                success: true,
-                data: runs,
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, runs);
         } catch (error) {
             next(error);
         }
@@ -46,14 +36,7 @@ export class PipelineController {
                 result.success ? "SUCCESS" : "FAILED"
             );
 
-            const response: ApiResponse<PipelineJobResponseDto> = {
-                success: result.success,
-                data: result,
-                message: result.message,
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, result, result.message);
         } catch (error) {
             next(error);
         }
@@ -83,14 +66,7 @@ export class PipelineController {
                 result.success ? "SUCCESS" : "FAILED"
             );
 
-            const response: ApiResponse<PipelineJobResponseDto> = {
-                success: result.success,
-                data: result,
-                message: result.message,
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, result, result.message);
         } catch (error) {
             next(error);
         }
@@ -99,14 +75,7 @@ export class PipelineController {
     getGitOpsDrift = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const driftReport = await this.pipelineService.getGitOpsDrift();
-
-            const response: ApiResponse<GitOpsDriftReport> = {
-                success: true,
-                data: driftReport,
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, driftReport);
         } catch (error) {
             next(error);
         }
@@ -134,14 +103,7 @@ export class PipelineController {
                 result.success ? "SUCCESS" : "FAILED"
             );
 
-            const response: ApiResponse<PipelineJobResponseDto> = {
-                success: result.success,
-                data: result,
-                message: result.message,
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, result, result.message);
         } catch (error) {
             next(error);
         }

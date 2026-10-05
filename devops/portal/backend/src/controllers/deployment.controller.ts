@@ -1,10 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import { K8sService } from "../services/k8s.service.js";
 import { AuditService } from "../services/audit.service.js";
-import type { ApiResponse } from "../dtos/common.dto.js";
+import { sendSuccess, sendError } from "../utils/response.util.js";
 import type {
-    DeploymentsOverviewDto,
-    WorkloadDeploymentDto,
     UpdateDeploymentStrategyDto,
     RollbackDeploymentDto
 } from "../dtos/deployment.dto.js";
@@ -22,20 +20,13 @@ export class DeploymentController {
         try {
             const namespace = typeof req.query.namespace === 'string' ? req.query.namespace : undefined;
             const overview = await this.k8sService.getDeploymentsOverview(namespace);
-
-            const response: ApiResponse<DeploymentsOverviewDto> = {
-                success: true,
-                data: overview,
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, overview);
         } catch (error) {
             next(error);
         }
     };
 
-    syncGitOps = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    syncGitOps = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const updatedOverview = await this.k8sService.syncGitOps();
 
@@ -45,14 +36,11 @@ export class DeploymentController {
                 'SUCCESS'
             );
 
-            const response: ApiResponse<DeploymentsOverviewDto> = {
-                success: true,
-                data: updatedOverview,
-                message: "A GitOps repository szinkronizáció sikeresen befejeződött.",
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(
+                res,
+                updatedOverview,
+                "A GitOps repository szinkronizáció sikeresen befejeződött."
+            );
         } catch (error) {
             next(error);
         }
@@ -63,11 +51,7 @@ export class DeploymentController {
             const dto = req.body as UpdateDeploymentStrategyDto;
 
             if (!dto.namespace || !dto.deploymentName || !dto.strategy) {
-                res.status(400).json({
-                    success: false,
-                    message: "A névtér, deployment név és stratégia megadása kötelező.",
-                    timestamp: new Date().toISOString()
-                });
+                sendError(res, "A névtér, deployment név és stratégia megadása kötelező.", 400);
                 return;
             }
 
@@ -85,14 +69,11 @@ export class DeploymentController {
                 'SUCCESS'
             );
 
-            const response: ApiResponse<WorkloadDeploymentDto> = {
-                success: true,
-                data: updatedWorkload,
-                message: `A(z) '${dto.deploymentName}' telepítési stratégiája sikeresen módosítva: ${dto.strategy}.`,
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(
+                res,
+                updatedWorkload,
+                `A(z) '${dto.deploymentName}' telepítési stratégiája sikeresen módosítva: ${dto.strategy}.`
+            );
         } catch (error) {
             next(error);
         }
@@ -103,11 +84,7 @@ export class DeploymentController {
             const dto = req.body as RollbackDeploymentDto;
 
             if (!dto.namespace || !dto.deploymentName || typeof dto.targetRevision !== 'number') {
-                res.status(400).json({
-                    success: false,
-                    message: "A névtér, deployment név és cél revíziószám megadása kötelező.",
-                    timestamp: new Date().toISOString()
-                });
+                sendError(res, "A névtér, deployment név és cél revíziószám megadása kötelező.", 400);
                 return;
             }
 
@@ -119,14 +96,11 @@ export class DeploymentController {
                 'SUCCESS'
             );
 
-            const response: ApiResponse<WorkloadDeploymentDto> = {
-                success: true,
-                data: rolledBack,
-                message: `A(z) '${dto.deploymentName}' workload sikeresen visszaállítva a #${dto.targetRevision}. revízióra (${rolledBack.currentImage}).`,
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(
+                res,
+                rolledBack,
+                `A(z) '${dto.deploymentName}' workload sikeresen visszaállítva a #${dto.targetRevision}. revízióra (${rolledBack.currentImage}).`
+            );
         } catch (error) {
             next(error);
         }

@@ -1,10 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import { BackupService } from "../services/backup.service.js";
-import type { ApiResponse } from "../dtos/common.dto.js";
-import type { BackupHistoryResponseDto, JobTriggerResponseDto } from "../dtos/backup.dto.js";
+import { sendSuccess } from "../utils/response.util.js";
 
 export class BackupController {
-
     private backupService: BackupService;
 
     constructor() {
@@ -14,14 +12,7 @@ export class BackupController {
     getHistory = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const history = await this.backupService.getBackupHistory();
-
-            const response: ApiResponse<BackupHistoryResponseDto> = {
-                success: true,
-                data: history,
-                timestamp: new Date().toISOString(),
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, history);
         } catch (error) {
             next(error);
         }
@@ -30,15 +21,7 @@ export class BackupController {
     triggerBackup = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const result = await this.backupService.triggerBackup();
-
-            const response: ApiResponse<JobTriggerResponseDto> = {
-                success: true,
-                data: result,
-                message: "Backup job triggered successfully",
-                timestamp: new Date().toISOString(),
-            };
-
-            res.status(202).json(response);
+            sendSuccess(res, result, "Backup job triggered successfully", 202);
         } catch (error) {
             next(error);
         }
@@ -48,18 +31,9 @@ export class BackupController {
         try {
             const targetBackup = req.body?.targetBackup || "latest";
             const result = await this.backupService.triggerRestore(targetBackup);
-
-            const response: ApiResponse<JobTriggerResponseDto> = {
-                success: true,
-                data: result,
-                message: `Restore job triggered for ${targetBackup}`,
-                timestamp: new Date().toISOString(),
-            };
-
-            res.status(202).json(response);
+            sendSuccess(res, result, `Restore job triggered for ${targetBackup}`, 202);
         } catch (error) {
             next(error);
         }
     };
-
 }
