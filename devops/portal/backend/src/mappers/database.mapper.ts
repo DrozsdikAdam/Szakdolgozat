@@ -72,26 +72,70 @@ export class DatabaseMapper {
         }
     }
 
+    static toDriverClassName(engine: DatabaseEngine): string {
+        switch (engine) {
+            case 'mssql':
+                return 'com.microsoft.sqlserver.jdbc.SQLServerDriver';
+            case 'oracle':
+                return 'oracle.jdbc.OracleDriver';
+            case 'postgres':
+            default:
+                return 'org.postgresql.Driver';
+        }
+    }
+
+    static toHibernateDialect(engine: DatabaseEngine): string {
+        switch (engine) {
+            case 'mssql':
+                return 'org.hibernate.dialect.SQLServerDialect';
+            case 'oracle':
+                return 'org.hibernate.dialect.OracleDialect';
+            case 'postgres':
+            default:
+                return 'org.hibernate.dialect.PostgreSQLDialect';
+        }
+    }
+
     static toSecretData(dto: SaveDatabaseConfigDto): Record<string, string> {
         const jdbcUrl = this.toJdbcUrl(dto.engine, dto.host, dto.port, dto.database);
+        const driverClassName = this.toDriverClassName(dto.engine);
+        const dialect = this.toHibernateDialect(dto.engine);
+
         const data: Record<string, string> = {
             SPRING_DATASOURCE_URL: jdbcUrl,
-            SPRING_DATASOURCE_USERNAME: dto.username
+            SPRING_DATASOURCE_USERNAME: dto.username,
+            SPRING_DATASOURCE_DRIVER_CLASS_NAME: driverClassName,
+            SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: dialect,
+            DB_ENGINE: dto.engine,
+            DB_HOST: dto.host,
+            DB_PORT: String(dto.port),
+            DB_NAME: dto.database,
+            DB_USER: dto.username,
+            DB_DRIVER: driverClassName
         };
         if (dto.password) {
             data.SPRING_DATASOURCE_PASSWORD = dto.password;
+            data.DB_PASSWORD = dto.password;
         }
         return data;
     }
 
     static toEnvUpdates(dto: SaveDatabaseConfigDto): Record<string, string> {
+        const driverClassName = this.toDriverClassName(dto.engine);
+        const dialect = this.toHibernateDialect(dto.engine);
+        const jdbcUrl = this.toJdbcUrl(dto.engine, dto.host, dto.port, dto.database);
+
         const updates: Record<string, string> = {
             DB_ENGINE: dto.engine,
             DB_MODE: dto.mode,
             DB_HOST: dto.host,
             DB_PORT: String(dto.port),
             DB_NAME: dto.database,
-            DB_USER: dto.username
+            DB_USER: dto.username,
+            DB_DRIVER: driverClassName,
+            SPRING_DATASOURCE_URL: jdbcUrl,
+            SPRING_DATASOURCE_DRIVER_CLASS_NAME: driverClassName,
+            SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: dialect
         };
         if (dto.password) {
             updates.DB_PASSWORD = dto.password;
