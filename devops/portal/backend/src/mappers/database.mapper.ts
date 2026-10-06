@@ -63,7 +63,7 @@ export class DatabaseMapper {
     static toJdbcUrl(engine: DatabaseEngine, host: string, port: number, database: string): string {
         switch (engine) {
             case 'mssql':
-                return `jdbc:sqlserver://${host}:${port};databaseName=${database};encrypt=false`;
+                return `jdbc:sqlserver://${host}:${port};databaseName=${database};encrypt=false;trustServerCertificate=true`;
             case 'oracle':
                 return `jdbc:oracle:thin:@${host}:${port}/${database}`;
             case 'postgres':

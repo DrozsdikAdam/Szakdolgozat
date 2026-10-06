@@ -26,7 +26,7 @@ export class DatabaseService {
         this.auditService = new AuditService();
     }
 
-    private getCurrentConfig = async (): Promise<ParsedDatabaseConfig> => {
+    getCurrentConfig = async (): Promise<ParsedDatabaseConfig> => {
         const configs = await SystemConfig.findAll();
         const configMap = new Map(configs.map(c => [c.key, c.value]));
         return DatabaseMapper.parseConfig(configMap);

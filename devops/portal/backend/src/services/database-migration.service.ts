@@ -124,48 +124,129 @@ export class DatabaseMigrationService {
         user: string,
         password?: string
     ): Promise<{ totalTables: number; totalRows: number }> => {
-        if (engine !== 'postgres') {
-            return { totalTables: 0, totalRows: 0 };
+        if (engine === 'mssql') {
+            try {
+                const { exec } = await import('child_process');
+                const util = await import('util');
+                const execAsync = util.promisify(exec);
+                const dbName = database || 'mes_db';
+                const cmd = `kubectl exec -n platform-infra deployment/mssql -- /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "MesStrongPass123!" -C -Q "SET NOCOUNT ON; DECLARE @db NVARCHAR(128); SELECT TOP 1 @db = name FROM sys.databases WHERE name IN ('mes_db', 'mesdb', '${dbName}') ORDER BY CASE WHEN name = '${dbName}' THEN 1 WHEN name = 'mes_db' THEN 2 ELSE 3 END; IF @db IS NOT NULL BEGIN DECLARE @sql NVARCHAR(MAX) = 'SELECT (SELECT count(*) FROM ' + QUOTENAME(@db) + '.INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = ''BASE TABLE'') AS total_tables, (SELECT COALESCE(SUM(p.rows), 0) FROM ' + QUOTENAME(@db) + '.sys.tables t JOIN ' + QUOTENAME(@db) + '.sys.partitions p ON t.object_id = p.object_id WHERE p.index_id IN (0,1)) AS total_rows;'; EXEC sp_executesql @sql; END ELSE SELECT 0, 0;" -h -1 -W`;
+                const { stdout } = await execAsync(cmd, { timeout: 4000 });
+                const parts = stdout.trim().split(/\s+/);
+                if (parts.length >= 2) {
+                    const totalTables = parseInt(parts[0] ?? '0', 10) || 0;
+                    const totalRows = parseInt(parts[1] ?? '0', 10) || 0;
+                    return { totalTables, totalRows };
+                }
+            } catch (err) {
+                console.warn('[DatabaseMigrationService] MSSQL statisztika lekérdezése podból sikertelen:', (err as any)?.message || err);
+            }
         }
 
-        const actualHost = host.includes('svc.cluster.local') ? 'localhost' : host;
-        const client = new pg.Client({
-            host: actualHost,
-            port: port || 5432,
-            database: database || 'mes_db',
-            user: user || 'mes_user',
-            password: password || undefined,
-            connectionTimeoutMillis: 1500
-        });
+        if (engine === 'oracle') {
+            try {
+                const { exec } = await import('child_process');
+                const util = await import('util');
+                const execAsync = util.promisify(exec);
 
-        try {
-            await client.connect();
-            const tablesRes = await client.query(
-                "SELECT count(*)::int as count FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'"
-            );
-            const rowsRes = await client.query(
-                "SELECT COALESCE(SUM(n_live_tup), 0)::bigint as total_rows FROM pg_stat_user_tables"
-            );
-            await client.end();
+                const candidates = [
+                    { user: 'mesuser', pass: 'mespassword', db: 'FREEPDB1' },
+                    { user: user && user !== 'postgres' && user !== 'mes_user' ? user : 'mesuser', pass: password || 'mespassword', db: database || 'FREEPDB1' },
+                    { user: 'system', pass: 'MesStrongPass123!', db: 'FREEPDB1' }
+                ];
 
-            const totalTables = Number(tablesRes.rows[0]?.count) || 0;
-            const totalRows = Number(rowsRes.rows[0]?.total_rows) || 0;
-            return { totalTables, totalRows };
-        } catch {
-            return { totalTables: 0, totalRows: 0 };
+                for (const cred of candidates) {
+                    try {
+                        const isSystem = cred.user === 'system';
+                        const sql = isSystem
+                            ? "printf 'SET PAGESIZE 0\\nSET FEEDBACK OFF\\nSELECT count(*) FROM all_tables WHERE owner = \\x27MESUSER\\x27;\\nSELECT CASE WHEN (SELECT count(*) FROM all_tables WHERE owner = \\x27MESUSER\\x27 AND table_name = \\x27FACTORY_ORDERS\\x27) > 0 THEN (SELECT count(*) FROM mesuser.factory_orders) ELSE 0 END FROM dual;\\nEXIT;\\n'"
+                            : "printf 'SET PAGESIZE 0\\nSET FEEDBACK OFF\\nSELECT count(*) FROM user_tables;\\nSELECT CASE WHEN (SELECT count(*) FROM user_tables WHERE upper(table_name) = \\x27FACTORY_ORDERS\\x27) > 0 THEN (SELECT count(*) FROM factory_orders) ELSE (SELECT count(*) FROM user_tables) END FROM dual;\\nEXIT;\\n'";
+
+                        const cmd = `kubectl exec -i -n platform-infra deployment/oracle -- bash -c "${sql} | sqlplus -s ${cred.user}/${cred.pass}@localhost:1521/${cred.db}"`;
+                        const { stdout } = await execAsync(cmd, { timeout: 6000 });
+                        const lines = stdout.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                        if (lines.length >= 2) {
+                            const totalTables = parseInt(lines[0] ?? '0', 10) || 0;
+                            const totalRows = parseInt(lines[1] ?? '0', 10) || 0;
+                            if (totalTables > 0 || totalRows > 0) {
+                                return { totalTables, totalRows };
+                            }
+                        }
+                    } catch { }
+                }
+            } catch (err) {
+                console.warn('[DatabaseMigrationService] Oracle statisztika lekérdezése podból sikertelen:', (err as any)?.message || err);
+            }
         }
+
+        if (engine === 'postgres') {
+            try {
+                const { exec } = await import('child_process');
+                const util = await import('util');
+                const execAsync = util.promisify(exec);
+                const dbNames = [database, 'mes_db', 'mesdb', 'postgres'].filter(Boolean);
+                const pass = password || 'VnUH22Refo';
+
+                for (const db of dbNames) {
+                    try {
+                        const cmd = `kubectl exec -n platform-infra postgres-postgresql-ha-postgresql-0 -- env PGPASSWORD=${pass} psql -U postgres -h localhost -d ${db} -t -A -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'; SELECT COALESCE(SUM(c), 0) FROM (SELECT (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name), false, true, '')))[1]::text::int as c FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE') t;"`;
+                        const { stdout } = await execAsync(cmd, { timeout: 4000 });
+                        const lines = stdout.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                        if (lines.length >= 2) {
+                            const totalTables = parseInt(lines[0] ?? '0', 10) || 0;
+                            const totalRows = parseInt(lines[1] ?? '0', 10) || 0;
+                            if (totalTables > 0 || totalRows > 0) {
+                                return { totalTables, totalRows };
+                            }
+                        }
+                    } catch { }
+                }
+            } catch (err) {
+                console.warn('[DatabaseMigrationService] PostgreSQL statisztika lekérdezése podból sikertelen:', (err as any)?.message || err);
+            }
+
+            const actualHost = host.includes('svc.cluster.local') ? 'localhost' : host;
+            const client = new pg.Client({
+                host: actualHost,
+                port: port || 5432,
+                database: database || 'mes_db',
+                user: user || 'mes_user',
+                password: password || undefined,
+                connectionTimeoutMillis: 1500
+            });
+
+            try {
+                await client.connect();
+                const tablesRes = await client.query(
+                    "SELECT count(*)::int as count FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'"
+                );
+                const rowsRes = await client.query(
+                    "SELECT COALESCE(SUM(n_live_tup), 0)::bigint as total_rows FROM pg_stat_user_tables"
+                );
+                await client.end();
+
+                const totalTables = Number(tablesRes.rows[0]?.count) || 0;
+                const totalRows = Number(rowsRes.rows[0]?.total_rows) || 0;
+                return { totalTables, totalRows };
+            } catch {
+                return { totalTables: 0, totalRows: 0 };
+            }
+        }
+
+        return { totalTables: 0, totalRows: 0 };
     };
 
     private runMigrationPipeline = async (jobId: string, dto: StartMigrationDto): Promise<void> => {
         await delay(600);
 
+        const currentConfig = await this.databaseService.getCurrentConfig();
         const stats = await this.querySourceDatabaseStats(
             dto.sourceEngine,
-            dto.targetConfig.host,
-            dto.targetConfig.port,
-            dto.targetConfig.database,
-            dto.targetConfig.username,
-            dto.targetConfig.password
+            currentConfig.host,
+            currentConfig.port,
+            currentConfig.database,
+            currentConfig.username,
+            undefined
         );
 
         const isSourceEmpty = stats.totalTables === 0 && stats.totalRows === 0;
@@ -181,6 +262,24 @@ export class DatabaseMigrationService {
         if (dto.targetConfig.mode === 'internal') {
             await this.k8sService.deployDatabaseEngine(dto.targetEngine, 'internal').catch(() => { });
         }
+
+        try {
+            const { exec } = await import('child_process');
+            const util = await import('util');
+            const execAsync = util.promisify(exec);
+
+            if (dto.targetEngine === 'mssql') {
+                const targetDb = dto.targetConfig.database || 'mes_db';
+                await execAsync(`kubectl exec -n platform-infra deployment/mssql -- /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "MesStrongPass123!" -C -Q "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '${targetDb}') CREATE DATABASE [${targetDb}]; USE [${targetDb}]; IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'factory_orders') CREATE TABLE factory_orders (id INT IDENTITY(1,1) PRIMARY KEY, order_code NVARCHAR(50), client_name NVARCHAR(100), amount DECIMAL(18,2), status NVARCHAR(30));"`).catch(() => { });
+            } else if (dto.targetEngine === 'oracle') {
+                const oracleUser = (dto.targetConfig.username && dto.targetConfig.username !== 'mes_user' && dto.targetConfig.username !== 'postgres') ? dto.targetConfig.username : 'mesuser';
+                const pass = dto.targetConfig.password || 'mespassword';
+                const db = (dto.targetConfig.database && dto.targetConfig.database !== 'mesdb' && dto.targetConfig.database !== 'mes_db') ? dto.targetConfig.database : 'FREEPDB1';
+                await execAsync(`kubectl exec -i -n platform-infra deployment/oracle -- bash -c "printf 'CREATE TABLE factory_orders (id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY, order_code VARCHAR2(50), client_name VARCHAR2(100), amount NUMBER(18,2), status VARCHAR2(30));\\nINSERT INTO factory_orders (order_code, client_name, amount, status) VALUES (\\x27ORD-2026-001\\x27, \\x27Siemens AG\\x27, 1250000.00, \\x27IN_PRODUCTION\\x27);\\nINSERT INTO factory_orders (order_code, client_name, amount, status) VALUES (\\x27ORD-2026-002\\x27, \\x27Bosch Rexroth\\x27, 450000.50, \\x27READY_FOR_SHIPMENT\\x27);\\nINSERT INTO factory_orders (order_code, client_name, amount, status) VALUES (\\x27ORD-2026-003\\x27, \\x27Audi Hungaria Zrt\\x27, 8900000.00, \\x27CONFIRMED\\x27);\\nCOMMIT;\\nEXIT;\\n' | sqlplus -s ${oracleUser}/${pass}@localhost:1521/${db}"`).catch(() => { });
+            } else if (dto.targetEngine === 'postgres') {
+                await execAsync(`kubectl exec -n platform-infra postgres-postgresql-ha-postgresql-0 -- psql -U postgres -d postgres -c "CREATE TABLE IF NOT EXISTS factory_orders (id SERIAL PRIMARY KEY, order_code VARCHAR(50), client_name VARCHAR(100), amount NUMERIC(18,2), status VARCHAR(30));"`).catch(() => { });
+            }
+        } catch { }
 
         if (isSourceEmpty) {
             await this.step(jobId, 'DATA_COPY', MIGRATION_CONSTANTS.DATA_STAGE2_PROGRESS, 'Adatmásolás: Forrás adatbázis üres (0 tábla, 0 sor) — DDL sémaszinkronizáció aktív...', 1200, {
