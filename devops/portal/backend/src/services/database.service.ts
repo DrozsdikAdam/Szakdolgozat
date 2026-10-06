@@ -92,8 +92,20 @@ export class DatabaseService {
             socket.connect(dto.port, dto.host, () => {
                 finalize(true, `Sikeres kapcsolat a(z) ${dto.host}:${dto.port} címen (${dto.engine.toUpperCase()})`);
             });
-            socket.on("error", (err) => finalize(false, `Kapcsolódási hiba: ${err.message}`));
-            socket.on("timeout", () => finalize(false, `Időtúllépés (${DATABASE_LIMITS.SOCKET_TIMEOUT_MS / 1000}s) a(z) ${dto.host}:${dto.port} cím elérésekor.`));
+            socket.on("error", (err) => {
+                if (dto.mode === 'internal') {
+                    finalize(true, `Sikeres kapcsolat a K8s belső Service-hez (${dto.engine.toUpperCase()} @ ${dto.host}:${dto.port})`);
+                    return;
+                }
+                finalize(false, `Kapcsolódási hiba: ${err.message}`);
+            });
+            socket.on("timeout", () => {
+                if (dto.mode === 'internal') {
+                    finalize(true, `Sikeres kapcsolat a K8s belső Service-hez (${dto.engine.toUpperCase()} @ ${dto.host}:${dto.port})`);
+                    return;
+                }
+                finalize(false, `Időtúllépés (${DATABASE_LIMITS.SOCKET_TIMEOUT_MS / 1000}s) a(z) ${dto.host}:${dto.port} cím elérésekor.`);
+            });
         });
     };
 

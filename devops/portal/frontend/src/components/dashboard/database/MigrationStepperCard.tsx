@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ArrowRightLeft, CheckCircle2, Loader2, Calendar, ShieldCheck, Database, AlertTriangle } from "lucide-react";
 import type { DatabaseEngine } from "../../../types/database";
 import type { MigrationStepperCardProps } from "../../../types/component/database/migrationStepperCardProps";
@@ -23,10 +23,21 @@ export const MigrationStepperCard = ({
     hasActiveCutoverSchedule = false,
     disabled = false
 }: MigrationStepperCardProps) => {
-    const availableTargets: DatabaseEngine[] = (["postgres", "mssql", "oracle"] as DatabaseEngine[])
-        .filter(e => e !== currentEngine);
+    const availableTargets: DatabaseEngine[] = useMemo(() => {
+        return (["postgres", "mssql", "oracle"] as DatabaseEngine[])
+            .filter(e => e !== currentEngine);
+    }, [currentEngine]);
 
-    const [selectedTarget, setSelectedTarget] = useState<DatabaseEngine>(availableTargets[0] || "mssql");
+    const [selectedTarget, setSelectedTarget] = useState<DatabaseEngine>(() => availableTargets[0] || "postgres");
+
+    useEffect(() => {
+        setSelectedTarget((prev) => {
+            if (availableTargets.includes(prev) && prev !== currentEngine) {
+                return prev;
+            }
+            return availableTargets[0] || (currentEngine === "postgres" ? "mssql" : "postgres");
+        });
+    }, [currentEngine, availableTargets]);
 
     const getStepStatus = (stepKey: string) => {
         if (!activeJob) return "inactive";

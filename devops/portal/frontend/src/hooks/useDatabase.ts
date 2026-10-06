@@ -49,7 +49,7 @@ export const useDatabase = () => {
         setTimeout(() => setToastMessage(null), 4000);
     }, []);
 
-    const loadData = useCallback(async (showLoading = false) => {
+    const loadData = useCallback(async (showLoading = false, forceResetForm = false) => {
         try {
             if (showLoading) setIsLoading(true);
             const [overviewData, cutoverData] = await Promise.all([
@@ -59,7 +59,7 @@ export const useDatabase = () => {
 
             if (overviewData) {
                 setOverview(overviewData);
-                if (!isFormDirty) {
+                if (forceResetForm || !isFormDirty) {
                     setForm({
                         engine: overviewData.engine,
                         mode: overviewData.mode,
@@ -72,6 +72,9 @@ export const useDatabase = () => {
                         poolSize: overviewData.poolSize,
                         restartWorkload: true
                     });
+                    if (forceResetForm) {
+                        setIsFormDirty(false);
+                    }
                 }
             }
 
@@ -92,7 +95,7 @@ export const useDatabase = () => {
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
-        await loadData(false);
+        await loadData(false, true);
         showToast("Adatbázis állapot frissítve!");
     };
 
@@ -203,7 +206,7 @@ export const useDatabase = () => {
     const handleStartMigration = async (targetEngine: DatabaseEngine) => {
         try {
             setIsMigrating(true);
-            const sourceEngine = overview?.engine || form.engine;
+            const sourceEngine = form.engine;
 
             const job = await api.startMigration({
                 sourceEngine,
@@ -293,8 +296,10 @@ export const useDatabase = () => {
 
             setCutoverStatus(result);
             setIsCutoverModalOpen(false);
+            setActiveMigrationJob(null);
+            setIsFormDirty(false);
             showToast(result.message || "Átállási ablak sikeresen ütemezve!", "success");
-            await loadData(false);
+            await loadData(false, true);
         } catch (err: any) {
             showToast(err?.message || "Nem sikerült beütemezni az átállást.", "error");
         } finally {
