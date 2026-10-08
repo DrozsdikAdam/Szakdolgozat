@@ -16,7 +16,7 @@ services:
     volumes:
       - portal-data:/app/data
       - ~/.kube:/app/.kube:ro
-      - ../platform.env:/app/platform.env:ro
+      - ../platform.env:/app/platform.env:rw
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

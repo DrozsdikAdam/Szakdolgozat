@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mes-backend
+  namespace: app-mes
   labels:
     app: mes-backend
 spec:
@@ -23,7 +24,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: backend
-          image: mes-backend:latest
+          image: mes-backend:v5
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -39,56 +40,33 @@ spec:
             limits:
               memory: "1024Mi"
               cpu: "1000m"
+          envFrom:
+            - secretRef:
+                name: backend-secret
           env:
-            - name: DB_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: backend-secret
-                  key: DB_HOST
-            - name: DB_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: backend-secret
-                  key: DB_PORT
-            - name: DB_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: backend-secret
-                  key: DB_NAME
-            - name: SPRING_DATASOURCE_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: backend-secret
-                  key: DB_USER
-            - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: backend-secret
-                  key: DB_PASSWORD
-            - name: SPRING_DATASOURCE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: backend-secret
-                  key: SPRING_DATASOURCE_URL
-            - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: backend-secret
-                  key: SPRING_DATASOURCE_DRIVER_CLASS_NAME
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: backend-secret
-                  key: JWT_SECRET
+            - name: SPRING_DATA_REDIS_HOST
+              value: "host.docker.internal"
+            - name: SPRING_DATA_REDIS_PORT
+              value: "6379"
+            - name: SPRING_MAIL_HOST
+              value: "host.docker.internal"
+            - name: SPRING_MAIL_PORT
+              value: "1025"
+            - name: SPRING_JPA_PROPERTIES_HIBERNATE_TYPE_PREFERRED__UUID__JDBC__TYPE
+              value: "CHAR"
+            - name: SPRING_JPA_PROPERTIES_HIBERNATE_GLOBALLY__QUOTED__IDENTIFIERS
+              value: "true"
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Dspring.jpa.properties.hibernate.type.preferred_uuid_jdbc_type=CHAR -Dhibernate.type.preferred_uuid_jdbc_type=CHAR -Dhibernate.auto_quote_keyword=true -Dspring.jpa.properties.hibernate.auto_quote_keyword=true"
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
               port: 8080
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 15
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: 8080
-            initialDelaySeconds: 20
+            initialDelaySeconds: 40
             periodSeconds: 10

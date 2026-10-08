@@ -21,28 +21,31 @@ spec:
     spec:
       containers:
         - name: backend
-          image: mes-backend:latest
+          image: mes-backend:v5
           ports:
             - containerPort: 8080
               name: http
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
-            limits:
-              cpu: 500m
+              cpu: 250m
               memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+          envFrom:
+            - secretRef:
+                name: backend-secret
           readinessProbe:
             httpGet:
-              path: /actuator/health
+              path: /actuator/health/readiness
               port: 8080
-            initialDelaySeconds: 15
+            initialDelaySeconds: 30
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /actuator/health
+              path: /actuator/health/liveness
               port: 8080
-            initialDelaySeconds: 30
+            initialDelaySeconds: 45
             periodSeconds: 15
 
   strategy:

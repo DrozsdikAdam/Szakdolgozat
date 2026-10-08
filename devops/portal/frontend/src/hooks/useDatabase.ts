@@ -13,6 +13,7 @@ import { DatabaseApi } from "../client/api/database";
 import {
     DEFAULT_DB_PORTS,
     DEFAULT_INTERNAL_HOSTS,
+    DEFAULT_INTERNAL_CONFIGS,
     INITIAL_DATABASE_FORM
 } from "../constants/database";
 
@@ -101,11 +102,15 @@ export const useDatabase = () => {
 
     const handleEngineChange = (engine: DatabaseEngine) => {
         setIsFormDirty(true);
+        const preset = DEFAULT_INTERNAL_CONFIGS[engine];
         setForm(prev => ({
             ...prev,
             engine,
             port: DEFAULT_DB_PORTS[engine],
-            host: prev.mode === 'internal' ? DEFAULT_INTERNAL_HOSTS[engine] : prev.host
+            host: prev.mode === 'internal' ? preset.host : prev.host,
+            database: prev.mode === 'internal' ? preset.database : prev.database,
+            username: prev.mode === 'internal' ? preset.username : prev.username,
+            password: prev.mode === 'internal' ? preset.password : prev.password
         }));
     };
 
@@ -207,6 +212,7 @@ export const useDatabase = () => {
         try {
             setIsMigrating(true);
             const sourceEngine = form.engine;
+            const targetPreset = DEFAULT_INTERNAL_CONFIGS[targetEngine];
 
             const job = await api.startMigration({
                 sourceEngine,
@@ -214,11 +220,11 @@ export const useDatabase = () => {
                 targetConfig: {
                     engine: targetEngine,
                     mode: form.mode,
-                    host: form.mode === 'internal' ? DEFAULT_INTERNAL_HOSTS[targetEngine] : form.host,
+                    host: form.mode === 'internal' ? targetPreset.host : form.host,
                     port: DEFAULT_DB_PORTS[targetEngine],
-                    database: form.database,
-                    username: form.username,
-                    password: form.password || undefined
+                    database: form.mode === 'internal' ? targetPreset.database : form.database,
+                    username: form.mode === 'internal' ? targetPreset.username : form.username,
+                    password: form.mode === 'internal' ? targetPreset.password : form.password
                 }
             });
 

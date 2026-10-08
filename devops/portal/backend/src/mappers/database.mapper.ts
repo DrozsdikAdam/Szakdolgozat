@@ -125,6 +125,10 @@ export class DatabaseMapper {
         const dialect = this.toHibernateDialect(dto.engine);
         const jdbcUrl = this.toJdbcUrl(dto.engine, dto.host, dto.port, dto.database);
 
+        const dockerHost = 'host.docker.internal';
+        const dockerPort = dto.engine === 'postgres' ? 5432 : dto.engine === 'mssql' ? 1433 : 1521;
+        const dockerJdbcUrl = this.toJdbcUrl(dto.engine, dockerHost, dockerPort, dto.database);
+
         const updates: Record<string, string> = {
             DB_ENGINE: dto.engine,
             DB_MODE: dto.mode,
@@ -134,11 +138,14 @@ export class DatabaseMapper {
             DB_USER: dto.username,
             DB_DRIVER: driverClassName,
             SPRING_DATASOURCE_URL: jdbcUrl,
+            SPRING_DATASOURCE_USERNAME: dto.username,
             SPRING_DATASOURCE_DRIVER_CLASS_NAME: driverClassName,
-            SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: dialect
+            SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: dialect,
+            DOCKER_SPRING_DATASOURCE_URL: dockerJdbcUrl
         };
         if (dto.password) {
             updates.DB_PASSWORD = dto.password;
+            updates.SPRING_DATASOURCE_PASSWORD = dto.password;
         }
         return updates;
     }

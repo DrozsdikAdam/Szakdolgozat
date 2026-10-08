@@ -38,16 +38,17 @@
     </changeSet>
 
     <changeSet id="007-seed-admin-user" author="mes-admin">
+        <validCheckSum>9:6237f2dd0b86c85e829fcd76db610123</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT COUNT(*) FROM users WHERE name = 'admin'</sqlCheck>
         </preConditions>
 
-        <!-- Default admin user: username: admin, password: password123 (BCrypt hash) -->
+        <!-- Default admin user: username: admin, password: Admin1234! (BCrypt hash) -->
         <insert tableName="users">
             <column name="id" value="a0000000-0000-0000-0000-000000000001" />
             <column name="name" value="admin" />
             <column name="password"
-                value="$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG" />
+                value="$2a$10$ZrCX8jW76alnJxNPgDe.J.h4ve0YomAlmrcIpHweFdA1NfMQvxG5a" />
             <column name="email" value="admin@mes.hu" />
             <column name="phone_number" value="+36301234567" />
             <column name="active" valueBoolean="true" />

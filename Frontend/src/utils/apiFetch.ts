@@ -1,6 +1,8 @@
+const BASE_URL = import.meta.env.VITE_API_URL || '';
+
 export const apiFetch = async <T>(path: string, options?: RequestInit): Promise<T> => {
     const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-    const url = `http://localhost:8080/${cleanPath}`;
+    const url = BASE_URL ? `${BASE_URL}/${cleanPath}` : `/${cleanPath}`;
 
     const mergedOptions: RequestInit = {
         credentials: "include",
@@ -16,7 +18,8 @@ export const apiFetch = async <T>(path: string, options?: RequestInit): Promise<
     const isAuthEndpoint = cleanPath.includes("api/auth/login") || cleanPath.includes("api/auth/refresh");
 
     if ((response.status === 401 || response.status === 403) && !isAuthEndpoint) {
-        const refreshResponse = await fetch(`http://localhost:8080/api/auth/refresh`, {
+        const refreshUrl = BASE_URL ? `${BASE_URL}/api/auth/refresh` : `/api/auth/refresh`;
+        const refreshResponse = await fetch(refreshUrl, {
             method: "POST",
             ...mergedOptions
         });
@@ -50,5 +53,10 @@ const throwError = async (res: Response): Promise<never> => {
 
 const handleResponse = async <T>(res: Response): Promise<T> => {
     const text = await res.text();
-    return text ? (JSON.parse(text) as T) : ({} as T);
+    if (!text) return {} as T;
+    try {
+        return JSON.parse(text) as T;
+    } catch {
+        return { message: text } as unknown as T;
+    }
 };

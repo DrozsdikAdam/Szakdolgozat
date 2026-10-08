@@ -33,7 +33,7 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService customUserDetailsService;
 
-    @Value("${app.cors.allowed-origins:http://localhost:3005,http://localhost:5173}")
+    @Value("${app.cors.allowed-origins:http://localhost:3005,http://localhost:5173,http://localhost:8085,http://localhost:8088}")
     private String allowedOrigins;
 
     @Bean
@@ -86,7 +86,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/actuator/health/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exceptions -> exceptions

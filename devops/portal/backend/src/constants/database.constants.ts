@@ -8,9 +8,27 @@ export const DEFAULT_DB_PORTS: Record<DatabaseEngine, number> = {
 };
 
 export const DEFAULT_INTERNAL_HOSTS: Record<DatabaseEngine, string> = {
-    postgres: 'pgbouncer.platform-infra.svc.cluster.local',
+    postgres: 'postgres-postgresql-primary.platform-infra.svc.cluster.local',
     mssql: 'mssql.platform-infra.svc.cluster.local',
     oracle: 'oracle.platform-infra.svc.cluster.local'
+};
+
+export const DEFAULT_INTERNAL_CREDENTIALS: Record<DatabaseEngine, { database: string; username: string; password: string }> = {
+    postgres: {
+        database: 'mes_db',
+        username: 'postgres',
+        password: 'VnUH22Refo'
+    },
+    mssql: {
+        database: 'mesdb',
+        username: 'sa',
+        password: 'MesStrongPass123!'
+    },
+    oracle: {
+        database: 'FREEPDB1',
+        username: 'mesuser',
+        password: 'mespassword'
+    }
 };
 
 export const DATABASE_LIMITS = {

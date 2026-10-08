@@ -261,7 +261,16 @@ export class K8sConfigService {
                     successNames.push(name);
                 }
             } catch (err) {
-                console.warn(`[K8sConfigService] Nem sikerült újraindítani a '${name}' deploymentet:`, (err as any)?.message || err);
+                try {
+                    const { exec } = await import('child_process');
+                    const { promisify } = await import('util');
+                    const execAsync = promisify(exec);
+                    const k8sFlag = process.env.K8S_SERVER_HOST ? `--server=https://${process.env.K8S_SERVER_HOST}:61682 --insecure-skip-tls-verify=true` : '';
+                    await execAsync(`kubectl ${k8sFlag} patch rollout ${name} -n ${namespace} --type=merge -p '{"spec":{"template":{"metadata":{"annotations":{"kubectl.kubernetes.io/restartedAt":"${restartedAt}"}}}}}'`);
+                    successNames.push(name);
+                } catch {
+                    console.warn(`[K8sConfigService] Nem sikerült újraindítani a '${name}' workloadot (deployment vagy rollout):`, (err as any)?.message || err);
+                }
             }
         }
 

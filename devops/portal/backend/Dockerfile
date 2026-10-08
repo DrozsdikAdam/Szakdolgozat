@@ -19,6 +19,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
+RUN apk add --no-cache curl ca-certificates bash && \
+    curl -LO "https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/kubectl" && \
+    chmod +x kubectl && \
+    mv kubectl /usr/local/bin/
+
 COPY package*.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist

@@ -9,19 +9,43 @@ export const DEFAULT_DB_PORTS: Record<DatabaseEngine, number> = {
 };
 
 export const DEFAULT_INTERNAL_HOSTS: Record<DatabaseEngine, string> = {
-    postgres: "postgres-master.storage.svc.cluster.local",
+    postgres: "postgres-postgresql-ha-postgresql.platform-infra.svc.cluster.local",
     mssql: "mssql.platform-infra.svc.cluster.local",
     oracle: "oracle.platform-infra.svc.cluster.local"
+};
+
+export const DEFAULT_INTERNAL_CONFIGS: Record<DatabaseEngine, { host: string; port: number; database: string; username: string; password: string }> = {
+    postgres: {
+        host: "postgres-postgresql-ha-postgresql.platform-infra.svc.cluster.local",
+        port: 5432,
+        database: "mes_db",
+        username: "postgres",
+        password: "VnUH22Refo"
+    },
+    mssql: {
+        host: "mssql.platform-infra.svc.cluster.local",
+        port: 1433,
+        database: "mesdb",
+        username: "sa",
+        password: "MesStrongPass123!"
+    },
+    oracle: {
+        host: "oracle.platform-infra.svc.cluster.local",
+        port: 1521,
+        database: "FREEPDB1",
+        username: "mesuser",
+        password: "mespassword"
+    }
 };
 
 export const INITIAL_DATABASE_FORM: DatabaseFormData = {
     engine: "postgres",
     mode: "internal",
-    host: "postgres-master.storage.svc.cluster.local",
+    host: "postgres-postgresql-ha-postgresql.platform-infra.svc.cluster.local",
     port: 5432,
-    database: "mesdb",
-    username: "mesuser",
-    password: "",
+    database: "mes_db",
+    username: "postgres",
+    password: "VnUH22Refo",
     replicas: 1,
     poolSize: 20,
     restartWorkload: true

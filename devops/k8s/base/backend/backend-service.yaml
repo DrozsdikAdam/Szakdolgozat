@@ -2,11 +2,13 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mes-backend
+  namespace: app-mes
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app: mes-backend
   ports:
     - port: 8080
       targetPort: 8080
       name: http
+

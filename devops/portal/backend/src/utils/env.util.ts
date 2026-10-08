@@ -20,21 +20,30 @@ export function getPlatformEnvPath(): string | null {
 }
 
 export function updatePlatformEnvFile(updates: Record<string, string>): void {
-    const envPath = getPlatformEnvPath();
-    if (!envPath) return;
+    const primaryEnvPath = getPlatformEnvPath();
+    const envPaths = [
+        primaryEnvPath,
+        primaryEnvPath ? path.resolve(path.dirname(primaryEnvPath), "../.env") : null,
+        path.resolve(__dirname, "../../../../../.env")
+    ].filter(Boolean) as string[];
 
-    try {
-        let content = fs.existsSync(envPath) ? fs.readFileSync(envPath, "utf-8") : "";
-        for (const [key, value] of Object.entries(updates)) {
-            const regex = new RegExp(`^${key}=.*$`, "m");
-            if (regex.test(content)) {
-                content = content.replace(regex, `${key}=${value}`);
-            } else {
-                content += (content.endsWith("\n") || content.length === 0 ? "" : "\n") + `${key}=${value}\n`;
+    const uniquePaths = Array.from(new Set(envPaths));
+
+    for (const envPath of uniquePaths) {
+        if (!fs.existsSync(envPath)) continue;
+        try {
+            let content = fs.readFileSync(envPath, "utf-8");
+            for (const [key, value] of Object.entries(updates)) {
+                const regex = new RegExp(`^${key}=.*$`, "m");
+                if (regex.test(content)) {
+                    content = content.replace(regex, `${key}=${value}`);
+                } else {
+                    content += (content.endsWith("\n") || content.length === 0 ? "" : "\n") + `${key}=${value}\n`;
+                }
             }
+            fs.writeFileSync(envPath, content, "utf-8");
+        } catch (err) {
+            console.warn(`[EnvUtil] Nem sikerült frissíteni az env fájlt (${envPath}):`, (err as any)?.message || err);
         }
-        fs.writeFileSync(envPath, content, "utf-8");
-    } catch (err) {
-        console.warn(`[EnvUtil] Nem sikerült frissíteni a platform.env fájlt (${envPath}):`, (err as any)?.message || err);
     }
 }

@@ -20,8 +20,8 @@ export function createMssqlDeploymentManifest(namespace: string): k8s.V1Deployme
                             { name: 'DB_NAME', value: 'mesdb' }
                         ],
                         resources: {
-                            requests: { memory: '512Mi', cpu: '250m' },
-                            limits: { memory: '1024Mi', cpu: '1000m' }
+                            requests: { memory: '1536Mi', cpu: '500m' },
+                            limits: { memory: '2560Mi', cpu: '2000m' }
                         }
                     }]
                 }

@@ -5,7 +5,7 @@ import { AuditService } from "./audit.service.js";
 import { DatabaseMapper } from "../mappers/database.mapper.js";
 import { SystemConfig } from "../models/SystemConfig.js";
 import { updatePlatformEnvFile } from "../utils/env.util.js";
-import { DATABASE_LIMITS, DATABASE_DEFAULTS, FALLBACK_DATABASE_OVERVIEW } from "../constants/database.constants.js";
+import { DATABASE_LIMITS, DATABASE_DEFAULTS, FALLBACK_DATABASE_OVERVIEW, DEFAULT_INTERNAL_CREDENTIALS, DEFAULT_INTERNAL_HOSTS, DEFAULT_DB_PORTS } from "../constants/database.constants.js";
 import type {
     DatabaseOverviewDto,
     ScaleDatabaseDto,
@@ -199,6 +199,15 @@ export class DatabaseService {
             throw new Error("Hiányzó kötelező adatbázis konfigurációs paraméterek.");
         }
 
+        const defaults = DEFAULT_INTERNAL_CREDENTIALS[dto.engine];
+        if (dto.mode === 'internal' && defaults) {
+            dto.host = DEFAULT_INTERNAL_HOSTS[dto.engine];
+            dto.database = defaults.database;
+            dto.username = defaults.username;
+            dto.password = defaults.password;
+            dto.port = DEFAULT_DB_PORTS[dto.engine];
+        }
+
         try {
             await Promise.all([
                 SystemConfig.upsert({ key: 'db_engine', value: dto.engine }),
@@ -222,7 +231,7 @@ export class DatabaseService {
             if (dto.restartWorkload) {
                 await this.k8sService.restartWorkload(
                     DATABASE_DEFAULTS.APP_NAMESPACE,
-                    [DATABASE_DEFAULTS.BACKEND_DEPLOYMENT]
+                    [DATABASE_DEFAULTS.BACKEND_DEPLOYMENT, 'mes-backend-canary', 'mes-backend-bluegreen']
                 ).catch(() => { });
             }
 

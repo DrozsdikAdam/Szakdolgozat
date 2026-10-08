@@ -10,13 +10,12 @@ spec:
     - Ingress
     - Egress
   ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: ingress-nginx
-      ports:
-        - port: 80
+    - ports:
+        - port: 8080
           protocol: TCP
+        - port: 3005
+          protocol: TCP
+
   egress:
     - to:
         - namespaceSelector:
