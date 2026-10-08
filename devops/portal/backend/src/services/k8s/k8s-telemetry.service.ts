@@ -15,13 +15,7 @@ import type {
     RiskLevel,
     NodeStatus
 } from "../../dtos/telemetry.dto.js";
-
-interface WorkloadBaseline {
-    cpuBase: number;
-    cpuLimit: number;
-    memBase: number;
-    memLimit: number;
-}
+import type { WorkloadBaseline } from "../../types/k8s.types.js";
 
 const WORKLOAD_BASELINES: Record<string, WorkloadBaseline> = {
     haproxy: { cpuBase: 25, cpuLimit: 300, memBase: 64, memLimit: 256 },

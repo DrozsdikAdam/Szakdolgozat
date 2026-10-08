@@ -7,3 +7,9 @@ export type FeatureFlagName = 'rate_limiting'
     | 'vpa_scaling';
 
 export type InactivationStrategy = 'hot_standby' | 'scale_to_zero';
+
+export interface FeatureWorkloadTarget {
+    type: 'deployment' | 'cronjob';
+    name: string;
+    namespace: string;
+}

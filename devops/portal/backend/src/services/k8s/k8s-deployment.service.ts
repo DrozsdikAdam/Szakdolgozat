@@ -1,12 +1,13 @@
 import { K8sClientService } from "./k8s-client.service.js";
 import {
     DEFAULT_GITOPS_REPO,
-    DEFAULT_WORKLOAD_METADATA,
-    type WorkloadMetadata
+    DEFAULT_WORKLOAD_METADATA
 } from "../../constants/k8s-deployment.constants.js";
+import type { WorkloadMetadata } from "../../types/k8s.types.js";
 import type {
     GitRepoConfig,
-    DeploymentStrategy
+    DeploymentStrategy,
+    DeploymentRevision
 } from "../../types/deployment.dto.js";
 import type { DeploymentsOverviewDto, RollbackDeploymentDto, UpdateDeploymentStrategyDto, WorkloadDeploymentDto } from "../../dtos/deployment.dto.js";
 
@@ -101,7 +102,7 @@ export class K8sDeploymentService {
             }
         });
 
-        const activeRev = meta.history.find(h => h.status === "active");
+        const activeRev = meta.history.find((h: DeploymentRevision) => h.status === "active");
         const currentImage = activeRev?.imageTag || `${dto.deploymentName}:latest`;
 
         return this.toWorkloadDto(dto.deploymentName, dto.namespace, currentImage, meta);
@@ -115,12 +116,12 @@ export class K8sDeploymentService {
             throw new Error(`Nem található deployment metaadat a(z) '${dto.deploymentName}' workloadhoz.`);
         }
 
-        const targetRev = meta.history.find(h => h.revision === dto.targetRevision);
+        const targetRev = meta.history.find((h: DeploymentRevision) => h.revision === dto.targetRevision);
         if (!targetRev) {
             throw new Error(`Nem található a(z) ${dto.targetRevision}. revízió az előzményekben.`);
         }
 
-        meta.history.forEach(h => {
+        meta.history.forEach((h: DeploymentRevision) => {
             h.status = h.revision === dto.targetRevision ? "active" : "superseded";
         });
 
@@ -230,7 +231,7 @@ export class K8sDeploymentService {
             if (!ns || !name) continue;
 
             if (targetNamespaces.includes(ns)) {
-                const activeRev = meta.history.find(h => h.status === "active") || meta.history[0];
+                const activeRev = meta.history.find((h: DeploymentRevision) => h.status === "active") || meta.history[0];
                 const currentImage = activeRev?.imageTag || `${name}:latest`;
 
                 workloads.push(

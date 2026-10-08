@@ -5,16 +5,10 @@ import type { PlatformStatusResponse } from "../dtos/status.dto.js";
 import { BackupRecord } from "../models/BackupRecords.js";
 import { FeatureFlag } from "../models/FeatureFlag.js";
 import { SystemConfig } from "../models/SystemConfig.js";
-import type { FeatureFlagName, InactivationStrategy } from "../types/feature.types.js";
+import type { FeatureFlagName, InactivationStrategy, FeatureWorkloadTarget } from "../types/feature.types.js";
 import type { DatabaseEngine, DatabaseMode, GitProvider, InstanceSize, S3Provider } from "../types/setup.types.js";
 import { AuditService } from "./audit.service.js";
 import { K8sService } from "./k8s.service.js";
-
-interface FeatureWorkloadTarget {
-    type: 'deployment' | 'cronjob';
-    name: string;
-    namespace: string;
-}
 
 const FEATURE_WORKLOAD_MAP: Partial<Record<FeatureFlagName, FeatureWorkloadTarget>> = {
     pgbouncer: { type: 'deployment', name: 'pgbouncer', namespace: 'platform-infra' },

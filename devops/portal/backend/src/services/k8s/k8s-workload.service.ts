@@ -370,7 +370,24 @@ export class K8sWorkloadService {
                 console.log('[K8sWorkloadService] Oracle Database Free 23c deployment és service sikeresen alkalmazva a platform-infra névtérben.');
                 return { success: true, message: 'Oracle Database Free 23c provisioning sikeres a platform-infra névtérben' };
             } else {
-                console.log('[K8sWorkloadService] PostgreSQL Patroni HA klaszter aktív az app-mes/storage névtérben.');
+                try {
+                    const sts = await this.client.appsApi.readNamespacedStatefulSet({
+                        name: 'postgres-postgresql-ha-postgresql',
+                        namespace: 'platform-infra'
+                    });
+                    if (sts.spec && (sts.spec.replicas ?? 0) < 1) {
+                        sts.spec.replicas = 1;
+                        await this.client.appsApi.replaceNamespacedStatefulSet({
+                            name: 'postgres-postgresql-ha-postgresql',
+                            namespace: 'platform-infra',
+                            body: sts
+                        });
+                        console.log('[K8sWorkloadService] PostgreSQL StatefulSet replikaszám beállítva (1).');
+                    }
+                } catch (err) {
+                    console.warn('[K8sWorkloadService] PostgreSQL StatefulSet állapot lekérdezési figyelmeztetés:', (err as any)?.message || err);
+                }
+                console.log('[K8sWorkloadService] PostgreSQL Patroni HA klaszter aktív a platform-infra névtérben.');
                 return { success: true, message: 'PostgreSQL Patroni HA klaszter aktív a fürtben' };
             }
         } catch (error) {

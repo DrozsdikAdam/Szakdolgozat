@@ -1,19 +1,6 @@
-import type {
-    GitRepoConfig,
-    DeploymentStrategy,
-    GitOpsSyncStatus,
-    GitOpsHealthStatus,
-    DeploymentRevision
-} from "../types/deployment.dto.js";
-
-export interface WorkloadMetadata {
-    strategy: DeploymentStrategy;
-    canaryWeight: number;
-    blueGreenActive: 'blue' | 'green';
-    syncStatus: GitOpsSyncStatus;
-    healthStatus: GitOpsHealthStatus;
-    history: DeploymentRevision[];
-}
+import type { GitRepoConfig } from "../types/deployment.dto.js";
+import type { WorkloadMetadata } from "../types/k8s.types.js";
+export type { WorkloadMetadata };
 
 export const DEFAULT_GITOPS_REPO: GitRepoConfig = {
     repoUrl: "https://github.com/DrozsdikAdam/Szakdolgozat-GitOps.git",

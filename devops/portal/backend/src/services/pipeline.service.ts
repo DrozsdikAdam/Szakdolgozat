@@ -90,7 +90,6 @@ export class PipelineService {
         const timestamp = new Date().toISOString();
         const decisionText = request.decision === "approved" ? "jovahagyva" : "elutasitva";
 
-        // Szimulalt azonosito eseten nincs szukseg GitHub hivasra (Early Return)
         if (request.runId.startsWith("run-")) {
             return {
                 success: true,

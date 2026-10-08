@@ -68,7 +68,7 @@ export class DatabaseMapper {
                 return `jdbc:oracle:thin:@${host}:${port}/${database}`;
             case 'postgres':
             default:
-                return `jdbc:postgresql://${host}:${port}/${database}`;
+                return `jdbc:postgresql://${host}:${port}/${database}?stringtype=unspecified`;
         }
     }
 

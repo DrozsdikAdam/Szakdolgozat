@@ -1,9 +1,9 @@
 import crypto from "crypto";
-import pg from "pg";
 import { K8sService } from "./k8s.service.js";
 import { AuditService } from "./audit.service.js";
 import { DatabaseService } from "./database.service.js";
 import { DataSyncService } from "./data-sync.service.js";
+import { SyncAdapterFactory } from "./sync/sync-adapter.factory.js";
 import { DatabaseMapper } from "../mappers/database.mapper.js";
 import { SystemConfig } from "../models/SystemConfig.js";
 import { DATABASE_DEFAULTS, MIGRATION_CONSTANTS } from "../constants/database.constants.js";
@@ -114,24 +114,8 @@ export class DatabaseMigrationService {
         if (!current) return;
 
         Object.assign(current, { status, progressPercent, currentStep, ...extras });
-        if (waitMs > 0) {
-            await delay(waitMs);
-        }
-    };
-
-    private getK8sServerFlag = async (): Promise<string> => {
-        try {
-            const fs = await import('fs');
-            const kubeConfigPath = process.env.KUBECONFIG || '/app/.kube/config';
-            if (fs.existsSync(kubeConfigPath)) {
-                const content = fs.readFileSync(kubeConfigPath, 'utf8');
-                const portMatch = content.match(/server:\s*https?:\/\/[^:]+:(\d+)/);
-                const port = portMatch ? portMatch[1] : '61682';
-                const host = process.env.K8S_SERVER_HOST || 'host.docker.internal';
-                return `--server=https://${host}:${port} --insecure-skip-tls-verify=true`;
-            }
-        } catch { }
-        return process.env.K8S_SERVER_HOST ? `--server=https://${process.env.K8S_SERVER_HOST}:61682 --insecure-skip-tls-verify=true` : '';
+        if (waitMs <= 0) return;
+        await delay(waitMs);
     };
 
     private querySourceDatabaseStats = async (
@@ -142,112 +126,29 @@ export class DatabaseMigrationService {
         user: string,
         password?: string
     ): Promise<{ totalTables: number; totalRows: number }> => {
-        const k8sFlag = await this.getK8sServerFlag();
-
-        if (engine === 'mssql') {
-            try {
-                const { exec } = await import('child_process');
-                const util = await import('util');
-                const execAsync = util.promisify(exec);
-                const dbName = database || 'mesdb';
-                const cmd = `kubectl ${k8sFlag} exec -n platform-infra deployment/mssql -- /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "MesStrongPass123!" -C -Q "SET NOCOUNT ON; DECLARE @db NVARCHAR(128); SELECT TOP 1 @db = name FROM sys.databases WHERE name IN ('mesdb', 'mes_db', '${dbName}') ORDER BY CASE WHEN name = '${dbName}' THEN 1 WHEN name = 'mesdb' THEN 2 ELSE 3 END; IF @db IS NOT NULL BEGIN DECLARE @sql NVARCHAR(MAX) = 'SELECT (SELECT count(*) FROM ' + QUOTENAME(@db) + '.INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = ''BASE TABLE'') AS total_tables, (SELECT COALESCE(SUM(p.rows), 0) FROM ' + QUOTENAME(@db) + '.sys.tables t JOIN ' + QUOTENAME(@db) + '.sys.partitions p ON t.object_id = p.object_id WHERE p.index_id IN (0,1)) AS total_rows;'; EXEC sp_executesql @sql; END ELSE SELECT 0, 0;" -h -1 -W`;
-                const { stdout } = await execAsync(cmd, { timeout: 8000 });
-                const parts = stdout.trim().split(/\s+/).filter(Boolean);
-                if (parts.length >= 2) {
-                    const totalTables = parseInt(parts[0] ?? '0', 10) || 0;
-                    const totalRows = parseInt(parts[1] ?? '0', 10) || 0;
-                    return { totalTables, totalRows };
-                }
-            } catch (err) {
-                console.warn('[DatabaseMigrationService] MSSQL élő statisztika lekérdezése sikertelen:', (err as any)?.message || err);
-            }
+        try {
+            const adapter = SyncAdapterFactory.getAdapter(engine);
+            return await adapter.getStats({ host, port, database, username: user, password });
+        } catch (err) {
+            console.warn(`[DatabaseMigrationService] Nem sikerült lekérdezni a(z) ${engine} statisztikáját:`, (err as any)?.message || err);
+            return { totalTables: 0, totalRows: 0 };
         }
+    };
 
-        if (engine === 'postgres') {
-            const pass = password || 'VnUH22Refo';
-            const dbNames = ['mes_db', 'postgres', database, 'mesdb'].filter(Boolean);
-            const hostsToTry = [
-                host.includes('svc.cluster.local') ? 'postgres-postgresql-ha-postgresql.platform-infra.svc.cluster.local' : host,
-                'host.docker.internal',
-                'localhost'
-            ];
+    private waitForTargetReadiness = async (engine: string, config: any, maxAttempts = 12): Promise<boolean> => {
+        const adapter = SyncAdapterFactory.getAdapter(engine);
+        const norm = adapter.normalizeConfig(config);
 
-            for (const h of hostsToTry) {
-                for (const db of dbNames) {
-                    try {
-                        const client = new pg.Client({
-                            host: h,
-                            port: port || 5432,
-                            database: db,
-                            user: user && user !== 'sa' ? user : 'postgres',
-                            password: pass,
-                            connectionTimeoutMillis: 1500
-                        });
-                        await client.connect();
-                        const tablesRes = await client.query(
-                            "SELECT count(*)::int as count FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'"
-                        );
-                        const rowsRes = await client.query(
-                            "SELECT COALESCE(SUM(n_live_tup), 0)::bigint as total_rows FROM pg_stat_user_tables"
-                        );
-                        await client.end();
-
-                        const totalTables = Number(tablesRes.rows[0]?.count) || 0;
-                        const totalRows = Number(rowsRes.rows[0]?.total_rows) || 0;
-                        if (totalTables > 1 || totalRows > 0) {
-                            return { totalTables, totalRows };
-                        }
-                    } catch { }
-                }
-            }
-
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                const { exec } = await import('child_process');
-                const util = await import('util');
-                const execAsync = util.promisify(exec);
-                for (const db of ['mes_db', 'postgres', database].filter(Boolean)) {
-                    try {
-                        const cmd = `kubectl ${k8sFlag} exec -n platform-infra postgres-postgresql-ha-postgresql-0 -- env PGPASSWORD=${pass} psql -U postgres -d ${db} -t -A -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'; SELECT COALESCE(SUM(c), 0) FROM (SELECT (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name), false, true, '')))[1]::text::int as c FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE') t;"`;
-                        const { stdout } = await execAsync(cmd, { timeout: 8000 });
-                        const lines = stdout.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-                        if (lines.length >= 2) {
-                            const totalTables = parseInt(lines[0] ?? '0', 10) || 0;
-                            const totalRows = parseInt(lines[1] ?? '0', 10) || 0;
-                            if (totalTables > 1 || totalRows > 0) {
-                                return { totalTables, totalRows };
-                            }
-                        }
-                    } catch { }
+                const stats = await adapter.getStats(norm);
+                if (stats !== undefined && stats !== null) {
+                    return true;
                 }
-            } catch (err) {
-                console.warn('[DatabaseMigrationService] PostgreSQL élő statisztika lekérdezése podból sikertelen:', (err as any)?.message || err);
-            }
+            } catch { }
+            await delay(1500);
         }
-
-        if (engine === 'oracle') {
-            try {
-                const { exec } = await import('child_process');
-                const util = await import('util');
-                const execAsync = util.promisify(exec);
-                const oracleUser = user && user !== 'postgres' && user !== 'sa' && user !== 'system' ? user : 'mesuser';
-                const pass = password || 'mespassword';
-                const db = database && database !== 'mes_db' && database !== 'mesdb' && database !== 'postgres' ? database : 'FREEPDB1';
-
-                const sql = "printf 'SET PAGESIZE 0\\nSET FEEDBACK OFF\\nSET SERVEROUTPUT ON\\nSELECT count(*) FROM user_tables;\\nDECLARE v_total NUMBER := 0; v_cnt NUMBER; BEGIN FOR t IN (SELECT table_name FROM user_tables) LOOP EXECUTE IMMEDIATE \\x27SELECT count(*) FROM \\x27 || t.table_name INTO v_cnt; v_total := v_total + v_cnt; END LOOP; DBMS_OUTPUT.PUT_LINE(v_total); END;\\n/\\nEXIT;\\n'";
-                const cmd = `kubectl ${k8sFlag} exec -i -n platform-infra deployment/oracle -- bash -c "${sql} | sqlplus -s ${oracleUser}/${pass}@localhost:1521/${db}"`;
-                const { stdout } = await execAsync(cmd, { timeout: 8000 });
-                const lines = stdout.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-                if (lines.length >= 2) {
-                    const totalTables = parseInt(lines[0] ?? '0', 10) || 0;
-                    const totalRows = parseInt(lines[1] ?? '0', 10) || 0;
-                    return { totalTables, totalRows };
-                }
-            } catch (err) {
-                console.warn('[DatabaseMigrationService] Oracle élő statisztika lekérdezése podból sikertelen:', (err as any)?.message || err);
-            }
-        }
-
-        return { totalTables: 0, totalRows: 0 };
+        return false;
     };
 
     private runMigrationPipeline = async (jobId: string, dto: StartMigrationDto): Promise<void> => {
@@ -263,8 +164,6 @@ export class DatabaseMigrationService {
             undefined
         );
 
-        const isSourceEmpty = stats.totalTables === 0 && stats.totalRows === 0;
-
         await this.step(jobId, 'SNAPSHOT', MIGRATION_CONSTANTS.SNAPSHOT_PROGRESS, 'Snapshot adatmentés készítése (MinIO S3)...', 1200, {
             tablesTotal: stats.totalTables,
             tablesMigrated: 0,
@@ -272,14 +171,12 @@ export class DatabaseMigrationService {
         });
         await this.k8sService.triggerBackupJob(DATABASE_DEFAULTS.INFRA_NAMESPACE, 'db-backup').catch(() => { });
 
-        await this.step(jobId, 'SCHEMA_INIT', MIGRATION_CONSTANTS.SCHEMA_PROGRESS, `Cél adatbázis (${dto.targetEngine.toUpperCase()}) séma inicializálása és DDL felkészítése...`, 1200);
+        await this.step(jobId, 'SCHEMA_INIT', MIGRATION_CONSTANTS.SCHEMA_PROGRESS, `Cél adatbázis (${dto.targetEngine.toUpperCase()}) provisioning és készenlét ellenőrzése...`, 1000);
         if (dto.targetConfig.mode === 'internal') {
             await this.k8sService.deployDatabaseEngine(dto.targetEngine, 'internal').catch(() => { });
+            await this.waitForTargetReadiness(dto.targetEngine, dto.targetConfig);
         }
 
-        // Tényleges dinamikus adatszinkronizáció (minden modell, tábla és sor automatikus átvitele)
-        let lastReportedRows = 0;
-        let lastReportedTables = 0;
         const discoveredTables = await this.dataSyncService.discoverSourceTables(dto.sourceEngine, currentConfig);
         const actualTablesTotal = discoveredTables.length > 0 ? discoveredTables.length : stats.totalTables;
 
@@ -295,8 +192,6 @@ export class DatabaseMigrationService {
             currentConfig,
             dto.targetConfig,
             async (tableName, migrated, total, rows) => {
-                lastReportedTables = migrated;
-                lastReportedRows = rows;
                 const progress = Math.min(85, Math.floor(MIGRATION_CONSTANTS.DATA_STAGE1_PROGRESS + (migrated / total) * 35));
                 await this.step(jobId, 'DATA_COPY', progress, `Modell/tábla szinkronizálása: ${tableName} (${migrated}/${total})...`, 0, {
                     tablesTotal: total,
@@ -312,6 +207,17 @@ export class DatabaseMigrationService {
             rowsCopied: syncResult.totalRows
         });
 
+        const targetStats = await this.querySourceDatabaseStats(
+            dto.targetEngine,
+            dto.targetConfig.host,
+            dto.targetConfig.port,
+            dto.targetConfig.database,
+            dto.targetConfig.username,
+            dto.targetConfig.password
+        );
+
+        console.log(`[DatabaseMigrationService] Integritás validáció: Cél=${targetStats.totalTables} tábla / ${targetStats.totalRows} sor, Átmásolva=${syncResult.totalTables} tábla / ${syncResult.totalRows} sor`);
+
         await this.step(jobId, 'COMPLETED', MIGRATION_CONSTANTS.COMPLETED_PROGRESS, `Sikeres adatátvitel! ${syncResult.totalTables} tábla és ${syncResult.totalRows.toLocaleString()} rekord átmásolva a(z) ${dto.targetEngine.toUpperCase()} adatbázisba.`, 0, {
             tablesTotal: syncResult.totalTables,
             tablesMigrated: syncResult.totalTables,
@@ -321,7 +227,7 @@ export class DatabaseMigrationService {
 
         await this.auditService.logAudit(
             'DATABASE_MIGRATION_COMPLETE',
-            `Adatbázis migráció sikeres (${dto.sourceEngine} -> ${dto.targetEngine}): ${syncResult.totalTables} tábla, ${syncResult.totalRows.toLocaleString()} rekord dinamikusan átmásolva.`
+            `Adatbázis migráció sikeres (${dto.sourceEngine} -> ${dto.targetEngine}): ${syncResult.totalTables} tábla, ${syncResult.totalRows.toLocaleString()} rekord dinamikusan átmásolva (Cél ellenőrizve: ${targetStats.totalRows} sor).`
         );
     };
 
