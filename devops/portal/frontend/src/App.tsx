@@ -13,7 +13,6 @@ import { FlagsTab } from './view/FlagsTab'
 import { AuditTab } from './view/AuditTab'
 import { BackupTab } from './view/BackupTab'
 import { TrafficTab } from './view/TrafficTab'
-import { AutoscalingTab } from './view/AutoscalingTab'
 import { SetupTab } from './view/SetupTab'
 import { ConfigTab } from './view/ConfigTab'
 import { HealthcheckTab } from './view/HealthcheckTab'
@@ -153,7 +152,7 @@ function App() {
               <Route path="/audit" element={<AuditTab />} />
               <Route path="/backup" element={<BackupTab />} />
               <Route path="/traffic" element={<TrafficTab />} />
-              <Route path="/autoscaling" element={<AutoscalingTab />} />
+              <Route path="/autoscaling" element={<TrafficTab initialTab="hpa" />} />
               <Route
                 path="/setup"
                 element={

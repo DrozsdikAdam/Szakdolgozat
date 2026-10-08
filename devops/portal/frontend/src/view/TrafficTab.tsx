@@ -1,77 +1,55 @@
-import { useEffect, useState } from "react"
-import { K8sApi } from "../client/api/k8s"
+import { useTraffic } from "../hooks/useTraffic"
+import type { TrafficSubTab, TrafficTabProps } from "../types/traffic"
+import { TRAFFIC_TAB_OPTIONS } from "../constants/traffic"
 import { TrafficStats } from "../components/dashboard/traffic/Stats"
 import { RateLimitCard } from "../components/dashboard/traffic/RateLimitCard"
+import { AutoscalingStats } from "../components/dashboard/autoscaling/Stats"
+import { HpaCard } from "../components/dashboard/autoscaling/HpaCard"
+import { VpaCard } from "../components/dashboard/autoscaling/VpaCard"
 import { Button } from "../components/common/Button"
-import { Activity, AlertCircle, CheckCircle2, RefreshCw, X } from "lucide-react"
-import type { UpdateRateLimitDto } from "../types/k8s"
+import { SegmentedControl } from "../components/common/SegmentedControl"
+import { Activity, AlertCircle, CheckCircle2, RefreshCw } from "lucide-react"
 
-export const TrafficTab = () => {
-    const [currentRps, setCurrentRps] = useState<number>(100)
-    const [selectRps, setSelectRps] = useState<number>(100)
-    const [currentBurst, setCurrentBurst] = useState<number>(5)
-    const [selectBurst, setSelectBurst] = useState<number>(5)
-    const [isLoading, setIsLoading] = useState<boolean>(false)
-    const [isSaving, setIsSaving] = useState<boolean>(false)
-    const [feedbackMessage, setFeedBackMessage] = useState<{ message: string, status: "error" | "success" } | null>(null)
-    const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
-
-    const fetchRateLimit = async () => {
-        try {
-            setIsLoading(true)
-            const rateLimitConfig = await new K8sApi().getRateLimit()
-            setCurrentRps(rateLimitConfig.rps)
-            setSelectRps(rateLimitConfig.rps)
-            setCurrentBurst(rateLimitConfig.burst ?? 5)
-            setSelectBurst(rateLimitConfig.burst ?? 5)
-            setLastUpdate(new Date())
-        } catch (error) {
-            setFeedBackMessage({
-                message: "Hiba a forgalomkorlát lekérdezése során!",
-                status: "error"
-            })
-            setTimeout(() => {
-                setFeedBackMessage(null)
-            }, 4000)
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
-    const handleSaveRateLimit = async () => {
-        try {
-            setIsSaving(true)
-            const request: UpdateRateLimitDto = {
-                rps: selectRps,
-                burst: selectBurst
-            }
-            await new K8sApi().updateRateLimit(request)
-            setCurrentRps(selectRps)
-            setCurrentBurst(selectBurst)
-            setLastUpdate(new Date())
-            setFeedBackMessage({
-                message: `A kéréskorlát sikeresen frissítve az Ingress rétegen: ${selectRps} RPS (Puffer: ${selectBurst}x)`,
-                status: "success"
-            })
-            setTimeout(() => {
-                setFeedBackMessage(null)
-            }, 4000)
-        } catch (error) {
-            setFeedBackMessage({
-                message: "Hiba történt a beállítás mentése során!",
-                status: "error"
-            })
-            setTimeout(() => {
-                setFeedBackMessage(null)
-            }, 4000)
-        } finally {
-            setIsSaving(false)
-        }
-    }
-
-    useEffect(() => {
-        fetchRateLimit()
-    }, [])
+export const TrafficTab = ({ initialTab = "ingress" }: TrafficTabProps) => {
+    const {
+        activeTab,
+        handleTabChange,
+        currentRps,
+        selectRps,
+        setSelectRps,
+        currentBurst,
+        selectBurst,
+        setSelectBurst,
+        isSavingRateLimit,
+        saveRateLimit,
+        currentHpa,
+        selectMinReplicas,
+        setSelectMinReplicas,
+        selectMaxReplicas,
+        setSelectMaxReplicas,
+        selectTargetCpu,
+        setSelectTargetCpu,
+        isSavingHpa,
+        saveHpa,
+        currentVpa,
+        selectMode,
+        setSelectMode,
+        selectMinCpu,
+        setSelectMinCpu,
+        selectMaxCpu,
+        setSelectMaxCpu,
+        selectMinMemory,
+        setSelectMinMemory,
+        selectMaxMemory,
+        setSelectMaxMemory,
+        isSavingVpa,
+        saveVpa,
+        isGlobalLoading,
+        toastMessage,
+        setToastMessage,
+        lastUpdate,
+        refreshAll
+    } = useTraffic(initialTab)
 
     return (
         <div className="flex flex-col gap-6">
@@ -79,10 +57,10 @@ export const TrafficTab = () => {
                 <div>
                     <h2 className="text-2xl font-bold text-slate-100 flex items-center gap-2.5">
                         <Activity className="w-6 h-6 text-cud-skyblue" />
-                        Forgalom és Rate Limiting
+                        Forgalom & Skálázás
                     </h2>
                     <p className="text-sm text-slate-400 mt-1">
-                        NGINX Ingress kérés-szabályozás és RPS sávszélesség korlátozás valós időben.
+                        Ingress sebességkorlátozás, horizontális pod-skálázás (HPA) és erőforrás-ajánlások egy felületen.
                         {lastUpdate && (
                             <span className="text-xs text-slate-500 ml-2">
                                 (Utolsó szinkronizáció: {lastUpdate.toLocaleTimeString("hu-HU")})
@@ -92,61 +70,120 @@ export const TrafficTab = () => {
                 </div>
 
                 <div className="flex items-center gap-2.5">
+                    <SegmentedControl<TrafficSubTab>
+                        value={activeTab}
+                        onChange={handleTabChange}
+                        options={TRAFFIC_TAB_OPTIONS}
+                        layout="pill"
+                    />
+
                     <Button
                         variant="secondary"
                         size="sm"
-                        loading={isLoading}
+                        loading={isGlobalLoading}
                         icon={<RefreshCw className="w-4 h-4" />}
-                        onClick={fetchRateLimit}
+                        onClick={refreshAll}
                     >
                         Frissítés
                     </Button>
                 </div>
             </div>
 
-            {feedbackMessage && (
-                <div
-                    className={`p-4 rounded-xl border flex items-center justify-between transition-all ${feedbackMessage.status === "error"
-                        ? "bg-cud-vermillon-bg text-cud-vermillon border-cud-vermillon-border"
-                        : "bg-cud-teal-bg text-cud-teal border-cud-teal-border"
-                        }`}
-                >
-                    <div className="flex items-center gap-2.5 text-sm font-medium">
-                        {feedbackMessage.status === "error" ? (
-                            <AlertCircle className="w-5 h-5 shrink-0" />
-                        ) : (
-                            <CheckCircle2 className="w-5 h-5 shrink-0" />
-                        )}
-                        <span>{feedbackMessage.message}</span>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => setFeedBackMessage(null)}
-                        className="opacity-70 hover:opacity-100 transition-opacity p-1 cursor-pointer"
-                        aria-label="Értesítés bezárása"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
+            {activeTab === "ingress" && (
+                <div className="flex flex-col gap-6">
+                    <TrafficStats
+                        currentRps={currentRps}
+                        burstMultiplier={currentBurst}
+                        ingressName="mes-ingress"
+                        namespace="app-mes"
+                    />
+
+                    <RateLimitCard
+                        currentRps={currentRps}
+                        selectRps={selectRps}
+                        onRpsChange={setSelectRps}
+                        currentBurst={currentBurst}
+                        selectBurst={selectBurst}
+                        onBurstChange={setSelectBurst}
+                        onSave={saveRateLimit}
+                        isLoading={isSavingRateLimit}
+                    />
                 </div>
             )}
 
-            <TrafficStats
-                currentRps={currentRps}
-                ingressName="mes-ingress"
-                namespace="app-mes"
-                burstMultiplier={currentBurst}
-            />
+            {activeTab === "hpa" && (
+                <div className="flex flex-col gap-6">
+                    <AutoscalingStats
+                        strategy="hpa"
+                        hpa={currentHpa}
+                        vpa={currentVpa}
+                        isLoading={isGlobalLoading}
+                    />
 
-            <RateLimitCard
-                currentRps={currentRps}
-                selectRps={selectRps}
-                onRpsChange={setSelectRps}
-                currentBurst={currentBurst}
-                selectBurst={selectBurst}
-                onBurstChange={setSelectBurst}
-                onSave={handleSaveRateLimit}
-                isLoading={isSaving}
-            />
+                    <HpaCard
+                        currentHpa={currentHpa}
+                        selectMinReplicas={selectMinReplicas}
+                        selectMaxReplicas={selectMaxReplicas}
+                        selectTargetCpu={selectTargetCpu}
+                        onMinReplicasChange={setSelectMinReplicas}
+                        onMaxReplicasChange={setSelectMaxReplicas}
+                        onTargetCpuChange={setSelectTargetCpu}
+                        onSave={saveHpa}
+                        isLoading={isSavingHpa}
+                    />
+                </div>
+            )}
+
+            {activeTab === "vpa" && (
+                <div className="flex flex-col gap-6">
+                    <AutoscalingStats
+                        strategy="vpa"
+                        hpa={currentHpa}
+                        vpa={currentVpa}
+                        isLoading={isGlobalLoading}
+                    />
+
+                    <VpaCard
+                        currentVpa={currentVpa}
+                        selectMode={selectMode}
+                        selectMinCpu={selectMinCpu}
+                        selectMaxCpu={selectMaxCpu}
+                        selectMinMemory={selectMinMemory}
+                        selectMaxMemory={selectMaxMemory}
+                        onModeChange={setSelectMode}
+                        onMinCpuChange={setSelectMinCpu}
+                        onMaxCpuChange={setSelectMaxCpu}
+                        onMinMemoryChange={setSelectMinMemory}
+                        onMaxMemoryChange={setSelectMaxMemory}
+                        onSave={saveVpa}
+                        isLoading={isSavingVpa}
+                    />
+                </div>
+            )}
+
+            {toastMessage && (
+                <div
+                    className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl text-sm font-medium animate-in slide-in-from-bottom-3 duration-200 ${toastMessage.type === "success"
+                            ? "bg-emerald-950/90 border-emerald-500/50 text-emerald-200"
+                            : "bg-rose-950/90 border-rose-500/50 text-rose-200"
+                        }`}
+                >
+                    {toastMessage.type === "success" ? (
+                        <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-400" />
+                    ) : (
+                        <AlertCircle className="w-5 h-5 shrink-0 text-rose-400" />
+                    )}
+                    <span>{toastMessage.text}</span>
+                    <button
+                        type="button"
+                        onClick={() => setToastMessage(null)}
+                        className="ml-2 text-xs opacity-60 hover:opacity-100 hover:scale-110 transition-all cursor-pointer p-0.5"
+                        title="Bezárás"
+                    >
+                        ✕
+                    </button>
+                </div>
+            )}
         </div>
     )
 }

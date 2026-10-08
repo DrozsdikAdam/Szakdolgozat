@@ -1,123 +1,58 @@
-import { useState, useEffect, useMemo } from "react"
-import { Activity, Box, RefreshCw, Server } from "lucide-react"
-import { K8sApi } from "../client/api/k8s"
-import type { ClusterOverviewDto, K8sEventDto } from "../types/k8s"
-import type { SegmentedControlOption } from "../types/component/common/segmentedControlProps"
+import { useClusterOverview } from "../hooks/useClusterOverview"
+import type { ClusterOverviewTabProps, ClusterViewMode } from "../types/cluster"
+import type { PodSourceFilter } from "../types/cluster"
+import { LOG_TAIL_OPTIONS } from "../constants/cluster"
 import { Button } from "../components/common/Button"
 import { SearchInput } from "../components/common/SearchInput"
 import { SegmentedControl } from "../components/common/SegmentedControl"
+import { Select } from "../components/common/Select"
 import { ClusterStats } from "../components/dashboard/cluster/ClusterStats"
 import { PodTable } from "../components/dashboard/cluster/PodTable"
 import { PodLogModal } from "../components/dashboard/cluster/PodLogModal"
 import { ClusterEventsTable } from "../components/dashboard/cluster/ClusterEventsTable"
-import type { PodTableItem } from "../types/component/cluster/podTableProps"
-
-interface ClusterOverviewTabProps {
-    initialView?: "pods" | "events"
-}
+import { TerminalViewer } from "../components/dashboard/cluster/TerminalViewer"
+import { RefreshCw, Server, Copy, Check } from "lucide-react"
 
 export const ClusterOverviewTab = ({ initialView = "pods" }: ClusterOverviewTabProps) => {
-    const [viewMode, setViewMode] = useState<"pods" | "events">(initialView)
-    const [data, setData] = useState<ClusterOverviewDto | null>(null)
-    const [loading, setLoading] = useState<boolean>(true)
-    const [search, setSearch] = useState<string>("")
-    const [activeTab, setActiveTab] = useState<"all" | "app" | "platform">("all")
-
-    const [events, setEvents] = useState<K8sEventDto[]>([])
-    const [eventsLoading, setEventsLoading] = useState<boolean>(false)
-    const [eventsSearch, setEventsSearch] = useState<string>("")
-
-    const [selectedLogPod, setSelectedLogPod] = useState<PodTableItem | null>(null)
-
-    const k8sApi = useMemo(() => new K8sApi(), [])
-
-    const loadClusterData = () => {
-        setLoading(true)
-        k8sApi
-            .getOverview()
-            .then((res) => {
-                setData(res)
-            })
-            .catch((err) => {
-                console.warn("Nem sikerült lekérni a klaszter adatokat:", err)
-            })
-            .finally(() => {
-                setLoading(false)
-            })
-    }
-
-    const loadEventsData = () => {
-        setEventsLoading(true)
-        k8sApi
-            .getEvents()
-            .then((res) => {
-                setEvents(res || [])
-            })
-            .catch((err) => {
-                console.warn("Nem sikerült lekérni a klaszter eseményeket:", err)
-            })
-            .finally(() => {
-                setEventsLoading(false)
-            })
-    }
-
-    useEffect(() => {
-        loadClusterData()
-        loadEventsData()
-    }, [])
-
-    const allPods: PodTableItem[] = useMemo(() => {
-        const apps: PodTableItem[] = (data?.appPods || []).map((p) => ({ ...p, source: "app" }))
-        const platforms: PodTableItem[] = (data?.platformPods || []).map((p) => ({
-            ...p,
-            source: "platform"
-        }))
-        return [...apps, ...platforms]
-    }, [data])
-
-    const filteredPods = useMemo(() => {
-        return allPods.filter((pod) => {
-            const matchesTab =
-                activeTab === "all" ||
-                (activeTab === "app" && pod.source === "app") ||
-                (activeTab === "platform" && pod.source === "platform")
-
-            const matchesSearch = pod.name.toLowerCase().includes(search.toLowerCase())
-
-            return matchesTab && matchesSearch
-        })
-    }, [allPods, activeTab, search])
-
-    const runningCount = useMemo(() => {
-        return allPods.filter((p) => p.status.toLowerCase() === "running").length
-    }, [allPods])
-
-    const totalRestarts = useMemo(() => {
-        return allPods.reduce((sum, p) => sum + (p.restarts || 0), 0)
-    }, [allPods])
-
-    const viewModeOptions: SegmentedControlOption<"pods" | "events">[] = [
-        {
-            id: "pods",
-            label: "Podok",
-            count: allPods.length,
-            icon: <Box className="w-3.5 h-3.5" />,
-            variant: "skyblue"
-        },
-        {
-            id: "events",
-            label: "Klaszter Események",
-            count: events.length,
-            icon: <Activity className="w-3.5 h-3.5" />,
-            variant: "skyblue"
-        }
-    ]
-
-    const podTabOptions: SegmentedControlOption<"all" | "app" | "platform">[] = [
-        { id: "all", label: "Összes", count: allPods.length, variant: "skyblue" },
-        { id: "app", label: "App Podok", count: data?.appPods?.length || 0, variant: "skyblue" },
-        { id: "platform", label: "Platform", count: data?.platformPods?.length || 0, variant: "skyblue" }
-    ]
+    const {
+        viewMode,
+        handleViewModeChange,
+        viewModeOptions,
+        data,
+        loading,
+        search,
+        setSearch,
+        activeTab,
+        setActiveTab,
+        podTabOptions,
+        allPods,
+        filteredPods,
+        runningCount,
+        totalRestarts,
+        events,
+        eventsLoading,
+        eventsSearch,
+        setEventsSearch,
+        loadEventsData,
+        selectedLogPodName,
+        setSelectedLogPodName,
+        podSelectOptions,
+        logLines,
+        logsLoading,
+        logSearch,
+        setLogSearch,
+        logTail,
+        setLogTail,
+        autoScroll,
+        setAutoScroll,
+        copied,
+        handleCopyLogs,
+        fetchLogsForSelected,
+        selectedModalPod,
+        setSelectedModalPod,
+        handleRefresh,
+        isCurrentLoading
+    } = useClusterOverview(initialView)
 
     return (
         <div className="flex flex-col gap-6">
@@ -125,10 +60,10 @@ export const ClusterOverviewTab = ({ initialView = "pods" }: ClusterOverviewTabP
                 <div>
                     <h2 className="text-2xl font-bold text-slate-100 flex items-center gap-2.5">
                         <Server className="w-6 h-6 text-cud-skyblue" />
-                        Klaszter és Pod Áttekintés
+                        Klaszter & Munkamenetek
                     </h2>
                     <p className="text-sm text-slate-400 mt-1">
-                        Kubernetes workloadok, pod állapotok, konténer naplók és életesemények valós időben.
+                        Kubernetes workloadok, pod állapotok, konténer naplók és életesemények valós időben egyetlen felületen.
                         {data?.timestamp && (
                             <span className="text-xs text-slate-500 ml-2">
                                 (Utolsó szinkronizáció: {new Date(data.timestamp).toLocaleTimeString()})
@@ -138,9 +73,9 @@ export const ClusterOverviewTab = ({ initialView = "pods" }: ClusterOverviewTabP
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <SegmentedControl<"pods" | "events">
+                    <SegmentedControl<ClusterViewMode>
                         value={viewMode}
-                        onChange={setViewMode}
+                        onChange={handleViewModeChange}
                         options={viewModeOptions}
                         layout="pill"
                     />
@@ -148,9 +83,9 @@ export const ClusterOverviewTab = ({ initialView = "pods" }: ClusterOverviewTabP
                     <Button
                         variant="secondary"
                         size="sm"
-                        loading={viewMode === "pods" ? loading : eventsLoading}
+                        loading={isCurrentLoading}
                         icon={<RefreshCw className="w-4 h-4" />}
-                        onClick={viewMode === "pods" ? loadClusterData : loadEventsData}
+                        onClick={handleRefresh}
                     >
                         Frissítés
                     </Button>
@@ -173,7 +108,7 @@ export const ClusterOverviewTab = ({ initialView = "pods" }: ClusterOverviewTabP
                             className="w-full sm:w-80"
                         />
 
-                        <SegmentedControl<"all" | "app" | "platform">
+                        <SegmentedControl<PodSourceFilter>
                             value={activeTab}
                             onChange={setActiveTab}
                             options={podTabOptions}
@@ -185,7 +120,7 @@ export const ClusterOverviewTab = ({ initialView = "pods" }: ClusterOverviewTabP
                         pods={filteredPods}
                         loading={loading}
                         searchQuery={search}
-                        onViewLogs={(pod) => setSelectedLogPod(pod)}
+                        onViewLogs={(pod) => setSelectedModalPod(pod)}
                     />
                 </div>
             )}
@@ -200,10 +135,82 @@ export const ClusterOverviewTab = ({ initialView = "pods" }: ClusterOverviewTabP
                 />
             )}
 
-            {selectedLogPod && (
+            {viewMode === "logs" && (
+                <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 flex flex-col gap-4">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                            <div className="w-full sm:w-72">
+                                <Select<string>
+                                    value={selectedLogPodName}
+                                    onChange={setSelectedLogPodName}
+                                    options={podSelectOptions}
+                                    title="Konténer Pod kiválasztása"
+                                />
+                            </div>
+
+                            <div className="w-32">
+                                <Select<number>
+                                    value={logTail}
+                                    onChange={setLogTail}
+                                    options={LOG_TAIL_OPTIONS}
+                                    title="Sorok száma"
+                                />
+                            </div>
+
+                            <div className="w-full sm:w-64 pt-5">
+                                <SearchInput
+                                    value={logSearch}
+                                    onChange={setLogSearch}
+                                    placeholder="Keresés a naplóban..."
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-2 md:pt-4">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setAutoScroll(!autoScroll)}
+                                className={autoScroll ? "text-cud-teal" : "text-slate-400"}
+                            >
+                                Auto-görgetés: {autoScroll ? "BE" : "KI"}
+                            </Button>
+
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                icon={copied ? <Check className="w-3.5 h-3.5 text-cud-teal" /> : <Copy className="w-3.5 h-3.5" />}
+                                onClick={handleCopyLogs}
+                            >
+                                {copied ? "Másolva!" : "Másolás"}
+                            </Button>
+
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                icon={<RefreshCw className="w-3.5 h-3.5" />}
+                                loading={logsLoading}
+                                onClick={fetchLogsForSelected}
+                            >
+                                Újratöltés
+                            </Button>
+                        </div>
+                    </div>
+
+                    <TerminalViewer
+                        lines={logLines}
+                        loading={logsLoading}
+                        searchQuery={logSearch}
+                        autoScroll={autoScroll}
+                        className="h-137.5"
+                    />
+                </div>
+            )}
+
+            {selectedModalPod && (
                 <PodLogModal
-                    pod={selectedLogPod}
-                    onClose={() => setSelectedLogPod(null)}
+                    pod={selectedModalPod}
+                    onClose={() => setSelectedModalPod(null)}
                 />
             )}
         </div>
