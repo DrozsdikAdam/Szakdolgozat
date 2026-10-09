@@ -9,10 +9,8 @@ import { ArrowLeft } from 'lucide-react'
 import { PlatformApi } from './client/api/platform'
 import { K8sApi } from './client/api/k8s'
 import { ClusterOverviewTab } from './view/ClusterOverviewTab'
-import { FlagsTab } from './view/FlagsTab'
 import { TrafficTab } from './view/TrafficTab'
-import { SetupTab } from './view/SetupTab'
-import { ConfigTab } from './view/ConfigTab'
+import { ConfigsTab } from './view/ConfigsTab'
 import { HealthcheckTab } from './view/HealthcheckTab'
 import { DeploymentsTab } from './view/DeploymentsTab'
 import { TelemetryTab } from './view/TelemetryTab'
@@ -146,23 +144,14 @@ function App() {
             <Route element={<ServiceLayout />}>
               <Route path="/cluster" element={<ClusterOverviewTab />} />
               <Route path="/events" element={<ClusterOverviewTab initialView="events" />} />
-              <Route path="/features" element={<FlagsTab onNavigate={handleSelectService} />} />
+              <Route path="/features" element={<ConfigsTab initialTab="features" onNavigate={handleSelectService} />} />
               <Route path="/audit" element={<SecurityTab initialTab="audit" />} />
               <Route path="/backup" element={<DatabaseTab initialTab="backups" />} />
               <Route path="/traffic" element={<TrafficTab />} />
               <Route path="/autoscaling" element={<TrafficTab initialTab="hpa" />} />
-              <Route
-                path="/setup"
-                element={
-                  <SetupTab
-                    onComplete={() => {
-                      handleRefresh()
-                      navigate('/')
-                    }}
-                  />
-                }
-              />
-              <Route path="/configs" element={<ConfigTab />} />
+              <Route path="/setup" element={<ConfigsTab initialTab="wizard" onNavigate={handleSelectService} />} />
+              <Route path="/configs" element={<ConfigsTab initialTab="config" onNavigate={handleSelectService} />} />
+              <Route path="/config" element={<ConfigsTab initialTab="config" onNavigate={handleSelectService} />} />
               <Route path="/health" element={<HealthcheckTab />} />
               <Route path="/deployments" element={<DeploymentsTab />} />
               <Route path="/telemetry" element={<TelemetryTab />} />
