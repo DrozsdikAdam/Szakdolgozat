@@ -10,8 +10,6 @@ import { PlatformApi } from './client/api/platform'
 import { K8sApi } from './client/api/k8s'
 import { ClusterOverviewTab } from './view/ClusterOverviewTab'
 import { FlagsTab } from './view/FlagsTab'
-import { AuditTab } from './view/AuditTab'
-import { BackupTab } from './view/BackupTab'
 import { TrafficTab } from './view/TrafficTab'
 import { SetupTab } from './view/SetupTab'
 import { ConfigTab } from './view/ConfigTab'
@@ -149,8 +147,8 @@ function App() {
               <Route path="/cluster" element={<ClusterOverviewTab />} />
               <Route path="/events" element={<ClusterOverviewTab initialView="events" />} />
               <Route path="/features" element={<FlagsTab onNavigate={handleSelectService} />} />
-              <Route path="/audit" element={<AuditTab />} />
-              <Route path="/backup" element={<BackupTab />} />
+              <Route path="/audit" element={<SecurityTab initialTab="audit" />} />
+              <Route path="/backup" element={<DatabaseTab initialTab="backups" />} />
               <Route path="/traffic" element={<TrafficTab />} />
               <Route path="/autoscaling" element={<TrafficTab initialTab="hpa" />} />
               <Route
