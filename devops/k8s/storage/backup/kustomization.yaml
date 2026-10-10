@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: platform-infra
 
 resources:
+  - staging/backup-staging-pvc.yaml
   - minio-pvc.yaml
   - minio-deployment.yaml
   - minio-service.yaml

@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: mes-backend:v5
+          image: mes-backend:v13
           ports:
             - containerPort: 8080
               name: http

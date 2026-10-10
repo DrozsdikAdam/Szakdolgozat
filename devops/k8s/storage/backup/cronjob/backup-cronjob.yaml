@@ -21,45 +21,44 @@ spec:
             - name: staging-volume
               persistentVolumeClaim:
                 claimName: backup-staging-pvc
-          initContainers:
+          containers:
             - name: postgres-dump
               image: bitnami/postgresql:latest
               env:
                 - name: DB_HOST
                   valueFrom:
                     secretKeyRef:
-                      name: backup-secret
+                      name: backup-secret-6hd2k844bt
                       key: DB_HOST
                 - name: DB_PORT
                   valueFrom:
                     secretKeyRef:
-                      name: backup-secret
+                      name: backup-secret-6hd2k844bt
                       key: DB_PORT
                 - name: DB_USER
                   valueFrom:
                     secretKeyRef:
-                      name: backup-secret
+                      name: backup-secret-6hd2k844bt
                       key: DB_USER
                 - name: DB_PASSWORD
                   valueFrom:
                     secretKeyRef:
-                      name: backup-secret
+                      name: backup-secret-6hd2k844bt
                       key: DB_PASSWORD
                 - name: DB_NAME
                   valueFrom:
                     secretKeyRef:
-                      name: backup-secret
+                      name: backup-secret-6hd2k844bt
                       key: DB_NAME
                 - name: DB_PRIMARY_HOST
                   valueFrom:
                     secretKeyRef:
-                      name: backup-secret
+                      name: backup-secret-6hd2k844bt
                       key: DB_HOST
               volumeMounts:
                 - name: staging-volume
                   mountPath: /staging
               command: ["/bin/sh", "-c"]
-              # stops when error -> creates a timestamp -> compresses the dump -> updates the most recent -> creates a catalog entry -> uploads catalog entry
               args:
                 - >
                   set -e;
@@ -68,42 +67,6 @@ spec:
                   PGPASSWORD=$DB_PASSWORD pg_dump -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME | gzip > /staging/backup_${TIMESTAMP}.sql.gz;
                   cp /staging/backup_${TIMESTAMP}.sql.gz /staging/latest.sql.gz;
                   PGPASSWORD=$DB_PASSWORD psql -h $DB_PRIMARY_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "CREATE TABLE IF NOT EXISTS backup_catalog (id SERIAL PRIMARY KEY, filename TEXT, size_bytes BIGINT, status TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
-                  PGPASSWORD=$DB_PASSWORD psql -h $DB_PRIMARY_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "INSERT INTO backup_catalog (filename, size_bytes, status) VALUES ('backup_${TIMESTAMP}.sql.gz', $(stat -c%s /staging/backup_${TIMESTAMP}.sql.gz), 'STAGED_LOCALLY');";
-                  echo "Backup completed successfully."
-
-          containers:
-            - name: s3-sync
-              image: cgr.dev/chainguard/minio-client:latest
-              env:
-                - name: S3_ENDPOINT
-                  valueFrom:
-                    secretKeyRef:
-                      name: backup-secret
-                      key: S3_ENDPOINT
-                - name: S3_BUCKET
-                  valueFrom:
-                    secretKeyRef:
-                      name: backup-secret
-                      key: S3_BUCKET
-                - name: S3_ACCESS_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: backup-secret
-                      key: S3_ACCESS_KEY
-                - name: S3_SECRET_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: backup-secret
-                      key: S3_SECRET_KEY
-              volumeMounts:
-                - name: staging-volume
-                  mountPath: /staging
-              command: ["/bin/sh", "-c"]
-              # sets up the s3 alias -> syncs the backup to minio
-              args:
-                - >
-                  set -e;
-                  mc alias set remote $S3_ENDPOINT $S3_ACCESS_KEY $S3_SECRET_KEY;
-                  mc mb --ignore-existing remote/$S3_BUCKET;
-                  mc cp /staging/latest.sql.gz remote/$S3_BUCKET/latest.sql.gz && mc mirror --overwrite /staging remote/$S3_BUCKET/archive/;
-                  echo "Backup uploaded successfully."
+                  PGPASSWORD=$DB_PASSWORD psql -h $DB_PRIMARY_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "INSERT INTO backup_catalog (filename, size_bytes, status) VALUES ('backup_${TIMESTAMP}.sql.gz', $(stat -c%s /staging/backup_${TIMESTAMP}.sql.gz), 'COMPLETED');";
+                  echo "Backup completed successfully:";
+                  ls -lh /staging;

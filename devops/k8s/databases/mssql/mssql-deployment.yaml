@@ -26,7 +26,17 @@ spec:
             - name: MSSQL_SA_PASSWORD
               value: "MesStrongPass123!"
             - name: DB_NAME
-              value: "mesdb"
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/bash
+                  - -c
+                  - |
+                    for i in {1..30}; do
+                      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -Q "IF DB_ID('mesdb') IS NULL CREATE DATABASE mesdb;" && break
+                      sleep 2
+                    done
           resources:
             requests:
               memory: "512Mi"

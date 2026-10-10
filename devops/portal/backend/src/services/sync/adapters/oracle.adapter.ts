@@ -90,11 +90,6 @@ export class OracleSyncAdapter extends BaseSyncAdapter {
     }
 
     private formatOracleColumnName(colName: string): string {
-        const lower = colName.toLowerCase();
-        // A foglalt kulcsszavakat explicit kisbetűvel idézőjelezzük, hogy az Oracle SQL parser és a Hibernate is megegyezzen
-        if (lower === 'start' || lower === 'timestamp') {
-            return `"${lower}"`;
-        }
         return `"${colName.toUpperCase()}"`;
     }
 
@@ -130,7 +125,18 @@ export class OracleSyncAdapter extends BaseSyncAdapter {
                 .filter(l => l && !l.startsWith('SQL>') && !l.startsWith('Connected') && !l.startsWith('Disconnected'));
             const jsonText = lines.join('').trim();
             if (!jsonText || jsonText === '[]') return [];
-            return this.normalizeExtractedRows(JSON.parse(jsonText));
+
+            try {
+                return this.normalizeExtractedRows(JSON.parse(jsonText));
+            } catch {
+                const sanitized = jsonText.replace(/[\x00-\x1F\x7F]/g, (ch) => {
+                    if (ch === '\n') return '\\n';
+                    if (ch === '\r') return '\\r';
+                    if (ch === '\t') return '\\t';
+                    return '';
+                });
+                return this.normalizeExtractedRows(JSON.parse(sanitized));
+            }
         } catch (err) {
             console.warn(`[OracleSyncAdapter] Oracle extract hiba a(z) ${tableName} táblánál:`, (err as any)?.message || err);
             return [];

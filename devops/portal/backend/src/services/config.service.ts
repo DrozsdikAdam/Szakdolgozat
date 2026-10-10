@@ -174,7 +174,6 @@ export class ConfigService {
             const dbResult = await this.k8sService.deployDatabaseEngine(engine, request.dbMode);
             await this.auditService.logAudit('SETUP_DATABASE_PROVISION', `Database provisioning (${engine}, ${request.dbMode}): ${dbResult.message}`, dbResult.success ? 'SUCCESS' : 'FAILED');
 
-            // Ha nincs autoscaling, a választott statikus példányméretet (requests & limits) állítjuk be a podra
             const isAutoscalingActive = request.enabledFeatures.includes('hpa_scaling') || request.enabledFeatures.includes('vpa_scaling');
             if (!isAutoscalingActive) {
                 const sizeResult = await this.k8sService.applyInstanceSize(size);
@@ -196,11 +195,9 @@ export class ConfigService {
         if (!target) return;
 
         if (target.type === 'deployment') {
-            // Ha aktív -> 1 pod; ha inaktív és scale_to_zero -> 0 pod; ha hot_standby -> 1 pod marad
             const replicas = enabled ? 1 : (strategy === 'scale_to_zero' ? 0 : 1);
             await this.k8sService.scaleDeployment(target.name, target.namespace, replicas);
         } else if (target.type === 'cronjob') {
-            // CronJob felfüggesztése csak kikapcsolt + scale_to_zero állapotban
             const isSuspended = !enabled && strategy === 'scale_to_zero';
             await this.k8sService.setCronJobSuspended(target.name, target.namespace, isSuspended);
         }
@@ -263,6 +260,11 @@ export class ConfigService {
                 });
             } else if (request.name === 'maintenance_mode') {
                 await this.k8sService.setMaintenanceMode(request.enabled);
+                if (strategy === 'scale_to_zero') {
+                    const targetReplicas = request.enabled ? 0 : 1;
+                    await this.k8sService.scaleDeployment('mes-backend', 'app-mes', targetReplicas).catch(() => { });
+                    await this.k8sService.scaleDeployment('mes-frontend', 'app-mes', targetReplicas).catch(() => { });
+                }
             } else {
                 await this.applyWorkloadStrategy(request.name, request.enabled, strategy);
             }

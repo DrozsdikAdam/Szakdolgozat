@@ -68,7 +68,7 @@ export class DatabaseMapper {
                 return `jdbc:oracle:thin:@${host}:${port}/${database}`;
             case 'postgres':
             default:
-                return `jdbc:postgresql://${host}:${port}/${database}?stringtype=unspecified`;
+                return `jdbc:postgresql://${host}:${port}/${database}?targetServerType=primary&stringtype=unspecified`;
         }
     }
 
@@ -101,11 +101,15 @@ export class DatabaseMapper {
         const driverClassName = this.toDriverClassName(dto.engine);
         const dialect = this.toHibernateDialect(dto.engine);
 
+        const uuidType = (dto.engine === 'oracle' || dto.engine === 'mssql') ? 'CHAR' : 'UUID';
+
         const data: Record<string, string> = {
             SPRING_DATASOURCE_URL: jdbcUrl,
             SPRING_DATASOURCE_USERNAME: dto.username,
             SPRING_DATASOURCE_DRIVER_CLASS_NAME: driverClassName,
             SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: dialect,
+            HIBERNATE_PREFERRED_UUID_JDBC_TYPE: uuidType,
+            SPRING_JPA_PROPERTIES_HIBERNATE_TYPE_PREFERRED_UUID_JDBC_TYPE: uuidType,
             DB_ENGINE: dto.engine,
             DB_HOST: dto.host,
             DB_PORT: String(dto.port),
@@ -128,6 +132,7 @@ export class DatabaseMapper {
         const dockerHost = 'host.docker.internal';
         const dockerPort = dto.engine === 'postgres' ? 5432 : dto.engine === 'mssql' ? 1433 : 1521;
         const dockerJdbcUrl = this.toJdbcUrl(dto.engine, dockerHost, dockerPort, dto.database);
+        const uuidType = (dto.engine === 'oracle' || dto.engine === 'mssql') ? 'CHAR' : 'UUID';
 
         const updates: Record<string, string> = {
             DB_ENGINE: dto.engine,
@@ -141,6 +146,8 @@ export class DatabaseMapper {
             SPRING_DATASOURCE_USERNAME: dto.username,
             SPRING_DATASOURCE_DRIVER_CLASS_NAME: driverClassName,
             SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: dialect,
+            HIBERNATE_PREFERRED_UUID_JDBC_TYPE: uuidType,
+            SPRING_JPA_PROPERTIES_HIBERNATE_TYPE_PREFERRED_UUID_JDBC_TYPE: uuidType,
             DOCKER_SPRING_DATASOURCE_URL: dockerJdbcUrl
         };
         if (dto.password) {

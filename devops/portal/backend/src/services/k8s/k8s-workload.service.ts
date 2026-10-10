@@ -100,9 +100,61 @@ export class K8sWorkloadService {
         }
     };
 
+    private cleanupPreviousJobs = async (
+        namespace: string,
+        labelSelector: string,
+        namePrefix: string
+    ): Promise<{ cleanedCount: number; errorsCount: number }> => {
+        let cleanedCount = 0;
+        let errorsCount = 0;
+
+        try {
+            const existing = await this.client.batchApi.listNamespacedJob({
+                namespace,
+                labelSelector,
+            });
+
+            const jobsToDelete = (existing.items || []).filter(
+                (j) => j.metadata?.name && j.metadata.name.startsWith(namePrefix)
+            );
+
+            for (const job of jobsToDelete) {
+                const jobName = job.metadata!.name!;
+                try {
+                    await this.client.batchApi.deleteNamespacedJob({
+                        name: jobName,
+                        namespace,
+                        propagationPolicy: "Background",
+                    });
+                    cleanedCount++;
+                    console.log(`[K8sWorkloadService] Korábbi manuális Job sikeresen eltávolítva: ${jobName}`);
+                } catch (delError: any) {
+                    const statusCode = delError?.response?.statusCode || delError?.statusCode;
+                    if (statusCode === 404) {
+                        continue;
+                    }
+                    errorsCount++;
+                    console.warn(
+                        `[K8sWorkloadService] Nem sikerült törölni a korábbi Jobot (${jobName}):`,
+                        delError?.message || delError
+                    );
+                }
+            }
+        } catch (listError: any) {
+            console.warn(
+                `[K8sWorkloadService] Nem sikerült lekérdezni a korábbi Jobokat (${labelSelector}):`,
+                listError?.message || listError
+            );
+        }
+
+        return { cleanedCount, errorsCount };
+    };
+
     triggerBackupJob = async (namespace = 'platform-infra', cronjob = 'db-backup'): Promise<JobTriggerResponseDto> => {
         const name = `manual-backup-${Date.now()}`;
         try {
+            await this.cleanupPreviousJobs(namespace, "app=db-backup", "manual-backup-");
+
             const cronJob = await this.client.batchApi.readNamespacedCronJob({ name: cronjob, namespace });
 
             if (!cronJob.spec?.jobTemplate?.spec)
@@ -117,6 +169,8 @@ export class K8sWorkloadService {
                 },
                 spec: {
                     ...cronJob.spec?.jobTemplate?.spec || {},
+                    backoffLimit: 2,
+                    activeDeadlineSeconds: 300,
                     ttlSecondsAfterFinished: 300
                 }
             };
@@ -139,6 +193,8 @@ export class K8sWorkloadService {
     triggerRestore = async (targetBackup = 'latest', namespace = 'platform-infra', cronjob = 'db-restore'): Promise<JobTriggerResponseDto> => {
         const name = `manual-restore-${Date.now()}`;
         try {
+            await this.cleanupPreviousJobs(namespace, "app=db-restore", "manual-restore-");
+
             const cronJob = await this.client.batchApi.readNamespacedCronJob({ name: cronjob, namespace });
 
             if (!cronJob.spec?.jobTemplate?.spec)
@@ -169,6 +225,8 @@ export class K8sWorkloadService {
                 },
                 spec: {
                     ...jobSpec,
+                    backoffLimit: 2,
+                    activeDeadlineSeconds: 300,
                     ttlSecondsAfterFinished: 300,
                 },
             };
@@ -464,11 +522,12 @@ export class K8sWorkloadService {
             if (!ingress.metadata.annotations) ingress.metadata.annotations = {};
 
             if (enabled) {
-                ingress.metadata.annotations['nginx.ingress.kubernetes.io/custom-http-errors'] = '503';
+                ingress.metadata.annotations['nginx.ingress.kubernetes.io/server-snippet'] =
+                    'return 503 "A rendszer karbantartas alatt all. Kerjuk latogasson vissza kesobb.";';
                 ingress.metadata.annotations['platform.devops.io/maintenance-mode'] = 'true';
                 console.log('[K8sWorkloadService] Karbantartási üzemmód (503 Service) bekapcsolva az Ingress rétegen.');
             } else {
-                delete ingress.metadata.annotations['nginx.ingress.kubernetes.io/custom-http-errors'];
+                delete ingress.metadata.annotations['nginx.ingress.kubernetes.io/server-snippet'];
                 delete ingress.metadata.annotations['platform.devops.io/maintenance-mode'];
                 console.log('[K8sWorkloadService] Karbantartási üzemmód kikapcsolva, normál forgalom visszaállítva.');
             }

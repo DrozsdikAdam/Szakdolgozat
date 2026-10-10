@@ -20,7 +20,7 @@ spec:
         spec:
           initContainers:
             - name: fetch-backup
-              image: cgr.dev/chainguard/minio-client:latest
+              image: minio/mc:latest
               env:
                 - name: TARGET_BACKUP
                   value: "latest"
