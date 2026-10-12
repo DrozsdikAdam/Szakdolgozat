@@ -11,5 +11,6 @@
     <include file="db/changelog/changes/005-create-workorders.xml" />
     <include file="db/changelog/changes/006-create-audit-and-notifications.xml" />
     <include file="db/changelog/changes/007-seed-initial-data.xml" />
+    <include file="db/changelog/changes/008-rename-reserved-word-columns.xml" />
 
 </databaseChangeLog>

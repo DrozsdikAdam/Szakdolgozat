@@ -1,5 +1,18 @@
 const BASE_URL = import.meta.env.VITE_API_URL || '';
 
+export class ApiError extends Error {
+    public readonly status: number;
+    public readonly errorData?: unknown;
+
+    constructor(message: string, status: number, errorData?: unknown) {
+        super(message);
+        this.name = "ApiError";
+        this.status = status;
+        this.errorData = errorData;
+        Object.setPrototypeOf(this, ApiError.prototype);
+    }
+}
+
 export const apiFetch = async <T>(path: string, options?: RequestInit): Promise<T> => {
     const cleanPath = path.startsWith('/') ? path.slice(1) : path;
     const url = BASE_URL ? `${BASE_URL}/${cleanPath}` : `/${cleanPath}`;
@@ -40,15 +53,16 @@ export const apiFetch = async <T>(path: string, options?: RequestInit): Promise<
 const throwError = async (res: Response): Promise<never> => {
     const text = await res.text();
     let errorMessage = "Hiba történt a hálózati kérés során";
+    let errorData: any = undefined;
     try {
         if (text) {
-            const errorData = JSON.parse(text);
+            errorData = JSON.parse(text);
             errorMessage = errorData.message || errorData.error || text;
         }
-    } catch (e) {
+    } catch {
         errorMessage = text || errorMessage;
     }
-    throw new Error(errorMessage);
+    throw new ApiError(errorMessage, res.status, errorData);
 };
 
 const handleResponse = async <T>(res: Response): Promise<T> => {
@@ -59,4 +73,4 @@ const handleResponse = async <T>(res: Response): Promise<T> => {
     } catch {
         return { message: text } as unknown as T;
     }
-};
+};

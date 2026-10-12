@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Legacy changeset placeholder for existing database tracking -->
+    <changeSet id="008-rename-reserved-word-columns" author="mes-admin">
+        <validCheckSum>any</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <columnExists tableName="audit_logs" columnName="created_at" />
+                <columnExists tableName="machine_telemetry" columnName="recorded_at" />
+            </and>
+        </preConditions>
+        <comment>Legacy changeset kept for backward compatibility with existing databases</comment>
+    </changeSet>
+
+    <!-- Rename audit_logs timestamp to created_at if it exists -->
+    <changeSet id="008-rename-audit-logs-timestamp" author="mes-admin">
+        <validCheckSum>any</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="audit_logs" columnName="timestamp" />
+        </preConditions>
+
+        <renameColumn tableName="audit_logs"
+                      oldColumnName="timestamp"
+                      newColumnName="created_at"
+                      columnDataType="TIMESTAMP" />
+    </changeSet>
+
+    <!-- Rename machine_telemetry timestamp to recorded_at if it exists -->
+    <changeSet id="008-rename-telemetry-timestamp" author="mes-admin">
+        <validCheckSum>any</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="machine_telemetry" columnName="timestamp" />
+        </preConditions>
+
+        <renameColumn tableName="machine_telemetry"
+                      oldColumnName="timestamp"
+                      newColumnName="recorded_at"
+                      columnDataType="TIMESTAMP" />
+    </changeSet>
+
+</databaseChangeLog>

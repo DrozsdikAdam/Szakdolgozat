@@ -1,6 +1,6 @@
 // Ez a teszt mesterséges intelligencia segítségével jön létre
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { apiFetch } from '../../utils/apiFetch';
+import { apiFetch, ApiError } from '../../utils/apiFetch';
 
 describe('apiFetch utility', () => {
     beforeEach(() => {
@@ -18,7 +18,7 @@ describe('apiFetch utility', () => {
         const result = await apiFetch('/api/products');
 
         expect(window.fetch).toHaveBeenCalledWith(
-            'http://localhost:8080/api/products',
+            '/api/products',
             expect.objectContaining({
                 credentials: 'include',
                 headers: expect.objectContaining({
@@ -37,6 +37,23 @@ describe('apiFetch utility', () => {
         } as unknown as Response);
 
         await expect(apiFetch('/api/work-orders')).rejects.toThrow('Érvénytelen kérés formátum');
+    });
+
+    it('hiba esetén ApiError példányt dob a megfelelő status kóddal', async () => {
+        window.fetch = vi.fn().mockResolvedValueOnce({
+            ok: false,
+            status: 400,
+            text: async () => JSON.stringify({ message: 'Nincs elég alkatrész raktáron!' }),
+        } as unknown as Response);
+
+        try {
+            await apiFetch('/api/work-orders/status');
+            expect.unreachable();
+        } catch (error) {
+            expect(error).toBeInstanceOf(ApiError);
+            expect((error as ApiError).status).toBe(400);
+            expect((error as ApiError).message).toBe('Nincs elég alkatrész raktáron!');
+        }
     });
 
     it('401 esetén megpróbálja a token frissítést és újrapróbálja a kérést', async () => {

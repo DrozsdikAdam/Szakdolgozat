@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import hu.mes.backend.dtos.audit.AuditLogResponse;
@@ -43,10 +44,12 @@ public class AuditLogService {
         return PagedResponse.of(pageResult, auditLogMapper.convertToResponses(pageResult.getContent()));
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void log(AuditAction action, AuditEntityType entityType, String entityId, String details) {
         log(null, null, action, entityType, entityId, details);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void log(String username, UUID userId, AuditAction action, AuditEntityType entityType, String entityId,
             String details) {
         String actualUsername = username;

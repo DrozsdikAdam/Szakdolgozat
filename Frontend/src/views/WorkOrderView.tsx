@@ -48,12 +48,14 @@ export const WorkOrderView = () => {
         }
         setIsLoading(true)
         setError(null)
-        const producedQuantity = (order.producedQuantity && order.producedQuantity > 0) ? order.producedQuantity : order.targetQuantity;
+        const producedQuantity = newStatus === "COMPLETED"
+            ? ((order.producedQuantity && order.producedQuantity > 0) ? order.producedQuantity : order.targetQuantity)
+            : (order.producedQuantity ?? 0);
 
         const request: WorkOrderStatusUpdateRequest = {
             status: newStatus,
             producedQuantity: producedQuantity,
-            scrapQuantity: order.scrapQuantity
+            scrapQuantity: order.scrapQuantity ?? 0
         }
 
         try {
