@@ -1,4 +1,18 @@
 services:
+  portal-db:
+    image: postgres:16-alpine
+    container_name: portal-db
+    restart: unless-stopped
+    env_file:
+      - ../platform.env
+    environment:
+      - POSTGRES_DB=${PORTAL_DB_NAME:-portal_db}
+      - POSTGRES_USER=${PORTAL_DB_USER:-portal_admin}
+      - POSTGRES_PASSWORD=${PORTAL_DB_PASSWORD:-PortalSecurePass2026!}
+    volumes:
+      - portal-db-data:/var/lib/postgresql/data
+    networks:
+      - portal-net
   portal-backend:
     build:
       context: ./backend
@@ -21,6 +35,8 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - portal-net
+    depends_on:
+      - portal-db
 
   portal-frontend:
     build:
@@ -45,3 +61,5 @@ networks:
 volumes:
   portal-data:
     name: portal-data
+  portal-db-data:
+    name: portal-db-data
