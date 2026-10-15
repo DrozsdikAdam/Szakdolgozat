@@ -32,9 +32,17 @@ spec:
         - port: 443
           protocol: TCP
     - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: portal-db
+      ports:
+        - port: 5432
+          protocol: TCP
+    - to:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: platform-monitoring
       ports:
         - port: 9090
           protocol: TCP
+

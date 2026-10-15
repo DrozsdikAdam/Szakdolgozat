@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: platform-infra
 
 resources:
+  - database
   - paas-portal-pvc.yaml
   - portal-ingress.yaml
   - portal-network-policy.yaml

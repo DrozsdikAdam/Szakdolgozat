@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 public class XssSanitizerAdvice extends RequestBodyAdviceAdapter {
 
     private final AuditLogService auditLogService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     @Override
     public boolean supports(MethodParameter methodParameter, Type targetType,
