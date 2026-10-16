@@ -37,8 +37,8 @@ export interface DatabaseSyncAdapter {
     discoverColumns(tableName: string, config: EngineConnectionConfig): Promise<ColumnDefinition[]>;
     discoverForeignKeys(config: EngineConnectionConfig): Promise<TableForeignKeyDependency[]>;
     ensureTableSchema(tableName: string, columns: ColumnDefinition[], config: EngineConnectionConfig): Promise<void>;
-    extractData(tableName: string, config: EngineConnectionConfig): Promise<any[]>;
-    loadData(tableName: string, rows: any[], columns: ColumnDefinition[], config: EngineConnectionConfig): Promise<number>;
+    extractData(tableName: string, config: EngineConnectionConfig): Promise<Record<string, unknown>[]>;
+    loadData(tableName: string, rows: Record<string, unknown>[], columns: ColumnDefinition[], config: EngineConnectionConfig): Promise<number>;
     disableConstraints(config: EngineConnectionConfig): Promise<void>;
     enableConstraints(config: EngineConnectionConfig): Promise<void>;
     getStats(config: EngineConnectionConfig): Promise<DatabaseStats>;

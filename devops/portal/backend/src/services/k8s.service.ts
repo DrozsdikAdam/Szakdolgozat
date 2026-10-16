@@ -107,6 +107,10 @@ export class K8sService {
         return this.workloadService.scaleDeployment(name, namespace, replicas);
     };
 
+    scaleStatefulSet = async (name: string, namespace: string, replicas: number) => {
+        return this.workloadService.scaleStatefulSet(name, namespace, replicas);
+    };
+
     setCronJobSuspended = async (name: string, namespace: string, suspended: boolean) => {
         return this.workloadService.setCronJobSuspended(name, namespace, suspended);
     };

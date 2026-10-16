@@ -1,94 +1,126 @@
-import fs from "fs";
-import { BaseSyncAdapter, execAsync } from "./base.adapter.js";
+import sql from "mssql";
+import { BaseSyncAdapter } from "./base.adapter.js";
 import type { EngineConnectionConfig, ColumnDefinition, DatabaseStats, TableForeignKeyDependency } from "../types.js";
+
+interface MsFkRecord {
+    parentTable: string;
+    childTable: string;
+}
+
+interface MsTableRecord {
+    TABLE_NAME: string;
+}
+
+interface MsColumnRecord {
+    name: string;
+    dataType: string;
+    maxLength: number | null;
+    isNullable: string;
+    isIdentity: number;
+}
+
+interface MsStatsRecord {
+    total_tables: number;
+    total_rows: number;
+}
 
 export class MssqlSyncAdapter extends BaseSyncAdapter {
     readonly engine = 'mssql';
 
-    protected async resolveDatabase(config: EngineConnectionConfig): Promise<string> {
-        const k8sFlag = this.getK8sServerFlag();
-        const user = config.username || 'sa';
-        const pass = config.password || 'MesStrongPass123!';
-        const targetDb = config.database || 'mesdb';
+    private async getPool(config: EngineConnectionConfig): Promise<sql.ConnectionPool> {
+        const conf = this.normalizeConfig(config);
+        const { host, port } = this.resolveTcpEndpoint(conf, 1433, 31433);
+        const user = conf.username || 'sa';
+        const pass = conf.password || 'MesStrongPass123!';
+        const db = conf.database || 'mesdb';
 
-        try {
-            const createSql = `IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '${targetDb}') CREATE DATABASE [${targetDb}];`;
-            await execAsync(`kubectl ${k8sFlag} exec -n platform-infra deployment/mssql -- /opt/mssql-tools18/bin/sqlcmd -S localhost -U ${user} -P "${pass}" -C -Q "${createSql}"`, { timeout: 8000 }).catch(() => { });
-            return targetDb;
-        } catch { }
-        return targetDb;
+        const pool = new sql.ConnectionPool({
+            user,
+            password: pass,
+            server: host,
+            port,
+            database: db,
+            connectionTimeout: 5000,
+            requestTimeout: 60000,
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        });
+        return await pool.connect();
     }
 
     public async discoverForeignKeys(config: EngineConnectionConfig): Promise<TableForeignKeyDependency[]> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'sa';
-        const pass = conf.password || 'MesStrongPass123!';
-        const db = await this.resolveDatabase(conf);
-
+        const pool = await this.getPool(config);
         try {
-            const sql = `SET NOCOUNT ON; USE [${db}]; SELECT tp.name + '|' + tr.name FROM sys.foreign_keys fk INNER JOIN sys.tables tp ON fk.parent_object_id = tp.object_id INNER JOIN sys.tables tr ON fk.referenced_object_id = tr.object_id;`;
-            const cmd = `kubectl ${k8sFlag} exec -n platform-infra deployment/mssql -- /opt/mssql-tools18/bin/sqlcmd -S localhost -U ${user} -P "${pass}" -C -Q "${sql}" -h -1 -W`;
-            const { stdout } = await execAsync(cmd, { timeout: 8000 });
-            return stdout.split(/\r?\n/)
-                .map(l => l.trim())
-                .filter(l => l && l.includes('|') && !l.startsWith('(') && !l.includes('Changed database'))
-                .map(l => {
-                    const [child, parent] = l.split('|');
-                    return { childTable: (child || '').toLowerCase(), parentTable: (parent || '').toLowerCase() };
-                });
+            const query = `
+                SELECT
+                    tp.name AS parentTable,
+                    tr.name AS childTable
+                FROM sys.foreign_keys fk
+                JOIN sys.tables tp ON fk.referenced_object_id = tp.object_id
+                JOIN sys.tables tr ON fk.parent_object_id = tr.object_id;
+            `;
+            const result = await pool.request().query<MsFkRecord>(query);
+            return result.recordset.map(r => ({
+                childTable: r.childTable.toLowerCase(),
+                parentTable: r.parentTable.toLowerCase()
+            }));
         } catch {
             return [];
+        } finally {
+            await pool.close().catch(() => { });
         }
     }
 
     public async discoverTables(config: EngineConnectionConfig): Promise<string[]> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'sa';
-        const pass = conf.password || 'MesStrongPass123!';
-        const db = await this.resolveDatabase(conf);
-
+        const pool = await this.getPool(config);
         try {
-            const cmd = `kubectl ${k8sFlag} exec -n platform-infra deployment/mssql -- /opt/mssql-tools18/bin/sqlcmd -S localhost -U ${user} -P "${pass}" -C -Q "SET NOCOUNT ON; USE [${db}]; SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME NOT IN ('sysdiagrams') ORDER BY TABLE_NAME;" -h -1 -W`;
-            const { stdout } = await execAsync(cmd, { timeout: 8000 });
-            const tables = stdout
-                .split(/\r?\n/)
-                .map(t => t.trim())
-                .filter(t => t && !t.includes('Changed database context') && !t.startsWith('('));
-            return await this.sortTablesByDependency(tables, conf);
+            const query = `
+                SELECT TABLE_NAME
+                FROM INFORMATION_SCHEMA.TABLES
+                WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME NOT IN ('sysdiagrams')
+                ORDER BY TABLE_NAME;
+            `;
+            const result = await pool.request().query<MsTableRecord>(query);
+            const tables = result.recordset.map(r => r.TABLE_NAME.toLowerCase());
+            return await this.sortTablesByDependency(tables, config);
         } catch (err) {
-            console.warn('[MssqlSyncAdapter] MSSQL tábla-felfedezés hiba:', (err as any)?.message || err);
+            const message = err instanceof Error ? err.message : String(err);
+            console.warn('[MssqlSyncAdapter] Tábla-felfedezés hiba:', message);
             return [];
+        } finally {
+            await pool.close().catch(() => { });
         }
     }
 
     public async discoverColumns(tableName: string, config: EngineConnectionConfig): Promise<ColumnDefinition[]> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'sa';
-        const pass = conf.password || 'MesStrongPass123!';
-        const db = await this.resolveDatabase(conf);
-
+        const pool = await this.getPool(config);
         try {
-            const sql = `SET NOCOUNT ON; USE [${db}]; SELECT c.COLUMN_NAME + '|' + c.DATA_TYPE + '|' + COALESCE(CAST(c.CHARACTER_MAXIMUM_LENGTH AS VARCHAR), '') + '|' + c.IS_NULLABLE + '|' + CAST(COLUMNPROPERTY(OBJECT_ID(c.TABLE_SCHEMA + '.' + c.TABLE_NAME), c.COLUMN_NAME, 'IsIdentity') AS VARCHAR) FROM INFORMATION_SCHEMA.COLUMNS c WHERE c.TABLE_NAME = '${tableName}';`;
-            const cmd = `kubectl ${k8sFlag} exec -n platform-infra deployment/mssql -- /opt/mssql-tools18/bin/sqlcmd -S localhost -U ${user} -P "${pass}" -C -Q "${sql}" -h -1 -W`;
-            const { stdout } = await execAsync(cmd, { timeout: 8000 });
-            return stdout.split(/\r?\n/)
-                .map(l => l.trim())
-                .filter(l => l && l.includes('|'))
-                .map(line => {
-                    const [name, dataType, maxLen, isNull, isIdent] = line.split('|');
-                    return {
-                        name: (name || '').toLowerCase(),
-                        dataType: (dataType || 'nvarchar').toLowerCase(),
-                        maxLength: maxLen ? parseInt(maxLen, 10) : null,
-                        isNullable: isNull === 'YES',
-                        isIdentity: isIdent === '1'
-                    };
-                });
+            const query = `
+                SELECT
+                    COLUMN_NAME as name,
+                    DATA_TYPE as dataType,
+                    CHARACTER_MAXIMUM_LENGTH as maxLength,
+                    IS_NULLABLE as isNullable,
+                    COLUMNPROPERTY(OBJECT_ID(TABLE_SCHEMA + '.' + TABLE_NAME), COLUMN_NAME, 'IsIdentity') as isIdentity
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_NAME = @tableName;
+            `;
+            const result = await pool.request()
+                .input('tableName', sql.NVarChar, tableName)
+                .query<MsColumnRecord>(query);
+            return result.recordset.map(r => ({
+                name: r.name.toLowerCase(),
+                dataType: r.dataType.toLowerCase(),
+                maxLength: r.maxLength ? Number(r.maxLength) : null,
+                isNullable: r.isNullable === 'YES',
+                isIdentity: r.isIdentity === 1
+            }));
         } catch {
             return [];
+        } finally {
+            await pool.close().catch(() => { });
         }
     }
 
@@ -105,140 +137,139 @@ export class MssqlSyncAdapter extends BaseSyncAdapter {
 
     public async ensureTableSchema(tableName: string, columns: ColumnDefinition[], config: EngineConnectionConfig): Promise<void> {
         if (!columns || columns.length === 0) return;
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'sa';
-        const pass = conf.password || 'MesStrongPass123!';
-        const db = await this.resolveDatabase(conf);
-
-        const colDefs = columns.map(c => `[${c.name.toLowerCase()}] ${this.mapMsType(c)}`).join(', ');
-        let fullMssql = `USE [${db}]; IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '${tableName}') CREATE TABLE [${tableName}] (${colDefs});\n`;
-        for (const c of columns) {
-            fullMssql += `IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[${tableName}]') AND name = '${c.name.toLowerCase()}') ALTER TABLE [${tableName}] ADD [${c.name.toLowerCase()}] ${this.mapMsType(c)} NULL;\n`;
-        }
-
-        const b64 = Buffer.from(fullMssql).toString('base64');
-        await execAsync(`kubectl ${k8sFlag} exec -n platform-infra deployment/mssql -- bash -c "echo '${b64}' | base64 -d | /opt/mssql-tools18/bin/sqlcmd -S localhost -U ${user} -P '${pass}' -C"`).catch(() => { });
-    }
-
-    public async extractData(tableName: string, config: EngineConnectionConfig): Promise<any[]> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'sa';
-        const pass = conf.password || 'MesStrongPass123!';
-        const db = await this.resolveDatabase(conf);
-
+        const pool = await this.getPool(config);
         try {
-            const cmd = `kubectl ${k8sFlag} exec -n platform-infra deployment/mssql -- /opt/mssql-tools18/bin/sqlcmd -S localhost -U ${user} -P "${pass}" -C -Q "SET NOCOUNT ON; USE [${db}]; SELECT * FROM [${tableName}] FOR JSON PATH;" -y 0`;
-            const { stdout } = await execAsync(cmd, { timeout: 120000, maxBuffer: 100 * 1024 * 1024 });
-            const lines = stdout
-                .split(/\r?\n/)
-                .filter(line => !line.startsWith('Changed database') && !line.startsWith('('));
-            const jsonText = lines.join('').trim();
-            if (!jsonText || jsonText === '[]') return [];
-            return this.normalizeExtractedRows(JSON.parse(jsonText));
+            const colDefs = columns.map(c => `[${c.name.toLowerCase()}] ${this.mapMsType(c)}`).join(', ');
+            let fullMssql = `IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '${tableName}') CREATE TABLE [${tableName}] (${colDefs});\n`;
+            for (const c of columns) {
+                fullMssql += `IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[${tableName}]') AND name = '${c.name.toLowerCase()}') ALTER TABLE [${tableName}] ADD [${c.name.toLowerCase()}] ${this.mapMsType(c)} NULL;\n`;
+            }
+            await pool.request().query(fullMssql);
+        } finally {
+            await pool.close().catch(() => { });
+        }
+    }
+
+    public async extractData(tableName: string, config: EngineConnectionConfig): Promise<Record<string, unknown>[]> {
+        const pool = await this.getPool(config);
+        try {
+            const result = await pool.request().query<Record<string, unknown>>(`SELECT * FROM [${tableName}];`);
+            return this.normalizeExtractedRows(result.recordset);
         } catch (err) {
-            console.warn(`[MssqlSyncAdapter] MSSQL extract hiba a(z) ${tableName} táblánál:`, (err as any)?.message || err);
+            const message = err instanceof Error ? err.message : String(err);
+            console.warn(`[MssqlSyncAdapter] Extract hiba (${tableName}):`, message);
             return [];
+        } finally {
+            await pool.close().catch(() => { });
         }
     }
 
-    private formatSqlValue(val: unknown, colDef?: ColumnDefinition, colName?: string): string {
-        if (val === null || val === undefined) return 'NULL';
-
-        if (this.isBooleanValue(val, colDef, colName)) {
-            const isTrue = val === true || val === 1 || val === '1' || String(val).toLowerCase() === 'true';
-            return isTrue ? '1' : '0';
+    private normalizeParamValue(val: unknown): unknown {
+        if (val === null || val === undefined) return null;
+        if (Buffer.isBuffer(val)) {
+            if (val.length === 16) {
+                const hex = val.toString('hex');
+                return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`.toUpperCase();
+            }
+            return val.toString('utf8');
         }
-
-        if (typeof val === 'number') {
-            return String(val);
+        if (typeof val === 'string' && /^[0-9a-fA-F]{32}$/.test(val)) {
+            return `${val.slice(0, 8)}-${val.slice(8, 12)}-${val.slice(12, 16)}-${val.slice(16, 20)}-${val.slice(20, 32)}`.toUpperCase();
         }
-
-        return `'${String(val).replace(/'/g, "''")}'`;
+        return val;
     }
 
-    public async loadData(tableName: string, rows: any[], columns: ColumnDefinition[], config: EngineConnectionConfig): Promise<number> {
-        if (!rows || rows.length === 0) return 0;
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'sa';
-        const pass = conf.password || 'MesStrongPass123!';
-        const db = await this.resolveDatabase(conf);
-        const rowKeys = Object.keys(rows[0]).map(k => k.toLowerCase());
-        const colNames = rowKeys.map(c => `[${c.toLowerCase()}]`).join(', ');
-        const hasIdentity = columns.some(c => c.isIdentity);
+    public async loadData(tableName: string, rows: Record<string, unknown>[], columns: ColumnDefinition[], config: EngineConnectionConfig): Promise<number> {
+        const firstRow = rows[0];
+        if (!firstRow) return 0;
+        const pool = await this.getPool(config);
+
+        const identCheck = await pool.request().query<{ hasIdent: number }>(`
+            SELECT COUNT(*) as hasIdent
+            FROM sys.columns
+            WHERE object_id = OBJECT_ID(N'[${tableName}]') AND is_identity = 1;
+        `).catch(() => ({ recordset: [{ hasIdent: 0 }] }));
+        const hasIdentity = (identCheck.recordset[0]?.hasIdent ?? 0) > 0;
+
+        const rowKeys = Object.keys(firstRow).map(k => k.toLowerCase());
+        const colNames = rowKeys.map(c => `[${c}]`).join(', ');
         const batchSize = 100;
 
-        let fullSql = `USE [${db}]; ALTER TABLE [${tableName}] NOCHECK CONSTRAINT ALL; DELETE FROM [${tableName}];\n`;
-
-        for (let i = 0; i < rows.length; i += batchSize) {
-            const batch = rows.slice(i, i + batchSize);
-            const valuesList = batch.map(row => {
-                const vals = rowKeys.map(c => {
-                    const colDef = columns.find(cd => cd.name.toLowerCase() === c);
-                    return this.formatSqlValue(row[c], colDef, c);
-                });
-                return `(${vals.join(', ')})`;
-            }).join(',\n');
-
-            if (hasIdentity) fullSql += `SET IDENTITY_INSERT [${tableName}] ON;\n`;
-            fullSql += `INSERT INTO [${tableName}] (${colNames}) VALUES ${valuesList};\n`;
-            if (hasIdentity) fullSql += `SET IDENTITY_INSERT [${tableName}] OFF;\n`;
-        }
-
-        fullSql += `ALTER TABLE [${tableName}] CHECK CONSTRAINT ALL;\n`;
-        const tempSqlFile = `/tmp/sync_ms_${Date.now()}_${Math.random().toString(36).substring(7)}.sql`;
         try {
-            fs.writeFileSync(tempSqlFile, fullSql);
-            await execAsync(`cat ${tempSqlFile} | kubectl ${k8sFlag} exec -i -n platform-infra deployment/mssql -- /opt/mssql-tools18/bin/sqlcmd -S localhost -U ${user} -P '${pass}' -C`);
+            await pool.request().query(`ALTER TABLE [${tableName}] NOCHECK CONSTRAINT ALL; DELETE FROM [${tableName}];`);
+
+            for (let i = 0; i < rows.length; i += batchSize) {
+                const batch = rows.slice(i, i + batchSize);
+                const req = pool.request();
+                const valueClauses: string[] = [];
+                let paramIndex = 0;
+
+                for (const row of batch) {
+                    const rowParamNames: string[] = [];
+                    for (const c of rowKeys) {
+                        const pName = `p_${paramIndex++}`;
+                        rowParamNames.push(`@${pName}`);
+                        req.input(pName, this.normalizeParamValue(row[c]));
+                    }
+                    valueClauses.push(`(${rowParamNames.join(', ')})`);
+                }
+
+                let insertSql = '';
+                if (hasIdentity) insertSql += `SET IDENTITY_INSERT [${tableName}] ON;\n`;
+                insertSql += `INSERT INTO [${tableName}] (${colNames}) VALUES ${valueClauses.join(',\n')};\n`;
+                if (hasIdentity) insertSql += `SET IDENTITY_INSERT [${tableName}] OFF;\n`;
+
+                await req.query(insertSql);
+            }
+
             return rows.length;
         } catch (err) {
-            console.warn(`[MssqlSyncAdapter] MSSQL betöltési hiba (${tableName}):`, (err as any)?.message || err);
+            const message = err instanceof Error ? err.message : String(err);
+            console.warn(`[MssqlSyncAdapter] Betöltési hiba (${tableName}):`, message);
             return 0;
         } finally {
-            if (fs.existsSync(tempSqlFile)) fs.unlinkSync(tempSqlFile);
+            await pool.close().catch(() => { });
         }
     }
 
     public async disableConstraints(config: EngineConnectionConfig): Promise<void> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'sa';
-        const pass = conf.password || 'MesStrongPass123!';
-        const db = await this.resolveDatabase(conf);
-        await execAsync(`kubectl ${k8sFlag} exec -n platform-infra deployment/mssql -- /opt/mssql-tools18/bin/sqlcmd -S localhost -U ${user} -P "${pass}" -C -Q "USE [${db}]; EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT all';"`).catch(() => { });
+        const pool = await this.getPool(config);
+        try {
+            await pool.request().query("EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT all';");
+        } catch { }
+        finally {
+            await pool.close().catch(() => { });
+        }
     }
 
     public async enableConstraints(config: EngineConnectionConfig): Promise<void> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'sa';
-        const pass = conf.password || 'MesStrongPass123!';
-        const db = await this.resolveDatabase(conf);
-        await execAsync(`kubectl ${k8sFlag} exec -n platform-infra deployment/mssql -- /opt/mssql-tools18/bin/sqlcmd -S localhost -U ${user} -P "${pass}" -C -Q "USE [${db}]; EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT all';"`).catch(() => { });
+        const pool = await this.getPool(config);
+        try {
+            await pool.request().query("EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT all';");
+        } catch { }
+        finally {
+            await pool.close().catch(() => { });
+        }
     }
 
     public async getStats(config: EngineConnectionConfig): Promise<DatabaseStats> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'sa';
-        const pass = conf.password || 'MesStrongPass123!';
-        const dbName = conf.database || 'mesdb';
-
+        const pool = await this.getPool(config);
         try {
-            const cmd = `kubectl ${k8sFlag} exec -n platform-infra deployment/mssql -- /opt/mssql-tools18/bin/sqlcmd -S localhost -U ${user} -P "${pass}" -C -Q "SET NOCOUNT ON; DECLARE @db NVARCHAR(128); SELECT TOP 1 @db = name FROM sys.databases WHERE name IN ('mesdb', 'mes_db', '${dbName}') ORDER BY CASE WHEN name = '${dbName}' THEN 1 WHEN name = 'mesdb' THEN 2 ELSE 3 END; IF @db IS NOT NULL BEGIN DECLARE @sql NVARCHAR(MAX) = 'SELECT (SELECT count(*) FROM ' + QUOTENAME(@db) + '.INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = ''BASE TABLE'') AS total_tables, (SELECT COALESCE(SUM(p.rows), 0) FROM ' + QUOTENAME(@db) + '.sys.tables t JOIN ' + QUOTENAME(@db) + '.sys.partitions p ON t.object_id = p.object_id WHERE p.index_id IN (0,1)) AS total_rows;'; EXEC sp_executesql @sql; END ELSE SELECT 0, 0;" -h -1 -W`;
-            const { stdout } = await execAsync(cmd, { timeout: 8000 });
-            const parts = stdout.trim().split(/\s+/).filter(Boolean);
-            if (parts.length >= 2) {
-                const totalTables = parseInt(parts[0] ?? '0', 10) || 0;
-                const totalRows = parseInt(parts[1] ?? '0', 10) || 0;
-                return { totalTables, totalRows };
-            }
+            const query = `
+                SELECT
+                    (SELECT count(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME NOT IN ('sysdiagrams')) AS total_tables,
+                    (SELECT COALESCE(SUM(p.rows), 0) FROM sys.tables t JOIN sys.partitions p ON t.object_id = p.object_id WHERE p.index_id IN (0,1) AND t.name NOT IN ('sysdiagrams')) AS total_rows;
+            `;
+            const result = await pool.request().query<MsStatsRecord>(query);
+            const totalTables = Number(result.recordset[0]?.total_tables) || 0;
+            const totalRows = Number(result.recordset[0]?.total_rows) || 0;
+            return { totalTables, totalRows };
         } catch (err) {
-            console.warn('[MssqlSyncAdapter] MSSQL statisztika hiba:', (err as any)?.message || err);
+            const message = err instanceof Error ? err.message : String(err);
+            console.warn('[MssqlSyncAdapter] Statisztika hiba:', message);
+            return { totalTables: 0, totalRows: 0 };
+        } finally {
+            await pool.close().catch(() => { });
         }
-
-        return { totalTables: 0, totalRows: 0 };
     }
 }

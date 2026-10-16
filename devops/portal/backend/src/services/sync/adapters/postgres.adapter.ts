@@ -1,101 +1,128 @@
-import fs from "fs";
 import pg from "pg";
-import { BaseSyncAdapter, execAsync } from "./base.adapter.js";
+import { BaseSyncAdapter } from "./base.adapter.js";
 import type { EngineConnectionConfig, ColumnDefinition, DatabaseStats, TableForeignKeyDependency } from "../types.js";
+
+interface PgFkRecord {
+    child: string;
+    parent: string;
+}
+
+interface PgTableRecord {
+    table_name: string;
+}
+
+interface PgColumnRecord {
+    column_name: string;
+    data_type: string;
+    character_maximum_length: number | string | null;
+    is_nullable: string;
+    column_default: string | null;
+}
+
+interface PgStatsRecord {
+    total_tables: number | string;
+    total_rows: number | string;
+}
 
 export class PostgresSyncAdapter extends BaseSyncAdapter {
     readonly engine = 'postgres';
 
-    protected async resolveDatabase(config: EngineConnectionConfig): Promise<string> {
-        const k8sFlag = this.getK8sServerFlag();
-        const user = config.username || 'postgres';
-        const pass = config.password || 'VnUH22Refo';
-        const candidates = [config.database, 'mes_db', 'mesdb', 'postgres'].filter(Boolean);
+    private async getClient(config: EngineConnectionConfig): Promise<pg.Client> {
+        const conf = this.normalizeConfig(config);
+        const { host, port } = this.resolveTcpEndpoint(conf, 5432, 30542);
+        const user = conf.username || 'postgres';
+        const pass = conf.password || 'VnUH22Refo';
+        const dbCandidates = Array.from(new Set([conf.database, 'mes_db', 'mesdb', 'postgres'].filter(Boolean)));
 
-        for (const db of candidates) {
+        for (const db of dbCandidates) {
             try {
-                const cmd = `kubectl ${k8sFlag} exec -n platform-infra postgres-postgresql-ha-postgresql-0 -- env PGPASSWORD=${pass} psql -U ${user} -d ${db} -t -A -c "SELECT 1;"`;
-                const { stdout } = await execAsync(cmd, { timeout: 3000 });
-                if (stdout.trim() === '1') return db as string;
+                const client = new pg.Client({
+                    host,
+                    port,
+                    user,
+                    password: pass,
+                    database: db,
+                    connectionTimeoutMillis: 4000
+                });
+                await client.connect();
+                return client;
             } catch { }
         }
-        return 'mes_db';
+
+        const fallback = new pg.Client({ host, port, user, password: pass, database: 'postgres' });
+        await fallback.connect();
+        return fallback;
     }
 
     public async discoverForeignKeys(config: EngineConnectionConfig): Promise<TableForeignKeyDependency[]> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'postgres';
-        const pass = conf.password || 'VnUH22Refo';
-        const db = await this.resolveDatabase(conf);
-
+        const client = await this.getClient(config);
         try {
-            const sql = `SELECT tc.table_name || '|' || ccu.table_name FROM information_schema.table_constraints AS tc JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'public';`;
-            const cmd = `kubectl ${k8sFlag} exec -n platform-infra postgres-postgresql-ha-postgresql-0 -- env PGPASSWORD=${pass} psql -U ${user} -d ${db} -t -A -c "${sql}"`;
-            const { stdout } = await execAsync(cmd, { timeout: 8000 });
-            return stdout.split(/\r?\n/)
-                .map(l => l.trim())
-                .filter(l => l && l.includes('|'))
-                .map(l => {
-                    const [child, parent] = l.split('|');
-                    return { childTable: (child || '').toLowerCase(), parentTable: (parent || '').toLowerCase() };
-                });
+            const sql = `
+                SELECT tc.table_name AS child, ccu.table_name AS parent
+                FROM information_schema.table_constraints AS tc
+                JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name
+                WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'public';
+            `;
+            const res = await client.query<PgFkRecord>(sql);
+            return res.rows.map(r => ({
+                childTable: r.child.toLowerCase(),
+                parentTable: r.parent.toLowerCase()
+            }));
         } catch {
             return [];
+        } finally {
+            await client.end().catch(() => { });
         }
     }
 
     public async discoverTables(config: EngineConnectionConfig): Promise<string[]> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'postgres';
-        const pass = conf.password || 'VnUH22Refo';
-        const db = await this.resolveDatabase(conf);
-
+        const client = await this.getClient(config);
         try {
-            const cmd = `kubectl ${k8sFlag} exec -n platform-infra postgres-postgresql-ha-postgresql-0 -- env PGPASSWORD=${pass} psql -U ${user} -d ${db} -t -A -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY table_name;"`;
-            const { stdout } = await execAsync(cmd, { timeout: 8000 });
-            const tables = stdout.split(/\r?\n/).map(t => t.trim()).filter(Boolean);
-            return await this.sortTablesByDependency(tables, conf);
+            const sql = `
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name NOT IN ('test_table')
+                ORDER BY table_name;
+            `;
+            const res = await client.query<PgTableRecord>(sql);
+            const tables = res.rows.map(r => r.table_name.toLowerCase());
+            return await this.sortTablesByDependency(tables, config);
         } catch (err) {
-            console.warn('[PostgresSyncAdapter] Tábla-felfedezés hiba:', (err as any)?.message || err);
+            const message = err instanceof Error ? err.message : String(err);
+            console.warn('[PostgresSyncAdapter] Tábla-felfedezés hiba:', message);
             return [];
+        } finally {
+            await client.end().catch(() => { });
         }
     }
 
     public async discoverColumns(tableName: string, config: EngineConnectionConfig): Promise<ColumnDefinition[]> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'postgres';
-        const pass = conf.password || 'VnUH22Refo';
-        const db = await this.resolveDatabase(conf);
-
+        const client = await this.getClient(config);
         try {
-            const sql = `SELECT column_name || '|' || data_type || '|' || COALESCE(character_maximum_length::text, '') || '|' || is_nullable || '|' || (CASE WHEN is_identity = 'YES' OR COALESCE(column_default, '') LIKE 'nextval(%' THEN '1' ELSE '0' END) FROM information_schema.columns WHERE table_schema = 'public' AND table_name = '${tableName}';`;
-            const cmd = `kubectl ${k8sFlag} exec -n platform-infra postgres-postgresql-ha-postgresql-0 -- env PGPASSWORD=${pass} psql -U ${user} -d ${db} -t -A -c "${sql}"`;
-            const { stdout } = await execAsync(cmd, { timeout: 8000 });
-            return stdout.split(/\r?\n/)
-                .map(l => l.trim())
-                .filter(l => l && l.includes('|'))
-                .map(line => {
-                    const [name, dataType, maxLen, isNull, isIdent] = line.split('|');
-                    return {
-                        name: (name || '').toLowerCase(),
-                        dataType: (dataType || 'varchar').toLowerCase(),
-                        maxLength: maxLen ? parseInt(maxLen, 10) : null,
-                        isNullable: isNull === 'YES',
-                        isIdentity: isIdent === '1'
-                    };
-                });
+            const sql = `
+                SELECT column_name, data_type, character_maximum_length, is_nullable, column_default
+                FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = $1;
+            `;
+            const res = await client.query<PgColumnRecord>(sql, [tableName.toLowerCase()]);
+            return res.rows.map(r => ({
+                name: r.column_name.toLowerCase(),
+                dataType: r.data_type.toLowerCase(),
+                maxLength: r.character_maximum_length ? Number(r.character_maximum_length) : null,
+                isNullable: r.is_nullable === 'YES',
+                isIdentity: Boolean(r.column_default && r.column_default.includes('nextval'))
+            }));
         } catch {
             return [];
+        } finally {
+            await client.end().catch(() => { });
         }
     }
 
     private mapPgType(c: ColumnDefinition): string {
         const dt = c.dataType.toLowerCase();
-        if (dt.includes('uuid') || dt.includes('uniqueidentifier') || (c.maxLength && c.maxLength === 36)) return 'UUID';
-        if (dt.includes('int') || dt.includes('smallint') || dt.includes('bigint')) return 'BIGINT';
+        if (dt.includes('uuid')) return 'UUID';
+        if (dt.includes('int') || dt.includes('serial')) return 'BIGINT';
         if (dt.includes('bool') || dt.includes('bit')) return 'BOOLEAN';
         if (dt.includes('date') || dt.includes('time')) return 'TIMESTAMP';
         if (dt.includes('decimal') || dt.includes('numeric') || dt.includes('float') || dt.includes('real')) return 'NUMERIC(19,4)';
@@ -105,193 +132,140 @@ export class PostgresSyncAdapter extends BaseSyncAdapter {
 
     public async ensureTableSchema(tableName: string, columns: ColumnDefinition[], config: EngineConnectionConfig): Promise<void> {
         if (!columns || columns.length === 0) return;
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'postgres';
-        const pass = conf.password || 'VnUH22Refo';
-        const db = await this.resolveDatabase(conf);
-
-        const colDefs = columns.map(c => `"${c.name.toLowerCase()}" ${this.mapPgType(c)}`).join(', ');
-        const createSql = `CREATE TABLE IF NOT EXISTS "${tableName.toLowerCase()}" (${colDefs});`;
-
-        const dbsToUpdate = [db];
-        if (db === 'mes_db') dbsToUpdate.push('mesdb');
-        if (db === 'mesdb') dbsToUpdate.push('mes_db');
-
-        for (const targetDb of Array.from(new Set(dbsToUpdate))) {
-            await execAsync(`kubectl ${k8sFlag} exec -n platform-infra postgres-postgresql-ha-postgresql-0 -- env PGPASSWORD=${pass} psql -U ${user} -d ${targetDb} -c "${createSql}"`).catch(() => { });
-            for (const c of columns) {
-                const alterSql = `ALTER TABLE "${tableName.toLowerCase()}" ADD COLUMN IF NOT EXISTS "${c.name.toLowerCase()}" ${this.mapPgType(c)};`;
-                await execAsync(`kubectl ${k8sFlag} exec -n platform-infra postgres-postgresql-ha-postgresql-0 -- env PGPASSWORD=${pass} psql -U ${targetDb} -d ${targetDb} -c "${alterSql}"`).catch(() => { });
-            }
-        }
-    }
-
-    public async extractData(tableName: string, config: EngineConnectionConfig): Promise<any[]> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'postgres';
-        const pass = conf.password || 'VnUH22Refo';
-        const db = await this.resolveDatabase(conf);
+        const client = await this.getClient(config);
+        const cleanTable = tableName.toLowerCase().replace(/[^a-z0-9_]/g, '');
 
         try {
-            const cmd = `kubectl ${k8sFlag} exec -n platform-infra postgres-postgresql-ha-postgresql-0 -- env PGPASSWORD=${pass} psql -U ${user} -d ${db} -t -A -c "SELECT COALESCE(json_agg(t), '[]'::json) FROM (SELECT * FROM \\"${tableName}\\") t;"`;
-            const { stdout } = await execAsync(cmd, { timeout: 120000, maxBuffer: 100 * 1024 * 1024 });
-            const jsonText = stdout.trim();
-            if (!jsonText || jsonText === '[]') return [];
-            return this.normalizeExtractedRows(JSON.parse(jsonText));
+            const colDefs = columns.map(c => `"${c.name.toLowerCase()}" ${this.mapPgType(c)}`).join(', ');
+            await client.query(`CREATE TABLE IF NOT EXISTS "${cleanTable}" (${colDefs});`);
+
+            for (const c of columns) {
+                const alterSql = `ALTER TABLE "${cleanTable}" ADD COLUMN IF NOT EXISTS "${c.name.toLowerCase()}" ${this.mapPgType(c)};`;
+                await client.query(alterSql).catch(() => { });
+            }
+        } finally {
+            await client.end().catch(() => { });
+        }
+    }
+
+    public async extractData(tableName: string, config: EngineConnectionConfig): Promise<Record<string, unknown>[]> {
+        const client = await this.getClient(config);
+        try {
+            const cleanTable = tableName.toLowerCase().replace(/[^a-z0-9_]/g, '');
+            const res = await client.query<Record<string, unknown>>(`SELECT * FROM "${cleanTable}";`);
+            return this.normalizeExtractedRows(res.rows);
         } catch (err) {
-            console.warn(`[PostgresSyncAdapter] Extract hiba a(z) ${tableName} táblánál:`, (err as any)?.message || err);
+            const message = err instanceof Error ? err.message : String(err);
+            console.warn(`[PostgresSyncAdapter] Extract hiba (${tableName}):`, message);
             return [];
+        } finally {
+            await client.end().catch(() => { });
         }
     }
 
-    private formatSqlValue(val: unknown, colDef?: ColumnDefinition, colName?: string): string {
-        if (val === null || val === undefined) return 'NULL';
-
-        if (this.isBooleanValue(val, colDef, colName)) {
-            const isTrue = val === true || val === 1 || val === '1' || String(val).toLowerCase() === 'true';
-            return isTrue ? "'true'" : "'false'";
+    private normalizeParamValue(val: unknown): unknown {
+        if (val === null || val === undefined) return null;
+        if (Buffer.isBuffer(val)) {
+            if (val.length === 16) {
+                const hex = val.toString('hex');
+                return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`.toLowerCase();
+            }
+            return val.toString('utf8');
         }
-
-        if (typeof val === 'number') {
-            return String(val);
+        if (typeof val === 'string' && /^[0-9a-fA-F]{32}$/.test(val)) {
+            return `${val.slice(0, 8)}-${val.slice(8, 12)}-${val.slice(12, 16)}-${val.slice(16, 20)}-${val.slice(20, 32)}`.toLowerCase();
         }
-
-        return `'${String(val).replace(/'/g, "''")}'`;
+        return val;
     }
 
-    public async loadData(tableName: string, rows: any[], columns: ColumnDefinition[], config: EngineConnectionConfig): Promise<number> {
-        if (!rows || rows.length === 0) return 0;
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'postgres';
-        const pass = conf.password || 'VnUH22Refo';
-        const db = await this.resolveDatabase(conf);
-        const rowKeys = Object.keys(rows[0]).map(k => k.toLowerCase());
-        const colNames = rowKeys.map(c => `"${c.toLowerCase()}"`).join(', ');
-        const batchSize = 250;
+    public async loadData(tableName: string, rows: Record<string, unknown>[], columns: ColumnDefinition[], config: EngineConnectionConfig): Promise<number> {
+        const firstRow = rows[0];
+        if (!firstRow) return 0;
+        const client = await this.getClient(config);
+        const cleanTable = tableName.toLowerCase().replace(/[^a-z0-9_]/g, '');
 
-        const dbsToUpdate = [db];
-        if (db === 'mes_db') dbsToUpdate.push('mesdb');
-        if (db === 'mesdb') dbsToUpdate.push('mes_db');
+        try {
+            await client.query("SET session_replication_role = 'replica';");
+            await client.query(`DELETE FROM "${cleanTable}";`);
 
-        for (const targetDb of Array.from(new Set(dbsToUpdate))) {
-            let fullSql = `SET session_replication_role = 'replica';\nTRUNCATE TABLE "${tableName.toLowerCase()}" CASCADE;\n`;
+            const rowKeys = Object.keys(firstRow).map(k => k.toLowerCase());
+            const colNames = rowKeys.map(c => `"${c}"`).join(', ');
+            const batchSize = 100;
 
             for (let i = 0; i < rows.length; i += batchSize) {
                 const batch = rows.slice(i, i + batchSize);
-                const valuesList = batch.map(row => {
-                    const vals = rowKeys.map(c => {
-                        const colDef = columns.find(cd => cd.name.toLowerCase() === c);
-                        return this.formatSqlValue(row[c], colDef, c);
-                    });
-                    return `(${vals.join(', ')})`;
-                }).join(',\n');
+                const valueClauses: string[] = [];
+                const params: unknown[] = [];
+                let paramIndex = 1;
 
-                fullSql += `INSERT INTO "${tableName.toLowerCase()}" (${colNames}) VALUES ${valuesList} ON CONFLICT DO NOTHING;\n`;
+                for (const row of batch) {
+                    const rowPlaceholders: string[] = [];
+                    for (const c of rowKeys) {
+                        rowPlaceholders.push(`$${paramIndex++}`);
+                        params.push(this.normalizeParamValue(row[c]));
+                    }
+                    valueClauses.push(`(${rowPlaceholders.join(', ')})`);
+                }
+
+                const insertSql = `INSERT INTO "${cleanTable}" (${colNames}) VALUES ${valueClauses.join(', ')};`;
+                await client.query(insertSql, params);
             }
 
-            fullSql += `SET session_replication_role = 'origin';\n`;
-            const tempSqlFile = `/tmp/sync_pg_${Date.now()}_${Math.random().toString(36).substring(7)}.sql`;
-            try {
-                fs.writeFileSync(tempSqlFile, fullSql);
-                await execAsync(`cat ${tempSqlFile} | kubectl ${k8sFlag} exec -i -n platform-infra postgres-postgresql-ha-postgresql-0 -- env PGPASSWORD=${pass} psql -U ${user} -d ${targetDb}`);
-            } finally {
-                if (fs.existsSync(tempSqlFile)) fs.unlinkSync(tempSqlFile);
-            }
-        }
-        return rows.length;
-    }
-
-    public async disableConstraints(config?: EngineConnectionConfig): Promise<void> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'postgres';
-        const pass = conf.password || 'VnUH22Refo';
-        const db = await this.resolveDatabase(conf);
-
-        const dbsToUpdate = Array.from(new Set([db, 'mes_db', 'mesdb'].filter(Boolean)));
-        const sql = `DO $$ DECLARE r RECORD; BEGIN FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP EXECUTE 'ALTER TABLE "' || r.tablename || '" DISABLE TRIGGER ALL'; END LOOP; END $$;`;
-
-        for (const targetDb of dbsToUpdate) {
-            await execAsync(`kubectl ${k8sFlag} exec -n platform-infra postgres-postgresql-ha-postgresql-0 -- env PGPASSWORD=${pass} psql -U ${user} -d ${targetDb} -c "${sql}"`).catch(() => { });
+            await client.query("SET session_replication_role = 'origin';").catch(() => { });
+            return rows.length;
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.warn(`[PostgresSyncAdapter] Betöltési hiba (${cleanTable}):`, message);
+            return 0;
+        } finally {
+            await client.end().catch(() => { });
         }
     }
 
-    public async enableConstraints(config?: EngineConnectionConfig): Promise<void> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'postgres';
-        const pass = conf.password || 'VnUH22Refo';
-        const db = await this.resolveDatabase(conf);
+    public async disableConstraints(config: EngineConnectionConfig): Promise<void> {
+        const client = await this.getClient(config);
+        try {
+            await client.query("SET session_replication_role = 'replica';");
+        } catch { }
+        finally {
+            await client.end().catch(() => { });
+        }
+    }
 
-        const dbsToUpdate = Array.from(new Set([db, 'mes_db', 'mesdb'].filter(Boolean)));
-        const sql = `DO $$ DECLARE r RECORD; BEGIN FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP EXECUTE 'ALTER TABLE "' || r.tablename || '" ENABLE TRIGGER ALL'; END LOOP; END $$;`;
-
-        for (const targetDb of dbsToUpdate) {
-            await execAsync(`kubectl ${k8sFlag} exec -n platform-infra postgres-postgresql-ha-postgresql-0 -- env PGPASSWORD=${pass} psql -U ${user} -d ${targetDb} -c "${sql}"`).catch(() => { });
+    public async enableConstraints(config: EngineConnectionConfig): Promise<void> {
+        const client = await this.getClient(config);
+        try {
+            await client.query("SET session_replication_role = 'origin';");
+        } catch { }
+        finally {
+            await client.end().catch(() => { });
         }
     }
 
     public async getStats(config: EngineConnectionConfig): Promise<DatabaseStats> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const pass = conf.password || 'VnUH22Refo';
-        const user = conf.username && conf.username !== 'sa' ? conf.username : 'postgres';
-        const dbNames = ['mes_db', 'postgres', conf.database, 'mesdb'].filter(Boolean);
-        const host = conf.host || 'localhost';
-
-        const hostsToTry = [
-            host.includes('svc.cluster.local') ? 'postgres-postgresql-ha-postgresql.platform-infra.svc.cluster.local' : host,
-            'host.docker.internal',
-            'localhost'
-        ];
-
-        for (const h of hostsToTry) {
-            for (const db of dbNames) {
-                try {
-                    const client = new pg.Client({
-                        host: h,
-                        port: conf.port || 5432,
-                        database: db,
-                        user,
-                        password: pass,
-                        connectionTimeoutMillis: 1500
-                    });
-                    await client.connect();
-                    const tablesRes = await client.query(
-                        "SELECT count(*)::int as count FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'"
-                    );
-                    const rowsRes = await client.query(
-                        "SELECT COALESCE(SUM(n_live_tup), 0)::bigint as total_rows FROM pg_stat_user_tables"
-                    );
-                    await client.end();
-
-                    const totalTables = Number(tablesRes.rows[0]?.count) || 0;
-                    const totalRows = Number(rowsRes.rows[0]?.total_rows) || 0;
-                    if (totalTables > 1 || totalRows > 0) {
-                        return { totalTables, totalRows };
-                    }
-                } catch { }
-            }
+        const client = await this.getClient(config);
+        try {
+            const sql = `
+                SELECT
+                    (SELECT count(*)::int FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name NOT IN ('test_table')) AS total_tables,
+                    COALESCE((
+                        SELECT sum(c) FROM (
+                            SELECT (xpath('/row/c/text()', query_to_xml(format('SELECT count(*) AS c FROM %I.%I', table_schema, table_name), false, true, '')))[1]::text::bigint AS c
+                            FROM information_schema.tables
+                            WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name NOT IN ('test_table')
+                        ) t
+                    ), 0)::bigint AS total_rows;
+            `;
+            const res = await client.query<PgStatsRecord>(sql);
+            const totalTables = Number(res.rows[0]?.total_tables) || 0;
+            const totalRows = Number(res.rows[0]?.total_rows) || 0;
+            return { totalTables, totalRows };
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.warn('[PostgresSyncAdapter] Statisztika hiba:', message);
+            return { totalTables: 0, totalRows: 0 };
+        } finally {
+            await client.end().catch(() => { });
         }
-
-        for (const db of ['mes_db', 'postgres', conf.database].filter(Boolean)) {
-            try {
-                const cmd = `kubectl ${k8sFlag} exec -n platform-infra postgres-postgresql-ha-postgresql-0 -- env PGPASSWORD=${pass} psql -U postgres -d ${db} -t -A -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'; SELECT COALESCE(SUM(c), 0) FROM (SELECT (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name), false, true, '')))[1]::text::int as c FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE') t;"`;
-                const { stdout } = await execAsync(cmd, { timeout: 8000 });
-                const lines = stdout.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-                if (lines.length >= 2) {
-                    const totalTables = parseInt(lines[0] ?? '0', 10) || 0;
-                    const totalRows = parseInt(lines[1] ?? '0', 10) || 0;
-                    if (totalTables > 1 || totalRows > 0) {
-                        return { totalTables, totalRows };
-                    }
-                }
-            } catch { }
-        }
-
-        return { totalTables: 0, totalRows: 0 };
     }
 }

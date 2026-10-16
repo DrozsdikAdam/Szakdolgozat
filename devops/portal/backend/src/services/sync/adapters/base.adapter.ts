@@ -43,6 +43,26 @@ export abstract class BaseSyncAdapter implements DatabaseSyncAdapter {
         };
     }
 
+    public resolveTcpEndpoint(config: EngineConnectionConfig, defaultPort: number, nodePort: number): { host: string; port: number } {
+        const isCluster = Boolean(process.env.KUBERNETES_SERVICE_HOST);
+        const hostConfig = config.host;
+
+        if (hostConfig && !hostConfig.includes('.svc.cluster.local') && hostConfig !== 'localhost') {
+            return { host: hostConfig, port: config.port || defaultPort };
+        }
+
+        if (isCluster) {
+            const engineKey = this.engine as keyof typeof DEFAULT_INTERNAL_HOSTS;
+            return {
+                host: hostConfig || DEFAULT_INTERNAL_HOSTS[engineKey],
+                port: config.port || defaultPort
+            };
+        }
+
+        const nodeIp = process.env.K8S_NODE_IP || '172.21.0.10';
+        return { host: nodeIp, port: nodePort };
+    }
+
     protected topologicalSortTables(tables: string[], dependencies: TableForeignKeyDependency[] = []): string[] {
         const tableSet = new Set(tables.map(t => t.toLowerCase()));
         const inDegree = new Map<string, number>();
@@ -109,15 +129,27 @@ export abstract class BaseSyncAdapter implements DatabaseSyncAdapter {
         return name === 'active' || name === 'deleted';
     }
 
-    protected normalizeExtractedRows(rawRows: any[]): any[] {
+    protected normalizeExtractedRows(rawRows: Record<string, unknown>[]): Record<string, unknown>[] {
         if (!Array.isArray(rawRows) || rawRows.length === 0) return [];
 
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         return rawRows.map(r => {
             if (!r || typeof r !== 'object') return r;
-            const normalized: Record<string, any> = {};
+            const normalized: Record<string, unknown> = {};
             for (const [k, v] of Object.entries(r)) {
-                normalized[k.toLowerCase()] = (typeof v === 'string' && uuidRegex.test(v)) ? v.toLowerCase() : v;
+                const key = k.toLowerCase();
+                if (Buffer.isBuffer(v)) {
+                    if (v.length === 16) {
+                        const hex = v.toString('hex');
+                        normalized[key] = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`.toLowerCase();
+                    } else {
+                        normalized[key] = v.toString('utf8');
+                    }
+                } else if (typeof v === 'string' && uuidRegex.test(v)) {
+                    normalized[key] = v.toLowerCase();
+                } else {
+                    normalized[key] = v;
+                }
             }
             return normalized;
         });
@@ -127,8 +159,8 @@ export abstract class BaseSyncAdapter implements DatabaseSyncAdapter {
     abstract discoverColumns(tableName: string, config: EngineConnectionConfig): Promise<ColumnDefinition[]>;
     abstract discoverForeignKeys(config: EngineConnectionConfig): Promise<TableForeignKeyDependency[]>;
     abstract ensureTableSchema(tableName: string, columns: ColumnDefinition[], config: EngineConnectionConfig): Promise<void>;
-    abstract extractData(tableName: string, config: EngineConnectionConfig): Promise<any[]>;
-    abstract loadData(tableName: string, rows: any[], columns: ColumnDefinition[], config: EngineConnectionConfig): Promise<number>;
+    abstract extractData(tableName: string, config: EngineConnectionConfig): Promise<Record<string, unknown>[]>;
+    abstract loadData(tableName: string, rows: Record<string, unknown>[], columns: ColumnDefinition[], config: EngineConnectionConfig): Promise<number>;
     abstract disableConstraints(config: EngineConnectionConfig): Promise<void>;
     abstract enableConstraints(config: EngineConnectionConfig): Promise<void>;
     abstract getStats(config: EngineConnectionConfig): Promise<DatabaseStats>;

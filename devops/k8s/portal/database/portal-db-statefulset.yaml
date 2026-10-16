@@ -33,17 +33,17 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: portal-db-secret
-                  key: POSTGRES_DB
+                  key: PORTAL_DB_NAME
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
                   name: portal-db-secret
-                  key: POSTGRES_USER
+                  key: PORTAL_DB_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: portal-db-secret
-                  key: POSTGRES_PASSWORD
+                  key: PORTAL_DB_PASSWORD
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           volumeMounts:

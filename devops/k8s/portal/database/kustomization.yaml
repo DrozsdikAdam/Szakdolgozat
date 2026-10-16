@@ -3,7 +3,6 @@ kind: Kustomization
 namespace: platform-infra
 
 resources:
-  - portal-db-secret.yaml
   - portal-db-pvc.yaml
   - portal-db-service.yaml
   - portal-db-statefulset.yaml

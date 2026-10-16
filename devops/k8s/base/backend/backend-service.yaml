@@ -3,12 +3,15 @@ kind: Service
 metadata:
   name: mes-backend
   namespace: app-mes
+  labels:
+    app: mes-backend
+    app.kubernetes.io/name: mes-backend
+    app.kubernetes.io/part-of: mes-system
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: mes-backend
   ports:
     - port: 8080
       targetPort: 8080
       name: http
-

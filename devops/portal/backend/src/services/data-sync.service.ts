@@ -2,8 +2,7 @@ import { SyncAdapterFactory } from "./sync/sync-adapter.factory.js";
 import type {
     ColumnDefinition,
     SyncProgressResult,
-    EngineConnectionConfig,
-    DatabaseSyncAdapter
+    EngineConnectionConfig
 } from "./sync/types.js";
 
 export type { ColumnDefinition, SyncProgressResult, EngineConnectionConfig };
@@ -49,7 +48,7 @@ export class DataSyncService {
         await adapter.ensureTableSchema(tableName, columns, norm);
     };
 
-    public extractTableData = async (engine: string, tableName: string, config?: EngineConnectionConfig): Promise<any[]> => {
+    public extractTableData = async (engine: string, tableName: string, config?: EngineConnectionConfig): Promise<Record<string, unknown>[]> => {
         const adapter = SyncAdapterFactory.getAdapter(engine);
         const norm = adapter.normalizeConfig(config);
         return await adapter.extractData(tableName, norm);
@@ -58,7 +57,7 @@ export class DataSyncService {
     public loadTableData = async (
         targetEngine: string,
         tableName: string,
-        rows: any[],
+        rows: Record<string, unknown>[],
         columns: ColumnDefinition[],
         targetConfig?: EngineConnectionConfig
     ): Promise<number> => {
@@ -95,27 +94,35 @@ export class DataSyncService {
         try {
             for (const tableName of tables) {
                 try {
-                    const rows = await sourceAdapter.extractData(tableName, normSource);
-                    if (rows.length === 0) {
-                        continue;
-                    }
-
                     let columns = await sourceAdapter.discoverColumns(tableName, normSource);
-                    if (columns.length === 0) {
-                        columns = Object.keys(rows[0]).map(k => ({
-                            name: k.toLowerCase(),
-                            dataType: typeof rows[0][k] === 'number' ? 'numeric' : typeof rows[0][k] === 'boolean' ? 'boolean' : 'varchar',
-                            maxLength: 255,
-                            isNullable: true,
-                            isIdentity: false
-                        }));
+                    const rows = await sourceAdapter.extractData(tableName, normSource);
+                    const firstRow = rows[0];
+                    if (columns.length === 0 && firstRow) {
+                        columns = Object.keys(firstRow).map(k => {
+                            const sampleVal = firstRow[k];
+                            const isNum = typeof sampleVal === 'number';
+                            const isBool = typeof sampleVal === 'boolean';
+                            return {
+                                name: k.toLowerCase(),
+                                dataType: isNum ? 'numeric' : isBool ? 'boolean' : 'varchar',
+                                maxLength: 255,
+                                isNullable: true,
+                                isIdentity: false
+                            };
+                        });
                     }
 
-                    await targetAdapter.ensureTableSchema(tableName, columns, normTarget);
-                    const loaded = await targetAdapter.loadData(tableName, rows, columns, normTarget);
-                    totalRowsCopied += loaded;
+                    if (columns.length > 0) {
+                        await targetAdapter.ensureTableSchema(tableName, columns, normTarget);
+                    }
+
+                    if (rows.length > 0 && columns.length > 0) {
+                        const loaded = await targetAdapter.loadData(tableName, rows, columns, normTarget);
+                        totalRowsCopied += loaded;
+                    }
                 } catch (err) {
-                    console.warn(`[DataSyncService] Hiba a(z) '${tableName}' tábla szinkronizációjakor:`, (err as any)?.message || err);
+                    const message = err instanceof Error ? err.message : String(err);
+                    console.warn(`[DataSyncService] Hiba a(z) '${tableName}' tábla szinkronizációjakor:`, message);
                 } finally {
                     tablesMigrated++;
                     if (onProgress) {

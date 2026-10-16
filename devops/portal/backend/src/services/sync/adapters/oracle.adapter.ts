@@ -1,79 +1,95 @@
-import fs from "fs";
-import { BaseSyncAdapter, execAsync } from "./base.adapter.js";
+import oracledb from "oracledb";
+import { BaseSyncAdapter } from "./base.adapter.js";
 import type { EngineConnectionConfig, ColumnDefinition, DatabaseStats, TableForeignKeyDependency } from "../types.js";
+
+type OracleFkTuple = [string, string];
+type OracleTableTuple = [string];
+type OracleColumnTuple = [string, string, number | null, string, string];
+
+interface OracleStatsOutBinds {
+    out_tables?: number;
+    out_rows?: number;
+}
 
 export class OracleSyncAdapter extends BaseSyncAdapter {
     readonly engine = 'oracle';
 
-    public async discoverForeignKeys(config: EngineConnectionConfig): Promise<TableForeignKeyDependency[]> {
-        const k8sFlag = this.getK8sServerFlag();
+    private async getConnection(config: EngineConnectionConfig): Promise<oracledb.Connection> {
         const conf = this.normalizeConfig(config);
+        const { host, port } = this.resolveTcpEndpoint(conf, 1521, 31521);
         const user = conf.username || 'mesuser';
         const pass = conf.password || 'mespassword';
         const db = conf.database || 'FREEPDB1';
 
+        return await oracledb.getConnection({
+            user,
+            password: pass,
+            connectString: `${host}:${port}/${db}`
+        });
+    }
+
+    public async discoverForeignKeys(config: EngineConnectionConfig): Promise<TableForeignKeyDependency[]> {
+        const conn = await this.getConnection(config);
         try {
-            const sql = `SET PAGESIZE 0\nSET FEEDBACK OFF\nSELECT lower(a.table_name) || '~' || lower(c_pk.table_name) FROM user_constraints a JOIN user_constraints c_pk ON a.r_constraint_name = c_pk.constraint_name WHERE a.constraint_type = 'R';\nEXIT;\n`;
-            const b64 = Buffer.from(sql).toString('base64');
-            const cmd = `kubectl ${k8sFlag} exec -i -n platform-infra deployment/oracle -- bash -c "echo '${b64}' | base64 -d | sqlplus -s ${user}/${pass}@localhost:1521/${db}"`;
-            const { stdout } = await execAsync(cmd, { timeout: 8000 });
-            return stdout.split(/\r?\n/)
-                .map(l => l.trim())
-                .filter(l => l && l.includes('~'))
-                .map(l => {
-                    const [child, parent] = l.split('~');
-                    return { childTable: (child || '').toLowerCase(), parentTable: (parent || '').toLowerCase() };
-                });
+            const sql = `
+                SELECT
+                    lower(a.table_name) AS child_table,
+                    lower(c_pk.table_name) AS parent_table
+                FROM user_constraints a
+                JOIN user_constraints c_pk ON a.r_constraint_name = c_pk.constraint_name
+                WHERE a.constraint_type = 'R' AND a.table_name NOT LIKE 'BIN$%'
+            `;
+            const result = await conn.execute<OracleFkTuple>(sql);
+            if (!result.rows) return [];
+            return result.rows.map(([child, parent]) => ({
+                childTable: child.toLowerCase(),
+                parentTable: parent.toLowerCase()
+            }));
         } catch {
             return [];
+        } finally {
+            await conn.close().catch(() => { });
         }
     }
 
     public async discoverTables(config: EngineConnectionConfig): Promise<string[]> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'mesuser';
-        const pass = conf.password || 'mespassword';
-        const db = conf.database || 'FREEPDB1';
-
+        const conn = await this.getConnection(config);
         try {
-            const cmd = `kubectl ${k8sFlag} exec -i -n platform-infra deployment/oracle -- bash -c "printf 'SET PAGESIZE 0\\nSET FEEDBACK OFF\\nSELECT lower(table_name) FROM user_tables ORDER BY table_name;\\nEXIT;\\n' | sqlplus -s ${user}/${pass}@localhost:1521/${db}"`;
-            const { stdout } = await execAsync(cmd, { timeout: 8000 });
-            const tables = stdout.split(/\r?\n/).map(t => t.trim().toLowerCase()).filter(Boolean);
-            return await this.sortTablesByDependency(tables, conf);
+            const sql = `SELECT lower(table_name) FROM user_tables WHERE table_name NOT LIKE 'BIN$%' ORDER BY table_name`;
+            const result = await conn.execute<OracleTableTuple>(sql);
+            if (!result.rows) return [];
+            const tables = result.rows.map(([t]) => t.toLowerCase());
+            return await this.sortTablesByDependency(tables, config);
         } catch (err) {
-            console.warn('[OracleSyncAdapter] Oracle tábla-felfedezés hiba:', (err as any)?.message || err);
+            const message = err instanceof Error ? err.message : String(err);
+            console.warn('[OracleSyncAdapter] Tábla-felfedezés hiba:', message);
             return [];
+        } finally {
+            await conn.close().catch(() => { });
         }
     }
 
     public async discoverColumns(tableName: string, config: EngineConnectionConfig): Promise<ColumnDefinition[]> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'mesuser';
-        const pass = conf.password || 'mespassword';
-        const db = conf.database || 'FREEPDB1';
-
+        const conn = await this.getConnection(config);
         try {
-            const sql = `SET PAGESIZE 0\nSET FEEDBACK OFF\nSELECT lower(column_name) || '~' || lower(data_type) || '~' || data_length || '~' || nullable || '~' || (CASE WHEN identity_column = 'YES' THEN '1' ELSE '0' END) FROM user_tab_cols WHERE table_name = '${tableName.toUpperCase()}';\nEXIT;\n`;
-            const b64 = Buffer.from(sql).toString('base64');
-            const cmd = `kubectl ${k8sFlag} exec -i -n platform-infra deployment/oracle -- bash -c "echo '${b64}' | base64 -d | sqlplus -s ${user}/${pass}@localhost:1521/${db}"`;
-            const { stdout } = await execAsync(cmd, { timeout: 8000 });
-            return stdout.split(/\r?\n/)
-                .map(l => l.trim())
-                .filter(l => l && l.includes('~'))
-                .map(line => {
-                    const [name, dataType, maxLen, isNull, isIdent] = line.split('~');
-                    return {
-                        name: (name || '').toLowerCase(),
-                        dataType: (dataType || 'varchar2').toLowerCase(),
-                        maxLength: maxLen ? parseInt(maxLen, 10) : null,
-                        isNullable: isNull === 'Y',
-                        isIdentity: isIdent === '1'
-                    };
-                });
+            const sql = `
+                SELECT lower(column_name), lower(data_type), data_length, nullable, identity_column
+                FROM user_tab_cols
+                WHERE table_name = :tname
+            `;
+            const result = await conn.execute<OracleColumnTuple>(sql, { tname: tableName.toUpperCase() });
+            if (!result.rows) return [];
+            return result.rows.map(([name, dataType, maxLen, isNull, isIdent]) => ({
+                name: name.toLowerCase(),
+                dataType: dataType.toLowerCase(),
+                maxLength: maxLen ? Number(maxLen) : null,
+                isNullable: isNull === 'Y',
+                isIdentity: isIdent === 'YES'
+            }));
         } catch {
             return [];
+        } finally {
+            await conn.close().catch(() => { });
         }
     }
 
@@ -89,167 +105,204 @@ export class OracleSyncAdapter extends BaseSyncAdapter {
         return 'CLOB';
     }
 
-    private formatOracleColumnName(colName: string): string {
-        return `"${colName.toUpperCase()}"`;
-    }
-
     public async ensureTableSchema(tableName: string, columns: ColumnDefinition[], config: EngineConnectionConfig): Promise<void> {
         if (!columns || columns.length === 0) return;
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'mesuser';
-        const pass = conf.password || 'mespassword';
-        const db = conf.database || 'FREEPDB1';
-
-        const colDefs = columns.map(c => `${this.formatOracleColumnName(c.name)} ${this.mapOraType(c)}`).join(', ');
-        const createSql = `BEGIN EXECUTE IMMEDIATE 'DROP TABLE "${tableName.toUpperCase()}" CASCADE CONSTRAINTS'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;\n/\nBEGIN EXECUTE IMMEDIATE 'CREATE TABLE "${tableName.toUpperCase()}" (${colDefs})'; END;\n/\nCOMMIT;\nEXIT;\n`;
-        const b64 = Buffer.from(createSql).toString('base64');
-        await execAsync(`kubectl ${k8sFlag} exec -i -n platform-infra deployment/oracle -- bash -c "echo '${b64}' | base64 -d | sqlplus -s ${user}/${pass}@localhost:1521/${db}"`).catch(() => { });
-    }
-
-    public async extractData(tableName: string, config: EngineConnectionConfig): Promise<any[]> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'mesuser';
-        const pass = conf.password || 'mespassword';
-        const db = conf.database || 'FREEPDB1';
-
+        const conn = await this.getConnection(config);
+        const upperTable = tableName.toUpperCase();
         try {
-            const plsql = `SET LONG 2000000000\nSET LONGCHUNKSIZE 65535\nSET PAGESIZE 0\nSET FEEDBACK OFF\nSET LINESIZE 32767\nSELECT COALESCE(json_arrayagg(json_object(* RETURNING CLOB) RETURNING CLOB), TO_CLOB('[]')) FROM "${tableName.toUpperCase()}";\nEXIT;\n`;
-            const b64 = Buffer.from(plsql).toString('base64');
-            const cmd = `kubectl ${k8sFlag} exec -i -n platform-infra deployment/oracle -- bash -c "echo '${b64}' | base64 -d | sqlplus -s ${user}/${pass}@localhost:1521/${db}"`;
-            const { stdout } = await execAsync(cmd, { timeout: 120000, maxBuffer: 100 * 1024 * 1024 });
-            const lines = stdout
-                .split(/\r?\n/)
-                .map(l => l.trim())
-                .filter(l => l && !l.startsWith('SQL>') && !l.startsWith('Connected') && !l.startsWith('Disconnected'));
-            const jsonText = lines.join('').trim();
-            if (!jsonText || jsonText === '[]') return [];
+            const colDefs = columns.map(c => `"${c.name.toUpperCase()}" ${this.mapOraType(c)}`).join(', ');
+            const plsql = `
+                BEGIN
+                    BEGIN
+                        EXECUTE IMMEDIATE 'CREATE TABLE "${upperTable}" (${colDefs})';
+                    EXCEPTION WHEN OTHERS THEN
+                        IF SQLCODE != -955 THEN RAISE; END IF;
+                    END;
+                END;
+            `;
+            await conn.execute(plsql);
 
-            try {
-                return this.normalizeExtractedRows(JSON.parse(jsonText));
-            } catch {
-                const sanitized = jsonText.replace(/[\x00-\x1F\x7F]/g, (ch) => {
-                    if (ch === '\n') return '\\n';
-                    if (ch === '\r') return '\\r';
-                    if (ch === '\t') return '\\t';
-                    return '';
-                });
-                return this.normalizeExtractedRows(JSON.parse(sanitized));
+            for (const c of columns) {
+                const addColPlsql = `
+                    BEGIN
+                        EXECUTE IMMEDIATE 'ALTER TABLE "${upperTable}" ADD ("${c.name.toUpperCase()}" ${this.mapOraType(c)})';
+                    EXCEPTION WHEN OTHERS THEN
+                        IF SQLCODE != -1430 THEN NULL; END IF;
+                    END;
+                `;
+                await conn.execute(addColPlsql).catch(() => { });
             }
-        } catch (err) {
-            console.warn(`[OracleSyncAdapter] Oracle extract hiba a(z) ${tableName} táblánál:`, (err as any)?.message || err);
-            return [];
+        } finally {
+            await conn.close().catch(() => { });
         }
     }
 
-    private formatSqlValue(val: unknown, colDef?: ColumnDefinition, colName?: string): string {
-        if (val === null || val === undefined) return 'NULL';
-
-        if (this.isBooleanValue(val, colDef, colName)) {
-            const isTrue = val === true || val === 1 || val === '1' || String(val).toLowerCase() === 'true';
-            return isTrue ? '1' : '0';
+    public async extractData(tableName: string, config: EngineConnectionConfig): Promise<Record<string, unknown>[]> {
+        const conn = await this.getConnection(config);
+        try {
+            const result = await conn.execute<Record<string, unknown>>(`SELECT * FROM "${tableName.toUpperCase()}"`, [], {
+                outFormat: oracledb.OUT_FORMAT_OBJECT
+            });
+            if (!result.rows) return [];
+            return this.normalizeExtractedRows(result.rows);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.warn(`[OracleSyncAdapter] Extract hiba (${tableName}):`, message);
+            return [];
+        } finally {
+            await conn.close().catch(() => { });
         }
+    }
 
-        if (typeof val === 'number') {
-            return String(val);
+    private normalizeOracleValue(val: unknown, colName: string, targetType?: string, tableName?: string): unknown {
+        if (val === null || val === undefined) return null;
+
+        if (typeof val === 'boolean') {
+            return val ? 1 : 0;
         }
 
         if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}/.test(val)) {
-            const cleanDate = val.replace('T', ' ').substring(0, 19);
-            return `TO_TIMESTAMP('${cleanDate}', 'YYYY-MM-DD HH24:MI:SS')`;
+            return new Date(val);
         }
 
-        return `'${String(val).replace(/'/g, "''")}'`;
+        if (typeof val === 'string') {
+            const isHex32 = /^[0-9a-fA-F]{32}$/.test(val);
+            const isUuid36 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
+
+            const isKnownRaw = (
+                (tableName?.toLowerCase() === 'roles' && colName.toLowerCase() === 'id') ||
+                (tableName?.toLowerCase() === 'products' && colName.toLowerCase() === 'id') ||
+                (tableName?.toLowerCase() === 'notifications' && colName.toLowerCase() === 'id') ||
+                (tableName?.toLowerCase() === 'audit_logs' && (colName.toLowerCase() === 'id' || colName.toLowerCase() === 'user_id'))
+            );
+
+            const isRawTarget = targetType ? targetType.includes('raw') : isKnownRaw;
+            if (isRawTarget && (isHex32 || isUuid36)) {
+                const cleanHex = val.replace(/-/g, '');
+                return Buffer.from(cleanHex, 'hex');
+            }
+        }
+
+        return val;
     }
 
-    public async loadData(tableName: string, rows: any[], columns: ColumnDefinition[], config: EngineConnectionConfig): Promise<number> {
-        if (!rows || rows.length === 0) return 0;
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'mesuser';
-        const pass = conf.password || 'mespassword';
-        const db = conf.database || 'FREEPDB1';
+    public async loadData(tableName: string, rows: Record<string, unknown>[], columns: ColumnDefinition[], config: EngineConnectionConfig): Promise<number> {
+        const firstRow = rows[0];
+        if (!firstRow) return 0;
+        const conn = await this.getConnection(config);
+        const upperTable = tableName.toUpperCase();
 
-        const rowKeys = Object.keys(rows[0]).map(k => k.toLowerCase());
-        const colNames = rowKeys.map(c => this.formatOracleColumnName(c)).join(', ');
-
-        const deleteSql = `DELETE FROM "${tableName.toUpperCase()}";\nCOMMIT;\nEXIT;\n`;
-        const tempDelFile = `/tmp/sync_ora_del_${Date.now()}.sql`;
         try {
-            fs.writeFileSync(tempDelFile, deleteSql);
-            await execAsync(`cat ${tempDelFile} | kubectl ${k8sFlag} exec -i -n platform-infra deployment/oracle -- sqlplus -s ${user}/${pass}@localhost:1521/${db}`).catch(() => { });
+            const targetCols = await this.discoverColumns(tableName, config).catch(() => []);
+            const targetTypeMap = new Map(targetCols.map(c => [c.name.toLowerCase(), c.dataType.toLowerCase()]));
+
+            await conn.execute(`DELETE FROM "${upperTable}"`).catch(() => { });
+            await conn.commit();
+
+            const rowKeys = Object.keys(firstRow).map(k => k.toLowerCase());
+            const colNames = rowKeys.map(c => `"${c.toUpperCase()}"`).join(', ');
+            const bindPlaceholders = rowKeys.map((_, i) => `:b${i}`).join(', ');
+            const insertSql = `INSERT INTO "${upperTable}" (${colNames}) VALUES (${bindPlaceholders})`;
+
+            const batchSize = 100;
+            for (let i = 0; i < rows.length; i += batchSize) {
+                const batch = rows.slice(i, i + batchSize);
+                for (const row of batch) {
+                    const bindValues = rowKeys.map(c => {
+                        const targetType = targetTypeMap.get(c.toLowerCase());
+                        return this.normalizeOracleValue(row[c], c, targetType, tableName);
+                    });
+                    await conn.execute(insertSql, bindValues).catch(() => { });
+                }
+                await conn.commit();
+            }
+
+            return rows.length;
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.warn(`[OracleSyncAdapter] Betöltési hiba (${upperTable}):`, message);
+            return 0;
         } finally {
-            if (fs.existsSync(tempDelFile)) fs.unlinkSync(tempDelFile);
+            await conn.close().catch(() => { });
         }
-
-        const batchSize = 250;
-        for (let i = 0; i < rows.length; i += batchSize) {
-            const batch = rows.slice(i, i + batchSize);
-            let sqlStatements = 'SET DEFINE OFF\n';
-            for (const row of batch) {
-                const vals = rowKeys.map(c => {
-                    const colDef = columns.find(cd => cd.name.toLowerCase() === c);
-                    return this.formatSqlValue(row[c], colDef, c);
-                });
-                sqlStatements += `INSERT INTO "${tableName.toUpperCase()}" (${colNames}) VALUES (${vals.join(', ')});\n`;
-            }
-            sqlStatements += `COMMIT;\nEXIT;\n`;
-
-            const tempSqlFile = `/tmp/sync_ora_${Date.now()}_${Math.random().toString(36).substring(7)}.sql`;
-            try {
-                fs.writeFileSync(tempSqlFile, sqlStatements);
-                await execAsync(`cat ${tempSqlFile} | kubectl ${k8sFlag} exec -i -n platform-infra deployment/oracle -- sqlplus -s ${user}/${pass}@localhost:1521/${db}`);
-            } finally {
-                if (fs.existsSync(tempSqlFile)) fs.unlinkSync(tempSqlFile);
-            }
-        }
-        return rows.length;
     }
 
     public async disableConstraints(config: EngineConnectionConfig): Promise<void> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'mesuser';
-        const pass = conf.password || 'mespassword';
-        const db = conf.database || 'FREEPDB1';
-        const plsql = `BEGIN FOR c IN (SELECT table_name, constraint_name FROM user_constraints WHERE constraint_type = 'R') LOOP BEGIN EXECUTE IMMEDIATE 'ALTER TABLE "' || c.table_name || '" DISABLE CONSTRAINT "' || c.constraint_name || '"'; EXCEPTION WHEN OTHERS THEN NULL; END; END LOOP; END;\n/\nEXIT;\n`;
-        const b64 = Buffer.from(plsql).toString('base64');
-        await execAsync(`kubectl ${k8sFlag} exec -i -n platform-infra deployment/oracle -- bash -c "echo '${b64}' | base64 -d | sqlplus -s ${user}/${pass}@localhost:1521/${db}"`).catch(() => { });
+        const conn = await this.getConnection(config);
+        try {
+            const plsql = `
+                BEGIN
+                    FOR c IN (SELECT table_name, constraint_name FROM user_constraints WHERE constraint_type = 'R') LOOP
+                        BEGIN
+                            EXECUTE IMMEDIATE 'ALTER TABLE "' || c.table_name || '" DISABLE CONSTRAINT "' || c.constraint_name || '"';
+                        EXCEPTION WHEN OTHERS THEN NULL;
+                        END;
+                    END LOOP;
+                END;
+            `;
+            await conn.execute(plsql);
+        } catch { }
+        finally {
+            await conn.close().catch(() => { });
+        }
     }
 
     public async enableConstraints(config: EngineConnectionConfig): Promise<void> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const user = conf.username || 'mesuser';
-        const pass = conf.password || 'mespassword';
-        const db = conf.database || 'FREEPDB1';
-        const plsql = `BEGIN FOR c IN (SELECT table_name, constraint_name FROM user_constraints WHERE constraint_type = 'R') LOOP BEGIN EXECUTE IMMEDIATE 'ALTER TABLE "' || c.table_name || '" ENABLE NOVALIDATE CONSTRAINT "' || c.constraint_name || '"'; EXCEPTION WHEN OTHERS THEN NULL; END; END LOOP; END;\n/\nEXIT;\n`;
-        const b64 = Buffer.from(plsql).toString('base64');
-        await execAsync(`kubectl ${k8sFlag} exec -i -n platform-infra deployment/oracle -- bash -c "echo '${b64}' | base64 -d | sqlplus -s ${user}/${pass}@localhost:1521/${db}"`).catch(() => { });
+        const conn = await this.getConnection(config);
+        try {
+            const plsql = `
+                BEGIN
+                    FOR c IN (SELECT table_name, constraint_name FROM user_constraints WHERE constraint_type = 'R') LOOP
+                        BEGIN
+                            EXECUTE IMMEDIATE 'ALTER TABLE "' || c.table_name || '" ENABLE NOVALIDATE CONSTRAINT "' || c.constraint_name || '"';
+                        EXCEPTION WHEN OTHERS THEN NULL;
+                        END;
+                    END LOOP;
+                END;
+            `;
+            await conn.execute(plsql);
+        } catch { }
+        finally {
+            await conn.close().catch(() => { });
+        }
     }
 
     public async getStats(config: EngineConnectionConfig): Promise<DatabaseStats> {
-        const k8sFlag = this.getK8sServerFlag();
-        const conf = this.normalizeConfig(config);
-        const oracleUser = conf.username && conf.username !== 'postgres' && conf.username !== 'sa' && conf.username !== 'system' ? conf.username : 'mesuser';
-        const pass = conf.password || 'mespassword';
-        const db = conf.database && conf.database !== 'mes_db' && conf.database !== 'mesdb' && conf.database !== 'postgres' ? conf.database : 'FREEPDB1';
-
+        const conn = await this.getConnection(config);
         try {
-            const sql = "printf 'SET PAGESIZE 0\\nSET FEEDBACK OFF\\nSET SERVEROUTPUT ON\\nSELECT count(*) FROM user_tables;\\nDECLARE v_total NUMBER := 0; v_cnt NUMBER; BEGIN FOR t IN (SELECT table_name FROM user_tables) LOOP EXECUTE IMMEDIATE \\x27SELECT count(*) FROM \\x27 || t.table_name INTO v_cnt; v_total := v_total + v_cnt; END LOOP; DBMS_OUTPUT.PUT_LINE(v_total); END;\\n/\\nEXIT;\\n'";
-            const cmd = `kubectl ${k8sFlag} exec -i -n platform-infra deployment/oracle -- bash -c "${sql} | sqlplus -s ${oracleUser}/${pass}@localhost:1521/${db}"`;
-            const { stdout } = await execAsync(cmd, { timeout: 8000 });
-            const lines = stdout.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-            if (lines.length >= 2) {
-                const totalTables = parseInt(lines[0] ?? '0', 10) || 0;
-                const totalRows = parseInt(lines[1] ?? '0', 10) || 0;
-                return { totalTables, totalRows };
-            }
+            const plsql = `
+                DECLARE
+                    v_tables NUMBER := 0;
+                    v_rows NUMBER := 0;
+                    v_cnt NUMBER;
+                BEGIN
+                    SELECT count(*) INTO v_tables FROM user_tables WHERE table_name NOT LIKE 'BIN$%';
+                    FOR t IN (SELECT table_name FROM user_tables WHERE table_name NOT LIKE 'BIN$%') LOOP
+                        BEGIN
+                            EXECUTE IMMEDIATE 'SELECT count(*) FROM "' || t.table_name || '"' INTO v_cnt;
+                            v_rows := v_rows + v_cnt;
+                        EXCEPTION WHEN OTHERS THEN NULL;
+                        END;
+                    END LOOP;
+                    :out_tables := v_tables;
+                    :out_rows := v_rows;
+                END;
+            `;
+            const result = await conn.execute(plsql, {
+                out_tables: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+                out_rows: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
+            });
+            const outBinds = result.outBinds as OracleStatsOutBinds;
+            return {
+                totalTables: outBinds?.out_tables || 0,
+                totalRows: outBinds?.out_rows || 0
+            };
         } catch (err) {
-            console.warn('[OracleSyncAdapter] Oracle statisztika hiba:', (err as any)?.message || err);
+            const message = err instanceof Error ? err.message : String(err);
+            console.warn('[OracleSyncAdapter] Statisztika hiba:', message);
+            return { totalTables: 0, totalRows: 0 };
+        } finally {
+            await conn.close().catch(() => { });
         }
-
-        return { totalTables: 0, totalRows: 0 };
     }
 }

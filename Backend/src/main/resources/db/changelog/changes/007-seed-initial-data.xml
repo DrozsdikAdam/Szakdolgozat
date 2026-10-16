@@ -41,8 +41,8 @@
     <!-- Legacy Oracle HEXTORAW roles seed skipped in favor of unified 36-char string UUIDs -->
     <changeSet id="007-seed-initial-roles-oracle" author="mes-admin" dbms="oracle">
         <validCheckSum>any</validCheckSum>
-        <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="1">SELECT 0 FROM DUAL WHERE 1=0</sqlCheck>
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="1">SELECT 0 FROM DUAL</sqlCheck>
         </preConditions>
         <comment>Skipped: Unified changeset 007-seed-initial-roles handles Oracle using standard CHAR(36) UUIDs</comment>
     </changeSet>
@@ -77,8 +77,8 @@
     <!-- Legacy Oracle HEXTORAW admin seed skipped in favor of unified 36-char string UUIDs -->
     <changeSet id="007-seed-admin-user-oracle" author="mes-admin" dbms="oracle">
         <validCheckSum>any</validCheckSum>
-        <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="1">SELECT 0 FROM DUAL WHERE 1=0</sqlCheck>
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="1">SELECT 0 FROM DUAL</sqlCheck>
         </preConditions>
         <comment>Skipped: Unified changeset 007-seed-admin-user handles Oracle using standard CHAR(36) UUIDs</comment>
     </changeSet>

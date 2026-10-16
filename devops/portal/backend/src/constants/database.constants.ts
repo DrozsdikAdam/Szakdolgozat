@@ -32,7 +32,7 @@ export const DEFAULT_INTERNAL_CREDENTIALS: Record<DatabaseEngine, { database: st
 };
 
 export const DATABASE_LIMITS = {
-    MIN_REPLICAS: 1,
+    MIN_REPLICAS: 0,
     MAX_REPLICAS: 5,
     DEFAULT_REPLICAS: 2,
     DEFAULT_POOL_SIZE: 50,

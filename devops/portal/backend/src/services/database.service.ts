@@ -14,6 +14,8 @@ import type {
     SaveDatabaseConfigDto
 } from "../dtos/database.dto.js";
 import type { DatabaseEngine, ParsedDatabaseConfig, ScaleDatabaseResult, SaveDatabaseConfigResult } from "../types/database.types.js";
+import type { DatabaseMode } from "../types/setup.types.js";
+import type { InactivationStrategy } from "../types/feature.types.js";
 
 export class DatabaseService {
     private k8sService: K8sService;
@@ -34,19 +36,20 @@ export class DatabaseService {
 
     private getLiveReplicas = async (engine: DatabaseEngine, fallbackReplicas: number): Promise<number> => {
         try {
-            if (engine !== 'postgres') {
+            const stsName = engine === 'postgres' ? DATABASE_DEFAULTS.POSTGRES_STATEFULSET : engine;
+            try {
+                const sts = await this.k8sClient.appsApi.readNamespacedStatefulSet({
+                    name: stsName,
+                    namespace: DATABASE_DEFAULTS.INFRA_NAMESPACE
+                });
+                return sts?.spec?.replicas ?? fallbackReplicas;
+            } catch {
                 const dep = await this.k8sClient.appsApi.readNamespacedDeployment({
                     name: engine,
                     namespace: DATABASE_DEFAULTS.INFRA_NAMESPACE
                 });
                 return dep?.spec?.replicas ?? fallbackReplicas;
             }
-
-            const sts = await this.k8sClient.appsApi.readNamespacedStatefulSet({
-                name: DATABASE_DEFAULTS.POSTGRES_STATEFULSET,
-                namespace: DATABASE_DEFAULTS.INFRA_NAMESPACE
-            });
-            return sts?.spec?.replicas ?? fallbackReplicas;
         } catch (err) {
             console.warn(`[DatabaseService] K8s replikaszám lekérdezése sikertelen (${engine}), mentett érték használata (${fallbackReplicas}):`, (err as any)?.message || err);
             return fallbackReplicas;
@@ -146,13 +149,64 @@ export class DatabaseService {
                 namespace,
                 body: sts
             });
-        } catch {
-            await this.k8sService.scaleDeployment(
-                DATABASE_DEFAULTS.PGBOUNCER_DEPLOYMENT,
-                namespace,
-                Math.min(replicas, 3)
-            );
+        } catch (err) {
+            console.warn('[DatabaseService] Nem sikerült skálázni a postgres statefulsetet:', (err as any)?.message || err);
         }
+
+        const poolReplicas = Math.min(replicas, 1);
+        await this.k8sService.scaleDeployment('postgres-postgresql-ha-pgpool', namespace, poolReplicas).catch(() => { });
+        await this.k8sService.scaleDeployment(DATABASE_DEFAULTS.PGBOUNCER_DEPLOYMENT, namespace, poolReplicas).catch(() => { });
+    };
+
+    private applyInternalDefaults = (dto: SaveDatabaseConfigDto): void => {
+        if (dto.mode !== 'internal') return;
+
+        const defaults = DEFAULT_INTERNAL_CREDENTIALS[dto.engine];
+        if (!defaults) return;
+
+        dto.host = DEFAULT_INTERNAL_HOSTS[dto.engine];
+        dto.database = defaults.database;
+        dto.username = defaults.username;
+        dto.password = defaults.password;
+        dto.port = DEFAULT_DB_PORTS[dto.engine];
+    };
+
+    private restartWorkloadsIfNeeded = async (restartWorkload?: boolean): Promise<void> => {
+        if (!restartWorkload) return;
+
+        await this.k8sService.restartWorkload(
+            DATABASE_DEFAULTS.APP_NAMESPACE,
+            [DATABASE_DEFAULTS.BACKEND_DEPLOYMENT, 'mes-backend-canary', 'mes-backend-bluegreen']
+        ).catch(() => { });
+    };
+
+    private applyInactivationStrategy = async (targetEngine: DatabaseEngine, mode: DatabaseMode): Promise<void> => {
+        if (mode !== 'internal') return;
+
+        const strategyConfig = await SystemConfig.findOne({ where: { key: 'inactivation_strategy' } });
+        const strategy: InactivationStrategy = (strategyConfig?.value as InactivationStrategy) || 'scale_to_zero';
+
+        const savedReplicasConfig = await SystemConfig.findOne({ where: { key: 'db_replicas' } });
+        const targetActiveReplicas = savedReplicasConfig ? Math.max(1, parseInt(savedReplicasConfig.value, 10)) : 1;
+
+        const allEngines: DatabaseEngine[] = ['postgres', 'mssql', 'oracle'];
+        const inactiveEngines = allEngines.filter(e => e !== targetEngine);
+        const targetInactiveReplicas = strategy === 'scale_to_zero' ? 0 : 1;
+
+        await this.scaleDatabase({ engine: targetEngine, replicas: targetActiveReplicas }).catch(err => {
+            console.warn(`[DatabaseService] Nem sikerült elindítani a cél adatbázist (${targetEngine}):`, (err as any)?.message || err);
+        });
+
+        for (const inactiveEngine of inactiveEngines) {
+            await this.scaleDatabase({ engine: inactiveEngine, replicas: targetInactiveReplicas }).catch(err => {
+                console.warn(`[DatabaseService] Hiba az inaktív adatbázis (${inactiveEngine}) inaktiválásakor (${strategy}):`, (err as any)?.message || err);
+            });
+        }
+
+        await this.auditService.logAudit(
+            'DATABASE_INACTIVATION_STRATEGY',
+            `Inaktiválási stratégia alkalmazva (${strategy}): ${targetEngine.toUpperCase()} aktív (${targetActiveReplicas} pod), inaktív motorok (${inactiveEngines.join(', ')}) -> ${targetInactiveReplicas} pod.`
+        ).catch(() => { });
     };
 
     scaleDatabase = async (dto: ScaleDatabaseDto): Promise<ScaleDatabaseResult> => {
@@ -167,7 +221,10 @@ export class DatabaseService {
             if (dto.engine === 'postgres') {
                 await this.scalePostgres(namespace, clampedReplicas);
             } else {
-                await this.k8sService.scaleDeployment(dto.engine, namespace, clampedReplicas);
+                const res = await this.k8sService.scaleStatefulSet(dto.engine, namespace, clampedReplicas);
+                if (!res.success) {
+                    await this.k8sService.scaleDeployment(dto.engine, namespace, clampedReplicas);
+                }
             }
 
             await SystemConfig.upsert({ key: 'db_replicas', value: String(clampedReplicas) });
@@ -199,14 +256,7 @@ export class DatabaseService {
             throw new Error("Hiányzó kötelező adatbázis konfigurációs paraméterek.");
         }
 
-        const defaults = DEFAULT_INTERNAL_CREDENTIALS[dto.engine];
-        if (dto.mode === 'internal' && defaults) {
-            dto.host = DEFAULT_INTERNAL_HOSTS[dto.engine];
-            dto.database = defaults.database;
-            dto.username = defaults.username;
-            dto.password = defaults.password;
-            dto.port = DEFAULT_DB_PORTS[dto.engine];
-        }
+        this.applyInternalDefaults(dto);
 
         try {
             await Promise.all([
@@ -228,12 +278,8 @@ export class DatabaseService {
                 data: secretData
             }).catch(err => console.warn('[DatabaseService] backend-secret K8s frissítés figyelmeztetés:', (err as any)?.message || err));
 
-            if (dto.restartWorkload) {
-                await this.k8sService.restartWorkload(
-                    DATABASE_DEFAULTS.APP_NAMESPACE,
-                    [DATABASE_DEFAULTS.BACKEND_DEPLOYMENT, 'mes-backend-canary', 'mes-backend-bluegreen']
-                ).catch(() => { });
-            }
+            await this.restartWorkloadsIfNeeded(dto.restartWorkload);
+            await this.applyInactivationStrategy(dto.engine, dto.mode);
 
             await this.auditService.logAudit(
                 'DATABASE_CONFIG_UPDATE',

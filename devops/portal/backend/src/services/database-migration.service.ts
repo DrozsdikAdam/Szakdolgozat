@@ -6,14 +6,16 @@ import { DataSyncService } from "./data-sync.service.js";
 import { SyncAdapterFactory } from "./sync/sync-adapter.factory.js";
 import { DatabaseMapper } from "../mappers/database.mapper.js";
 import { SystemConfig } from "../models/SystemConfig.js";
-import { DATABASE_DEFAULTS, MIGRATION_CONSTANTS } from "../constants/database.constants.js";
+import { K8sClientService } from "./k8s/k8s-client.service.js";
+import { DATABASE_DEFAULTS, MIGRATION_CONSTANTS, DEFAULT_INTERNAL_CREDENTIALS, DEFAULT_INTERNAL_HOSTS, DEFAULT_DB_PORTS } from "../constants/database.constants.js";
 import type {
     StartMigrationDto,
     MigrationJobStatusDto,
     ScheduleCutoverDto,
     CutoverStatusDto
 } from "../dtos/database.dto.js";
-import type { MigrationStep } from "../types/database.types.js";
+import type { MigrationStep, DatabaseEngine, ParsedDatabaseConfig } from "../types/database.types.js";
+import type { EngineConnectionConfig } from "./sync/types.js";
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
@@ -135,33 +137,84 @@ export class DatabaseMigrationService {
         }
     };
 
-    private waitForTargetReadiness = async (engine: string, config: any, maxAttempts = 12): Promise<boolean> => {
-        const adapter = SyncAdapterFactory.getAdapter(engine);
-        const norm = adapter.normalizeConfig(config);
+    private waitForTargetReadiness = async (engine: string, config?: EngineConnectionConfig, maxAttempts = 30): Promise<boolean> => {
+        const podName = engine === 'postgres' ? 'postgres-postgresql-ha-postgresql-0' : `${engine}-0`;
+        const namespace = DATABASE_DEFAULTS.INFRA_NAMESPACE;
+        const k8sClient = K8sClientService.getInstance();
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                const stats = await adapter.getStats(norm);
-                if (stats !== undefined && stats !== null) {
-                    return true;
+                const pod = await k8sClient.coreApi.readNamespacedPod({ name: podName, namespace });
+                const isReady = pod?.status?.phase === 'Running' && (pod?.status?.containerStatuses?.every(c => c.ready) ?? false);
+                if (isReady) {
+                    const adapter = SyncAdapterFactory.getAdapter(engine);
+                    const norm = adapter.normalizeConfig(config);
+                    const tables = await adapter.discoverTables(norm);
+                    if (tables && Array.isArray(tables)) {
+                        return true;
+                    }
                 }
             } catch { }
-            await delay(1500);
+            await delay(2000);
         }
         return false;
     };
+
+    private resolveSourceConfig(sourceEngine: DatabaseEngine, currentConfig: ParsedDatabaseConfig): EngineConnectionConfig {
+        const isInternal = currentConfig.mode === 'internal';
+        if (isInternal) {
+            const creds = DEFAULT_INTERNAL_CREDENTIALS[sourceEngine];
+            return {
+                mode: 'internal',
+                host: DEFAULT_INTERNAL_HOSTS[sourceEngine],
+                port: DEFAULT_DB_PORTS[sourceEngine],
+                database: creds?.database,
+                username: creds?.username,
+                password: creds?.password
+            };
+        }
+
+        const isSameEngine = sourceEngine === currentConfig.engine;
+        if (isSameEngine) {
+            return {
+                mode: currentConfig.mode,
+                host: currentConfig.host,
+                port: currentConfig.port,
+                database: currentConfig.database,
+                username: currentConfig.username,
+                password: DEFAULT_INTERNAL_CREDENTIALS[sourceEngine]?.password
+            };
+        }
+
+        const fallbackCreds = DEFAULT_INTERNAL_CREDENTIALS[sourceEngine];
+        return {
+            mode: currentConfig.mode,
+            host: DEFAULT_INTERNAL_HOSTS[sourceEngine],
+            port: DEFAULT_DB_PORTS[sourceEngine],
+            database: fallbackCreds?.database,
+            username: fallbackCreds?.username,
+            password: fallbackCreds?.password
+        };
+    }
 
     private runMigrationPipeline = async (jobId: string, dto: StartMigrationDto): Promise<void> => {
         await delay(600);
 
         const currentConfig = await this.databaseService.getCurrentConfig();
+        const sourceConfigWithAuth = this.resolveSourceConfig(dto.sourceEngine, currentConfig);
+
+        if (currentConfig.mode === 'internal') {
+            await this.databaseService.scaleDatabase({ engine: dto.sourceEngine, replicas: 1 }).catch(() => { });
+            await this.waitForTargetReadiness(dto.sourceEngine, sourceConfigWithAuth);
+        }
+
         const stats = await this.querySourceDatabaseStats(
             dto.sourceEngine,
-            currentConfig.host,
-            currentConfig.port,
-            currentConfig.database,
-            currentConfig.username,
-            undefined
+            sourceConfigWithAuth.host || '',
+            sourceConfigWithAuth.port || DEFAULT_DB_PORTS[dto.sourceEngine],
+            sourceConfigWithAuth.database || '',
+            sourceConfigWithAuth.username || '',
+            sourceConfigWithAuth.password
         );
 
         await this.step(jobId, 'SNAPSHOT', MIGRATION_CONSTANTS.SNAPSHOT_PROGRESS, 'Snapshot adatmentés készítése (MinIO S3)...', 1200, {
@@ -177,7 +230,7 @@ export class DatabaseMigrationService {
             await this.waitForTargetReadiness(dto.targetEngine, dto.targetConfig);
         }
 
-        const discoveredTables = await this.dataSyncService.discoverSourceTables(dto.sourceEngine, currentConfig);
+        const discoveredTables = await this.dataSyncService.discoverSourceTables(dto.sourceEngine, sourceConfigWithAuth);
         const actualTablesTotal = discoveredTables.length > 0 ? discoveredTables.length : stats.totalTables;
 
         await this.step(jobId, 'DATA_COPY', MIGRATION_CONSTANTS.DATA_STAGE1_PROGRESS, `Dinamikus modellek és táblák felfedezése, adatfolyam indítása (${dto.sourceEngine.toUpperCase()} -> ${dto.targetEngine.toUpperCase()})...`, 800, {
@@ -189,7 +242,7 @@ export class DatabaseMigrationService {
         const syncResult = await this.dataSyncService.syncAllTables(
             dto.sourceEngine,
             dto.targetEngine,
-            currentConfig,
+            sourceConfigWithAuth,
             dto.targetConfig,
             async (tableName, migrated, total, rows) => {
                 const progress = Math.min(85, Math.floor(MIGRATION_CONSTANTS.DATA_STAGE1_PROGRESS + (migrated / total) * 35));
