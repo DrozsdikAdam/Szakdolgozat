@@ -15,3 +15,4 @@ resources:
   - app-storage-service.yaml
   - app-storage-statefulset.yaml
   - app-storage-network-policy.yaml
+  - app-storage-init-bucket-job.yaml

@@ -23,4 +23,12 @@ export type SystemConfigKey = 'is_initialized'
     | 'db_replicas'
     | 'db_pool_size'
     | 'db_cutover_job'
-    | 'db_cutover_scheduled_at';
+    | 'db_cutover_scheduled_at'
+    | 'storage_mode'
+    | 'storage_internal_size_gb'
+    | 'storage_external_endpoint'
+    | 'storage_external_bucket'
+    | 'storage_external_region'
+    | 'storage_external_access_key'
+    | 'storage_external_secret_key'
+    | 'storage_scale_down_internal';
