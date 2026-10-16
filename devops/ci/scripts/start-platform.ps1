@@ -82,6 +82,17 @@ else {
     Write-Host "Kubernetes furt aktiv es elerheto!" -ForegroundColor Green
 }
 
+# 1.5 DBaaS & Adatbázis podok öngyógyítása (beragadt PID fájlok automatikus feloldása gép újraindulás után)
+if (-not $DryRun -and $k8sOk) {
+    $crashedPgPods = & kubectl get pods -n platform-infra -l app.kubernetes.io/name=postgresql-ha --no-headers 2>$null | Where-Object { $_ -match "CrashLoopBackOff|Error" }
+    if ($crashedPgPods) {
+        Write-Host "Beragadt PostgreSQL podok eszlelve, automatikus helyreallitas..." -ForegroundColor Yellow
+        & kubectl delete pod -n platform-infra -l app.kubernetes.io/name=postgresql-ha --force --grace-period=0 2>$null | Out-Null
+        Write-Host "PostgreSQL podok automatikusan ujrainditva tiszta ideiglenes taroloval!" -ForegroundColor Green
+    }
+}
+
+
 # Lokális CI és Konténer Fordítás
 if (-not $SkipBuild) {
     Write-Host "`n[2/4] FAZIS 2: Lokalis CI tesztek es Docker kontener forditas..." -ForegroundColor Yellow

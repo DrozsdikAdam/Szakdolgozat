@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: app-storage
+  namespace: platform-infra
+  labels:
+    app: app-storage
+    app.kubernetes.io/name: app-storage
+    app.kubernetes.io/part-of: paas-platform
+spec:
+  serviceName: app-storage
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-storage
+  template:
+    metadata:
+      labels:
+        app: app-storage
+        app.kubernetes.io/name: app-storage
+        app.kubernetes.io/part-of: paas-platform
+    spec:
+      containers:
+        - name: app-storage
+          image: cgr.dev/chainguard/minio:latest
+          args:
+            - server
+            - /data
+            - --console-address
+            - :9001
+          ports:
+            - containerPort: 9000
+              name: s3-api
+            - containerPort: 9001
+              name: console
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-storage-secret
+                  key: APP_STORAGE_ROOT_USER
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-storage-secret
+                  key: APP_STORAGE_ROOT_PASSWORD
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          volumeMounts:
+            - name: app-storage-data
+              mountPath: /data
+      volumes:
+        - name: app-storage-data
+          persistentVolumeClaim:
+            claimName: app-storage-pvc

@@ -37,3 +37,6 @@ spec:
           protocol: TCP
         - port: 1521
           protocol: TCP
+        - port: 9000
+          protocol: TCP
+

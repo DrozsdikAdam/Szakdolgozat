@@ -85,11 +85,17 @@ else {
 
 # 2. Alapértelmezett Névterek Létrehozása
 Write-Host "`n[2/8] Alapertelmezett nevterek felallitasa..." -ForegroundColor Yellow
+$nsDir = Join-Path $PSScriptRoot "..\..\k8s\namespaces"
 $nsFile = Join-Path $PSScriptRoot "..\..\k8s\namespaces.yaml"
-if (Test-Path $nsFile) {
+if (Test-Path $nsDir) {
+    Invoke-Kube @("apply", "-k", $nsDir) | Out-Null
+    Write-Host "Fo nevterek ervenyesitve ($appNamespace, platform-infra, platform-monitoring, app-generic-demo) a namespaces mappabol!" -ForegroundColor Green
+}
+elseif (Test-Path $nsFile) {
     Invoke-Kube @("apply", "-f", $nsFile) | Out-Null
     Write-Host "Fo nevterek ervenyesitve ($appNamespace, platform-infra, platform-monitoring, app-generic-demo)!" -ForegroundColor Green
 }
+
 
 # argo-rollouts névtér biztosítása
 $argoRolloutsNs = & kubectl $kubeArgs get namespace argo-rollouts --ignore-not-found -o name
@@ -270,15 +276,23 @@ if (Test-Path $resilienceScript) {
     & powershell -ExecutionPolicy Bypass -File $resilienceScript @resilienceArgs
 }
 
-# MinIO S3 Backup és Katasztrófa-helyreállítás (Kustomize)
+# MinIO S3 Backup és Alkalmazás Tárhely (Kustomize)
 if (-not $SkipStorage) {
     $backupDir = Join-Path $PSScriptRoot "..\..\k8s\storage\backup"
+    $appStorageDir = Join-Path $PSScriptRoot "..\..\k8s\storage\app"
+    $dryFlag = if ($DryRun) { "--dry-run=client" } else { "" }
+
     if (Test-Path (Join-Path $backupDir "kustomization.yaml")) {
-        $dryFlag = if ($DryRun) { "--dry-run=client" } else { "" }
         kubectl kustomize $backupDir --load-restrictor LoadRestrictionsNone | kubectl apply -f - $dryFlag
         Write-Host "S3 Backup Kustomize reteg (backup-secret, backup-config, MinIO, CronJob-ok) ervenyesitve!" -ForegroundColor Green
     }
+
+    if (Test-Path (Join-Path $appStorageDir "kustomization.yaml")) {
+        kubectl kustomize $appStorageDir --load-restrictor LoadRestrictionsNone | kubectl apply -f - $dryFlag
+        Write-Host "Alkalmazas S3 Tarhely Kustomize reteg (app-storage-secret, app-storage StatefulSet/PVC/Service) ervenyesitve!" -ForegroundColor Green
+    }
 }
+
 else {
     Write-Host "MinIO S3 tarolo kihagyva (-SkipStorage kapcsolo)." -ForegroundColor DarkGray
 }

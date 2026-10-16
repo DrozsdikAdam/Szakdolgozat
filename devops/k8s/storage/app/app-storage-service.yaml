@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-storage
+  namespace: platform-infra
+  labels:
+    app: app-storage
+    app.kubernetes.io/name: app-storage
+    app.kubernetes.io/part-of: paas-platform
+spec:
+  type: ClusterIP
+  selector:
+    app: app-storage
+  ports:
+    - name: s3-api
+      port: 9000
+      targetPort: 9000
+      protocol: TCP
+    - name: console
+      port: 9001
+      targetPort: 9001
+      protocol: TCP

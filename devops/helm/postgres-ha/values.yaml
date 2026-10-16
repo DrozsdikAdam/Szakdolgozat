@@ -29,3 +29,12 @@ readReplicas:
       cpu: "500m"
   persistence:
     size: 2Gi
+
+postgresql:
+  command:
+    - /bin/bash
+    - -ec
+    - |
+      rm -f /tmp/repmgrd.pid /tmp/*.pid /opt/bitnami/postgresql/tmp/*.pid 2>/dev/null || true
+      exec /opt/bitnami/scripts/postgresql-repmgr/entrypoint.sh /opt/bitnami/scripts/postgresql-repmgr/run.sh
+
