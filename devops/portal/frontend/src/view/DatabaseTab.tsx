@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useDatabase } from "../hooks/useDatabase";
 import { useBackupHistory } from "../hooks/useBackupHistory";
+import { useStorage } from "../hooks/useStorage";
 import type { DatabaseTabProps, DatabaseSubTab } from "../types/databaseTab";
 import { DATABASE_TAB_OPTIONS } from "../constants/databaseTab";
 import {
@@ -12,6 +13,12 @@ import {
     MigrationStepperCard,
     CutoverScheduleModal
 } from "../components/dashboard/database";
+import {
+    StorageMetricCards,
+    StorageModeSelectorCard,
+    InternalStorageCard,
+    ExternalStorageCard
+} from "../components/dashboard/storage";
 import { BackupStats } from "../components/dashboard/backup/Stats";
 import { BackupTable } from "../components/dashboard/backup/Table";
 import { RestoreModal } from "../components/dashboard/backup/RestoreModal";
@@ -76,6 +83,24 @@ export const DatabaseTab = ({ initialTab = "engines" }: DatabaseTabProps) => {
         handleConfirmRestore
     } = useBackupHistory();
 
+    const {
+        overview: storageOverview,
+        isLoading: isStorageLoading,
+        isRefreshing: isStorageRefreshing,
+        toastMessage: storageToast,
+        form: storageForm,
+        isFormDirty: isStorageDirty,
+        isTesting: isStorageTesting,
+        testResult: storageTestResult,
+        isSaving: isStorageSaving,
+        handleRefresh: handleStorageRefresh,
+        handleModeChange: handleStorageModeChange,
+        handleSizeChange: handleStorageSizeChange,
+        handleFieldChange: handleStorageFieldChange,
+        handleTestConnection: handleStorageTestConnection,
+        handleSaveConfig: handleStorageSaveConfig
+    } = useStorage();
+
     const handleTabChange = useCallback((tab: DatabaseSubTab) => {
         setActiveTab(tab);
         setSearchParams({ tab });
@@ -87,6 +112,8 @@ export const DatabaseTab = ({ initialTab = "engines" }: DatabaseTabProps) => {
                 setActiveTab("backups");
             } else if (queryTab === "migration") {
                 setActiveTab("migration");
+            } else if (queryTab === "storage") {
+                setActiveTab("storage");
             } else if (queryTab === "engines") {
                 setActiveTab("engines");
             }
@@ -96,12 +123,14 @@ export const DatabaseTab = ({ initialTab = "engines" }: DatabaseTabProps) => {
     const handleRefreshAll = () => {
         if (activeTab === "backups") {
             loadBackups();
+        } else if (activeTab === "storage") {
+            handleStorageRefresh();
         } else {
             handleDbRefresh();
         }
     };
 
-    const activeToast = dbToast || backupToast;
+    const activeToast = dbToast || backupToast || storageToast;
     const closeToast = () => {
         setBackupToast(null);
     };
@@ -136,7 +165,7 @@ export const DatabaseTab = ({ initialTab = "engines" }: DatabaseTabProps) => {
                     <Button
                         variant="secondary"
                         size="md"
-                        loading={isDbRefreshing || isBackupLoading}
+                        loading={isDbRefreshing || isBackupLoading || isStorageRefreshing}
                         icon={<RefreshCw className="w-4 h-4" />}
                         onClick={handleRefreshAll}
                     >
@@ -145,8 +174,12 @@ export const DatabaseTab = ({ initialTab = "engines" }: DatabaseTabProps) => {
                 </div>
             </div>
 
-            {activeTab !== "backups" && (
+            {(activeTab === "engines" || activeTab === "migration") && (
                 <DatabaseMetricCards overview={overview} isLoading={isDbLoading} />
+            )}
+
+            {activeTab === "storage" && (
+                <StorageMetricCards overview={storageOverview} isLoading={isStorageLoading} />
             )}
 
             {activeTab === "engines" && (
@@ -243,6 +276,43 @@ export const DatabaseTab = ({ initialTab = "engines" }: DatabaseTabProps) => {
                             isLoading={isRestoring}
                             onClose={handleCloseRestoreModal}
                             onConfirm={handleConfirmRestore}
+                        />
+                    )}
+                </div>
+            )}
+
+            {activeTab === "storage" && (
+                <div className="flex flex-col gap-6">
+                    <StorageModeSelectorCard
+                        selectedMode={storageForm.mode}
+                        onModeChange={handleStorageModeChange}
+                        disabled={isStorageSaving || isStorageTesting}
+                    />
+
+                    {storageForm.mode === "internal" ? (
+                        <InternalStorageCard
+                            overview={storageOverview}
+                            internalSizeGb={storageForm.internalSizeGb}
+                            isDirty={isStorageDirty}
+                            isSaving={isStorageSaving}
+                            isTesting={isStorageTesting}
+                            testResult={storageTestResult}
+                            onSizeChange={handleStorageSizeChange}
+                            onSave={handleStorageSaveConfig}
+                            onTestConnection={handleStorageTestConnection}
+                            disabled={isStorageSaving}
+                        />
+                    ) : (
+                        <ExternalStorageCard
+                            formData={storageForm}
+                            isDirty={isStorageDirty}
+                            isSaving={isStorageSaving}
+                            isTesting={isStorageTesting}
+                            testResult={storageTestResult}
+                            onFieldChange={handleStorageFieldChange}
+                            onSave={handleStorageSaveConfig}
+                            onTestConnection={handleStorageTestConnection}
+                            disabled={isStorageSaving}
                         />
                     )}
                 </div>
