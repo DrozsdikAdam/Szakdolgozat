@@ -8,6 +8,8 @@ resources:
   - backend/backend-deployment.yaml
   - frontend/frontend-deployment.yaml
   - backend/backend-service.yaml
+  - backend/backend-service-preview.yaml
+  - backend/backend-service-canary.yaml
   - frontend/frontend-service.yaml
   - backend/backend-hpa.yaml
   - ingress/ingress.yaml
