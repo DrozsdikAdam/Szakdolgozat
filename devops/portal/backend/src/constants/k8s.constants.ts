@@ -1,10 +1,11 @@
 import type { WorkloadHealthDto } from "../dtos/healthcheck.dto.js";
+import { DEFAULT_APP_NAMESPACE, DEFAULT_PLATFORM_NAMESPACE, DEFAULT_APP_NAME } from "./namespace.constants.js";
 
 export const DEFAULT_WORKLOAD_HEALTH: WorkloadHealthDto[] = [
     {
-        name: 'mes-backend',
-        namespace: 'app-mes',
-        containerName: 'mes-backend',
+        name: DEFAULT_APP_NAME,
+        namespace: DEFAULT_APP_NAMESPACE,
+        containerName: DEFAULT_APP_NAME,
         replicas: { desired: 1, ready: 1, available: 1 },
         restartCount: 0,
         startupProbe: {
@@ -44,7 +45,7 @@ export const DEFAULT_WORKLOAD_HEALTH: WorkloadHealthDto[] = [
     },
     {
         name: 'portal-backend',
-        namespace: 'platform-infra',
+        namespace: DEFAULT_PLATFORM_NAMESPACE,
         containerName: 'portal-backend',
         replicas: { desired: 1, ready: 1, available: 1 },
         restartCount: 0,
@@ -74,7 +75,7 @@ export const DEFAULT_WORKLOAD_HEALTH: WorkloadHealthDto[] = [
     },
     {
         name: 'haproxy',
-        namespace: 'platform-infra',
+        namespace: DEFAULT_PLATFORM_NAMESPACE,
         containerName: 'haproxy',
         replicas: { desired: 1, ready: 1, available: 1 },
         restartCount: 0,
@@ -92,7 +93,7 @@ export const DEFAULT_WORKLOAD_HEALTH: WorkloadHealthDto[] = [
     },
     {
         name: 'pgbouncer',
-        namespace: 'platform-infra',
+        namespace: DEFAULT_PLATFORM_NAMESPACE,
         containerName: 'pgbouncer',
         replicas: { desired: 1, ready: 1, available: 1 },
         restartCount: 0,

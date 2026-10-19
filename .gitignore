@@ -42,3 +42,4 @@ yarn-error.log*
 .settings/
 .DS_Store
 Thumbs.db
+*.sqlite

@@ -18,13 +18,10 @@ import { Select } from "../components/common/Select";
 import { Button } from "../components/common/Button";
 import { EmptyState } from "../components/common/EmptyState";
 
-const namespaceOptions = [
-    { value: "all", label: "Minden névtér" },
-    { value: "platform-infra", label: "platform-infra" },
-    { value: "app-mes", label: "app-mes" }
-];
+import { useNamespaces } from "../hooks/useNamespaces";
 
 export const DeploymentsTab = () => {
+    const { namespaceOptions } = useNamespaces(true);
     const {
         gitRepo,
         filteredWorkloads,

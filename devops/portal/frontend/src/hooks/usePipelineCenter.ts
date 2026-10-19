@@ -14,6 +14,9 @@ export const usePipelineCenter = () => {
     const [isTriggering, setIsTriggering] = useState<boolean>(false)
     const [isApproving, setIsApproving] = useState<boolean>(false)
     const [isRolloutActing, setIsRolloutActing] = useState<boolean>(false)
+    const [activeStrategy, setActiveStrategy] = useState<'canary' | 'bluegreen'>('bluegreen')
+    const [appNamespace, setAppNamespace] = useState<string>("app-mes")
+    const [appName, setAppName] = useState<string>("mes-backend")
     const [toastMessage, setToastMessage] = useState<ToastMessage | null>(null)
     const api = useMemo(() => new PipelineApi(), []);
 
@@ -26,12 +29,22 @@ export const usePipelineCenter = () => {
         try {
             if (!silent) setIsLoading(true);
             setIsRefreshing(true);
-            const [response, driftResponse] = await Promise.all([
+            const [response, driftResponse, config] = await Promise.all([
                 api.getPipelineRuns(),
-                api.getGitOpsDrift()
+                api.getGitOpsDrift(),
+                api.getPipelineConfig().catch(() => null)
             ]);
             setRuns(response);
             setDriftReport(driftResponse);
+            if (config?.defaultStrategy) {
+                setActiveStrategy(config.defaultStrategy);
+            }
+            if (config?.appNamespace) {
+                setAppNamespace(config.appNamespace);
+            }
+            if (config?.defaultAppName) {
+                setAppName(config.defaultAppName);
+            }
         } catch (error) {
             showToast("Hiba történt az adatok betöltése közben", "error");
         } finally {
@@ -90,8 +103,6 @@ export const usePipelineCenter = () => {
         setIsRolloutActing(true);
         try {
             const res = await api.executeRolloutAction({
-                rolloutName: "mes-backend-canary",
-                namespace: "app-mes",
                 action,
                 full
             });
@@ -99,6 +110,23 @@ export const usePipelineCenter = () => {
             await loadData(true);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Nem sikerült a rollout művelet végrehajtása.";
+            showToast(message, "error");
+        } finally {
+            setIsRolloutActing(false);
+        }
+    };
+
+    const handleSwitchStrategy = async (strategy: 'canary' | 'bluegreen'): Promise<void> => {
+        if (strategy === activeStrategy) return;
+
+        setIsRolloutActing(true);
+        try {
+            await api.updatePipelineStrategy(strategy);
+            setActiveStrategy(strategy);
+            showToast(`Telepítési stratégia sikeresen átállítva: ${strategy === 'bluegreen' ? 'Blue-Green (Kék/Zöld)' : 'Canary (Fokozatos)'}!`, "success");
+            await loadData(true);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Nem sikerült átállítani a stratégiát.";
             showToast(message, "error");
         } finally {
             setIsRolloutActing(false);
@@ -124,12 +152,16 @@ export const usePipelineCenter = () => {
         isTriggering,
         isApproving,
         isRolloutActing,
+        activeStrategy,
+        appNamespace,
+        appName,
         toastMessage,
         loadData,
         handleTriggerPipeline,
         handleOpenApprovalModal,
         handleCloseApprovalModal,
         handleApprovePipeline,
-        handleRolloutAction
+        handleRolloutAction,
+        handleSwitchStrategy
     };
 };

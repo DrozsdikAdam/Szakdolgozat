@@ -11,8 +11,10 @@ import { ConfigCard } from "../components/dashboard/config/ConfigCard";
 import { ConfigEditorModal } from "../components/dashboard/config/ConfigEditorModal";
 import { RestartConfirmModal } from "../components/dashboard/config/RestartConfirmModal";
 import { DeleteConfirmModal } from "../components/dashboard/config/DeleteConfirmModal";
+import { useNamespaces } from "../hooks/useNamespaces";
 
 export const ConfigTab = () => {
+    const { namespaceOptions, defaultAppNamespace } = useNamespaces(true);
     const {
         viewType,
         setViewType,
@@ -112,12 +114,7 @@ export const ConfigTab = () => {
                         <Select<string>
                             value={namespace}
                             onChange={(val) => setNamespace(String(val))}
-                            options={[
-                                { label: "Összes névtér", value: "all" },
-                                { label: "app-mes", value: "app-mes" },
-                                { label: "platform-infra", value: "platform-infra" },
-                                { label: "default", value: "default" },
-                            ]}
+                            options={namespaceOptions}
                         />
                     </div>
                     <SearchInput
@@ -194,7 +191,7 @@ export const ConfigTab = () => {
                 isOpen={isEditorOpen}
                 initialData={editingItem}
                 isSecret={viewType === "secrets"}
-                currentNamespace={namespace === "all" ? "app-mes" : namespace}
+                currentNamespace={namespace === "all" ? defaultAppNamespace : namespace}
                 isSaving={isSaving}
                 onClose={() => setIsEditorOpen(false)}
                 onSave={handleSave}

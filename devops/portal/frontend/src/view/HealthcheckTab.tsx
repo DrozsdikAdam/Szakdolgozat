@@ -17,13 +17,10 @@ import { WorkloadHealthCard } from "../components/dashboard/healthcheck/Workload
 import { ProbeConfigModal } from "../components/dashboard/healthcheck/ProbeConfigModal";
 import { ProbeTestResultBanner } from "../components/dashboard/healthcheck/ProbeTestResultBanner";
 
-const namespaceOptions = [
-    { value: "all", label: "Minden névtér" },
-    { value: "platform-infra", label: "platform-infra" },
-    { value: "app-mes", label: "app-mes" }
-];
+import { useNamespaces } from "../hooks/useNamespaces";
 
 export const HealthcheckTab = () => {
+    const { namespaceOptions } = useNamespaces(true);
     const {
         filteredWorkloads,
         loading,

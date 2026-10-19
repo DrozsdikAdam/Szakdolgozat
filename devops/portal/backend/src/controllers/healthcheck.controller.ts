@@ -4,6 +4,8 @@ import { AuditService } from "../services/audit.service.js";
 import { sendSuccess, sendError } from "../utils/response.util.js";
 import type { UpdateProbeDto } from "../dtos/healthcheck.dto.js";
 
+import { DEFAULT_APP_NAMESPACE } from '../constants/namespace.constants.js';
+
 export class HealthcheckController {
     private k8sService: K8sService;
     private auditService: AuditService;
@@ -56,7 +58,7 @@ export class HealthcheckController {
 
     testProbe = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const namespace = String(req.body.namespace || 'app-mes');
+            const namespace = String(req.body.namespace || DEFAULT_APP_NAMESPACE);
             const deploymentName = String(req.body.deploymentName || '');
             const path = typeof req.body.path === 'string' ? req.body.path : '/actuator/health';
             const port = req.body.port ?? 8080;

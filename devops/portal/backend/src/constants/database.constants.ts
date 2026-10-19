@@ -39,17 +39,19 @@ export const DATABASE_LIMITS = {
     SOCKET_TIMEOUT_MS: 4000
 } as const;
 
+import { DEFAULT_APP_NAMESPACE, DEFAULT_PLATFORM_NAMESPACE, DEFAULT_APP_NAME } from './namespace.constants.js';
+
 export const DATABASE_DEFAULTS = {
     ENGINE: 'postgres' as DatabaseEngine,
     MODE: 'internal' as DatabaseMode,
     DB_NAME: 'mes_db',
     DB_USER: 'mes_user',
-    APP_NAMESPACE: 'app-mes',
-    INFRA_NAMESPACE: 'platform-infra',
+    APP_NAMESPACE: DEFAULT_APP_NAMESPACE,
+    INFRA_NAMESPACE: DEFAULT_PLATFORM_NAMESPACE,
     SECRET_NAME: 'backend-secret',
     POSTGRES_STATEFULSET: 'postgres-postgresql-ha-postgresql',
     PGBOUNCER_DEPLOYMENT: 'pgbouncer',
-    BACKEND_DEPLOYMENT: 'mes-backend'
+    BACKEND_DEPLOYMENT: DEFAULT_APP_NAME
 } as const;
 
 export const MIGRATION_CONSTANTS = {

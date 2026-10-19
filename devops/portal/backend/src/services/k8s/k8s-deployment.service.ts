@@ -10,6 +10,7 @@ import type {
     DeploymentRevision
 } from "../../types/deployment.dto.js";
 import type { DeploymentsOverviewDto, RollbackDeploymentDto, UpdateDeploymentStrategyDto, WorkloadDeploymentDto } from "../../dtos/deployment.dto.js";
+import { PipelineService } from "../pipeline.service.js";
 
 export class K8sDeploymentService {
     private client: K8sClientService;
@@ -93,6 +94,8 @@ export class K8sDeploymentService {
         if (dto.promoteBlueGreen) {
             meta.blueGreenActive = meta.blueGreenActive === "blue" ? "green" : "blue";
         }
+
+        await this.syncStrategyEnv(dto.strategy);
 
         await this.patchDeployment(dto.namespace, dto.deploymentName, (dep) => {
             if (dep.metadata?.annotations) {
@@ -244,5 +247,13 @@ export class K8sDeploymentService {
             gitRepo: this.gitRepo,
             workloads
         };
+    }
+
+    private async syncStrategyEnv(strategy: DeploymentStrategy): Promise<void> {
+        if (strategy !== "Canary" && strategy !== "BlueGreen") return;
+
+        const targetStrategy = strategy === "Canary" ? "canary" : "bluegreen";
+        const pipelineService = new PipelineService(this.client);
+        await pipelineService.saveStrategyToEnv(targetStrategy);
     }
 }

@@ -1,7 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import { PipelineService } from "../services/pipeline.service.js";
 import { AuditService } from "../services/audit.service.js";
-import { sendSuccess } from "../utils/response.util.js";
+import { sendSuccess, sendError } from "../utils/response.util.js";
+import { pipelineConfig } from "../config/pipeline.config.js";
 import type {
     ManualApprovalRequest,
     RolloutActionRequest
@@ -84,8 +85,12 @@ export class PipelineController {
     executeRolloutAction = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const action = req.body?.action as RolloutActionRequest["action"] || "status";
-            const rolloutName = typeof req.body?.rolloutName === "string" ? req.body.rolloutName.trim() : "mes-backend-canary";
-            const namespace = typeof req.body?.namespace === "string" ? req.body.namespace.trim() : "app-mes";
+            const rolloutName = typeof req.body?.rolloutName === "string" && req.body.rolloutName.trim()
+                ? req.body.rolloutName.trim()
+                : undefined;
+            const namespace = typeof req.body?.namespace === "string" && req.body.namespace.trim()
+                ? req.body.namespace.trim()
+                : undefined;
             const full = Boolean(req.body?.full);
 
             const rolloutReq: RolloutActionRequest = {
@@ -99,11 +104,54 @@ export class PipelineController {
 
             await this.auditService.logAudit(
                 "ROLLOUT_ACTION",
-                `Argo Rollout művelet (${action}) végrehajtva a(z) '${rolloutName}' erőforráson (${namespace} névtér).`,
+                `Argo Rollout művelet (${action}) végrehajtva a(z) '${rolloutName || "alapértelmezett"}' erőforráson (${namespace || "alapértelmezett"} névtér). Eredmény: ${result.message}`,
                 result.success ? "SUCCESS" : "FAILED"
             );
 
+            if (!result.success) {
+                sendError(res, result.message, 400);
+                return;
+            }
+
             sendSuccess(res, result, result.message);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getPipelineConfig = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            sendSuccess(res, {
+                defaultStrategy: pipelineConfig.defaultStrategy,
+                defaultAppName: pipelineConfig.defaultAppName,
+                appNamespace: pipelineConfig.appNamespace,
+                stagingBranch: pipelineConfig.stagingBranch,
+                productionBranch: pipelineConfig.productionBranch
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    updatePipelineStrategy = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const rawStrategy = typeof req.body?.strategy === "string" ? req.body.strategy.trim().toLowerCase() : "";
+            if (!rawStrategy) {
+                sendError(res, "A 'strategy' paraméter megadása kötelező ('canary' vagy 'bluegreen').", 400);
+                return;
+            }
+
+            const strategy = rawStrategy.includes("blue") ? "bluegreen" : "canary";
+
+            await this.pipelineService.saveStrategyToEnv(strategy);
+
+            await this.auditService.logAudit(
+                "UPDATE_DEPLOYMENT_STRATEGY",
+                `Telepítési stratégia átállítva: ${strategy}`,
+                "SUCCESS"
+            );
+
+            sendSuccess(res, { strategy }, `Alapértelmezett stratégia sikeresen átállítva: ${strategy}`);
         } catch (error) {
             next(error);
         }

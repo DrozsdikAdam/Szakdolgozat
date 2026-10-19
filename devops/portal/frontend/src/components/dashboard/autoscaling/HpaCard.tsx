@@ -210,7 +210,7 @@ export const HpaCard = ({ currentHpa, selectMinReplicas, selectMaxReplicas, sele
                 <div className="my-1.5 font-mono text-xs text-cud-teal bg-slate-800/80 px-2.5 py-1 rounded inline-block">
                     kívánt_replikák = ceil[ jelenlegi_replikák × (mért_cpu / cél_cpu) ]
                 </div>
-                A módosítás a <code className="text-cud-skyblue font-mono">mes-backend-hpa</code> erőforrásban érvényesül azonnal.
+                A módosítás az aktív HPA erőforrásban érvényesül azonnal.
             </InfoCallout>
 
             <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">

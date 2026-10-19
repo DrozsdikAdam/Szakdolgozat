@@ -17,6 +17,7 @@ router.get("/pods/:namespace/:podName/logs", controller.getPodLogs);
 router.get("/events", controller.getEvents);
 router.get("/vpa", controller.getVpa);
 router.put("/vpa", controller.updateVpa);
+router.get("/namespaces", controller.getNamespaces);
 
 router.use("/", configRoutes);
 router.use("/", healthcheckRoutes);

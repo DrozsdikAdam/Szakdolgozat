@@ -6,8 +6,10 @@ import type { ClusterViewMode } from "../types/cluster"
 import type { PodTableItem } from "../types/component/cluster/podTableProps"
 import type { SelectOption } from "../types/component/common/selectProps"
 import { createClusterViewOptions, createPodSourceOptions } from "../constants/cluster"
+import { useNamespaces } from "./useNamespaces"
 
 export const useClusterOverview = (initialView: ClusterViewMode = "pods") => {
+    const { defaultAppNamespace, defaultPlatformNamespace } = useNamespaces(false)
     const [searchParams, setSearchParams] = useSearchParams()
     const queryTab = searchParams.get("tab") as ClusterViewMode | null
     const [viewMode, setViewMode] = useState<ClusterViewMode>(queryTab || initialView)
@@ -101,7 +103,8 @@ export const useClusterOverview = (initialView: ClusterViewMode = "pods") => {
     const fetchLogsForSelected = useCallback(async () => {
         if (!currentSelectedPod) return
         setLogsLoading(true)
-        const ns = currentSelectedPod.namespace || (currentSelectedPod.source === "app" ? "app-mes" : "platform-infra")
+        const fallbackNs = currentSelectedPod.source === "app" ? defaultAppNamespace : defaultPlatformNamespace
+        const ns = currentSelectedPod.namespace || fallbackNs
         try {
             const result = await k8sApi.getPodLogs(ns, currentSelectedPod.name, logTail)
             setLogLines(result.lines || [])
@@ -147,11 +150,14 @@ export const useClusterOverview = (initialView: ClusterViewMode = "pods") => {
     }, [allPods.length, data?.appPods?.length, data?.platformPods?.length])
 
     const podSelectOptions: SelectOption<string>[] = useMemo(() => {
-        return allPods.map((p) => ({
-            value: p.name,
-            label: `${p.name} (${p.namespace || (p.source === "app" ? "app-mes" : "platform-infra")})`
-        }))
-    }, [allPods])
+        return allPods.map((p) => {
+            const fallbackNs = p.source === "app" ? defaultAppNamespace : defaultPlatformNamespace;
+            return {
+                value: p.name,
+                label: `${p.name} (${p.namespace || fallbackNs})`
+            };
+        });
+    }, [allPods, defaultAppNamespace, defaultPlatformNamespace])
 
     const handleCopyLogs = useCallback(() => {
         navigator.clipboard.writeText(logLines.join("\n"))

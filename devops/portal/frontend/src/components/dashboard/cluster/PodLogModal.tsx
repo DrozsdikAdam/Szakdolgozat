@@ -13,6 +13,7 @@ import type { K8sEventDto } from "../../../types/k8s"
 import type { SelectOption } from "../../../types/component/common/selectProps"
 import type { SegmentedControlOption } from "../../../types/component/common/segmentedControlProps"
 import { Badge } from "../../common/Badge"
+import { useNamespaces } from "../../../hooks/useNamespaces"
 import { Button } from "../../common/Button"
 import { EmptyState } from "../../common/EmptyState"
 import { SearchInput } from "../../common/SearchInput"
@@ -41,7 +42,8 @@ export const PodLogModal = ({ pod, onClose }: PodLogModalProps) => {
     const [copied, setCopied] = useState<boolean>(false)
 
     const k8sApi = useMemo(() => new K8sApi(), [])
-    const namespace = pod.namespace || (pod.source === "app" ? "app-mes" : "platform-infra")
+    const { defaultAppNamespace, defaultPlatformNamespace } = useNamespaces(false)
+    const namespace = pod.namespace || (pod.source === "app" ? defaultAppNamespace : defaultPlatformNamespace)
 
     const fetchLogs = async () => {
         setLoadingLogs(true)

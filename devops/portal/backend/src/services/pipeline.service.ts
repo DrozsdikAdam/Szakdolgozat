@@ -1,7 +1,13 @@
+import fs from "fs";
 import { pipelineConfig } from "../config/pipeline.config.js";
 import { K8sClientService } from "./k8s/k8s-client.service.js";
+import { DEFAULT_PLATFORM_NAMESPACE } from "../constants/namespace.constants.js";
 import { PipelineMapper } from "../mappers/pipeline.mapper.js";
-import { ROLLOUT_PATCH_MAP, createFallbackPipelineRuns } from "../constants/pipeline.constants.js";
+import {
+    createFallbackPipelineRuns,
+    getRolloutName,
+    getRolloutPatch
+} from "../constants/pipeline.constants.js";
 import type { PipelineJobResponseDto } from "../dtos/pipeline.dto.js";
 import type {
     GitOpsDriftReport,
@@ -131,7 +137,7 @@ export class PipelineService {
             const customObj = await customApi.getNamespacedCustomObject({
                 group: "argoproj.io",
                 version: "v1alpha1",
-                namespace: "platform-infra",
+                namespace: DEFAULT_PLATFORM_NAMESPACE,
                 plural: "applications",
                 name: "mes-staging"
             }).catch(() => null);
@@ -153,34 +159,74 @@ export class PipelineService {
     };
 
     executeRolloutAction = async (request: RolloutActionRequest): Promise<PipelineJobResponseDto> => {
-        const rolloutName = request.rolloutName || "mes-backend-canary";
+        const rolloutName = request.rolloutName || getRolloutName(pipelineConfig.defaultAppName, pipelineConfig.defaultStrategy);
         const namespace = request.namespace || pipelineConfig.appNamespace;
         const timestamp = new Date().toISOString();
-        const patchBody = ROLLOUT_PATCH_MAP[request.action];
+        const patchDef = getRolloutPatch(request.action);
 
-        if (patchBody) {
-            try {
-                const patchFn = (this.k8sClient.customObjectsApi as any).patchNamespacedCustomObject;
-                if (typeof patchFn === "function") {
-                    await patchFn.call(this.k8sClient.customObjectsApi, {
-                        group: "argoproj.io",
-                        version: "v1alpha1",
-                        namespace,
-                        plural: "rollouts",
-                        name: rolloutName,
-                        body: patchBody
-                    }).catch(() => null);
-                }
-            } catch (error) {
-                console.warn(`[PipelineService] K8s Rollout hiba (${request.action}):`, (error as Error)?.message);
-            }
+        const k8sPayload = {
+            group: "argoproj.io",
+            version: "v1alpha1",
+            namespace,
+            plural: "rollouts",
+            name: rolloutName,
+            body: patchDef.body
+        };
+
+        try {
+            const customApi = this.k8sClient.customObjectsApi as any;
+            await this.dispatchRolloutPatch(customApi, k8sPayload, patchDef.subresource);
+
+            return {
+                success: true,
+                message: `Rollout művelet (${request.action}) sikeresen végrehajtva a(z) '${rolloutName}' erőforráson (${namespace} névtér).`,
+                jobId: `rollout-${request.action}-${Date.now()}`,
+                timestamp
+            };
+        } catch (error) {
+            const errorMsg =
+                (error as any)?.response?.body?.message ||
+                (error as any)?.response?.body?.error ||
+                (error as Error)?.message || "Ismeretlen Kubernetes hiba";
+
+            console.warn(`[PipelineService] K8s Rollout hiba (${request.action}):`, errorMsg);
+
+            return {
+                success: false,
+                message: `Rollout művelet (${request.action}) sikertelen a(z) '${rolloutName}' erőforráson (${namespace} névtér): ${errorMsg}`,
+                jobId: `rollout-failed-${Date.now()}`,
+                timestamp
+            };
+        }
+    };
+
+    private dispatchRolloutPatch = async (customApi: any, payload: object, subresource?: string): Promise<void> => {
+        if (subresource === "status" && typeof customApi.patchNamespacedCustomObjectStatus === "function") {
+            await customApi.patchNamespacedCustomObjectStatus(payload);
+            return;
         }
 
-        return {
-            success: true,
-            message: `Rollout muvelet (${request.action}) sikeresen vegrehajtva a(z) '${rolloutName}' eroforrason (${namespace} nevter).`,
-            jobId: `rollout-${request.action}-${Date.now()}`,
-            timestamp
-        };
+        await customApi.patchNamespacedCustomObject(payload);
+    };
+
+    saveStrategyToEnv = async (strategy: "canary" | "bluegreen"): Promise<void> => {
+        try {
+            pipelineConfig.defaultStrategy = strategy;
+
+            if (!fs.existsSync(pipelineConfig.envPath)) {
+                return;
+            }
+
+            const envVal = strategy === "bluegreen" ? "blue-green" : "canary";
+            const rawContent = fs.readFileSync(pipelineConfig.envPath, "utf-8");
+
+            const updatedContent = rawContent.includes("DEFAULT_STRATEGY=")
+                ? rawContent.replace(/DEFAULT_STRATEGY=[^\r\n]+/, `DEFAULT_STRATEGY=${envVal}`)
+                : `${rawContent.trimEnd()}\nDEFAULT_STRATEGY=${envVal}\n`;
+
+            fs.writeFileSync(pipelineConfig.envPath, updatedContent, "utf-8");
+        } catch (err) {
+            console.warn("[PipelineService] Nem sikerült frissíteni a pipeline.env fájlt:", err);
+        }
     };
 }

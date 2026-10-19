@@ -9,11 +9,17 @@ import type { FeatureFlagName, InactivationStrategy, FeatureWorkloadTarget } fro
 import type { DatabaseEngine, DatabaseMode, GitProvider, InstanceSize, S3Provider } from "../types/setup.types.js";
 import { AuditService } from "./audit.service.js";
 import { K8sService } from "./k8s.service.js";
+import {
+    DEFAULT_APP_NAMESPACE,
+    DEFAULT_PLATFORM_NAMESPACE,
+    DEFAULT_APP_NAME,
+    DEFAULT_FRONTEND_NAME
+} from "../constants/namespace.constants.js";
 
 const FEATURE_WORKLOAD_MAP: Partial<Record<FeatureFlagName, FeatureWorkloadTarget>> = {
-    pgbouncer: { type: 'deployment', name: 'pgbouncer', namespace: 'platform-infra' },
-    haproxy: { type: 'deployment', name: 'haproxy', namespace: 'platform-infra' },
-    cronjob_backup: { type: 'cronjob', name: 'db-backup', namespace: 'platform-infra' },
+    pgbouncer: { type: 'deployment', name: 'pgbouncer', namespace: DEFAULT_PLATFORM_NAMESPACE },
+    haproxy: { type: 'deployment', name: 'haproxy', namespace: DEFAULT_PLATFORM_NAMESPACE },
+    cronjob_backup: { type: 'cronjob', name: 'db-backup', namespace: DEFAULT_PLATFORM_NAMESPACE },
 };
 
 const PLATFORM_FEATURE_DEFAULTS: Partial<Record<FeatureFlagName, Record<string, any>>> = {
@@ -244,12 +250,12 @@ export class ConfigService {
                         targetCpuUtil: Number(mergedParams.targetCpuUtil ?? 70)
                     });
                 } else {
-                    await this.k8sService.scaleDeployment('mes-backend', 'app-mes', 1);
+                    await this.k8sService.scaleDeployment(DEFAULT_APP_NAME, DEFAULT_APP_NAMESPACE, 1);
                 }
             } else if (request.name === 'vpa_scaling') {
                 if (request.enabled) {
                     await FeatureFlag.update({ enabled: false }, { where: { name: 'hpa_scaling' } });
-                    await this.k8sService.scaleDeployment('mes-backend', 'app-mes', 1);
+                    await this.k8sService.scaleDeployment(DEFAULT_APP_NAME, DEFAULT_APP_NAMESPACE, 1);
                 }
                 await this.k8sService.updateVpa({
                     minAllowedCpu: String(mergedParams.minAllowedCpu ?? '100m'),
@@ -262,8 +268,8 @@ export class ConfigService {
                 await this.k8sService.setMaintenanceMode(request.enabled);
                 if (strategy === 'scale_to_zero') {
                     const targetReplicas = request.enabled ? 0 : 1;
-                    await this.k8sService.scaleDeployment('mes-backend', 'app-mes', targetReplicas).catch(() => { });
-                    await this.k8sService.scaleDeployment('mes-frontend', 'app-mes', targetReplicas).catch(() => { });
+                    await this.k8sService.scaleDeployment(DEFAULT_APP_NAME, DEFAULT_APP_NAMESPACE, targetReplicas).catch(() => { });
+                    await this.k8sService.scaleDeployment(DEFAULT_FRONTEND_NAME, DEFAULT_APP_NAMESPACE, targetReplicas).catch(() => { });
                 }
             } else {
                 await this.applyWorkloadStrategy(request.name, request.enabled, strategy);

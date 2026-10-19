@@ -65,4 +65,8 @@ export class K8sApi {
         return response.data!;
     }
 
+    getNamespaces = async (): Promise<string[]> => {
+        const response: ApiResponse<string[]> = await apiClient("/api/k8s/namespaces", "GET");
+        return response.data || [];
+    }
 }

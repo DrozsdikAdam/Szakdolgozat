@@ -176,7 +176,11 @@ export class DatabaseService {
 
         await this.k8sService.restartWorkload(
             DATABASE_DEFAULTS.APP_NAMESPACE,
-            [DATABASE_DEFAULTS.BACKEND_DEPLOYMENT, 'mes-backend-canary', 'mes-backend-bluegreen']
+            [
+                DATABASE_DEFAULTS.BACKEND_DEPLOYMENT,
+                `${DATABASE_DEFAULTS.BACKEND_DEPLOYMENT}-canary`,
+                `${DATABASE_DEFAULTS.BACKEND_DEPLOYMENT}-bluegreen`
+            ]
         ).catch(() => { });
     };
 

@@ -29,4 +29,14 @@ export class PipelineApi {
         const response: ApiResponse<PipelineJobResponseDto> = await apiClient(`${BASE_PATH}/rollout/action`, "POST", request)
         return response.data!;
     }
+
+    getPipelineConfig = async (): Promise<{ defaultStrategy: 'canary' | 'bluegreen'; defaultAppName: string; appNamespace: string }> => {
+        const response: ApiResponse<{ defaultStrategy: 'canary' | 'bluegreen'; defaultAppName: string; appNamespace: string }> = await apiClient(`${BASE_PATH}/config`, "GET");
+        return response.data!;
+    }
+
+    updatePipelineStrategy = async (strategy: 'canary' | 'bluegreen'): Promise<{ strategy: string }> => {
+        const response: ApiResponse<{ strategy: string }> = await apiClient(`${BASE_PATH}/strategy`, "PUT", { strategy });
+        return response.data!;
+    }
 }

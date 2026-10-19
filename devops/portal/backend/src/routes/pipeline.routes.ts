@@ -12,6 +12,9 @@ router.post("/:id/approve", controller.approvePipeline);
 
 router.get("/gitops-drift", controller.getGitOpsDrift);
 
+router.get("/config", controller.getPipelineConfig);
+router.put("/strategy", controller.updatePipelineStrategy);
+
 router.post("/rollout/action", controller.executeRolloutAction);
 
 export default router;

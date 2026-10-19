@@ -44,8 +44,8 @@ export interface GitOpsDriftReport {
 }
 
 export interface RolloutActionRequest {
-    rolloutName: string
-    namespace: string
+    rolloutName?: string
+    namespace?: string
     action: 'promote' | 'pause' | 'resume' | 'abort' | 'rollback'
     full?: boolean
 }

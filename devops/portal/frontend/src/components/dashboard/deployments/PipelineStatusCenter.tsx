@@ -104,6 +104,10 @@ export const PipelineStatusCenter = ({ pipelineCenter }: PipelineStatusCenterPro
             <RolloutControlPanel
                 onAction={handleRolloutAction}
                 isActing={isRolloutActing}
+                activeStrategy={pipelineCenter.activeStrategy}
+                onSwitchStrategy={pipelineCenter.handleSwitchStrategy}
+                namespace={pipelineCenter.appNamespace}
+                appName={pipelineCenter.appName}
             />
 
             <div className="space-y-3">

@@ -5,6 +5,7 @@ import type { SecretDto } from "../../../types/config";
 import { Modal } from "../../common/Modal";
 import { Button } from "../../common/Button";
 import { Select } from "../../common/Select";
+import { useNamespaces } from "../../../hooks/useNamespaces";
 
 interface KeyValueRow {
     id: string;
@@ -19,13 +20,14 @@ export const ConfigEditorModal = ({
     onSave,
     isSecret,
     initialData,
-    currentNamespace = "platform-infra",
+    currentNamespace,
     isSaving = false,
 }: ConfigEditorModalProps) => {
     const isEditMode = Boolean(initialData);
+    const { namespaceOptions, defaultPlatformNamespace } = useNamespaces(false);
 
     const [name, setName] = useState("");
-    const [namespace, setNamespace] = useState("platform-infra");
+    const [namespace, setNamespace] = useState(currentNamespace || defaultPlatformNamespace);
     const [secretType, setSecretType] = useState("Opaque");
     const [rows, setRows] = useState<KeyValueRow[]>([]);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export const ConfigEditorModal = ({
             setRows(initialRows.length > 0 ? initialRows : [{ id: crypto.randomUUID(), key: "", value: "", isVisible: !isSecret }]);
         } else {
             setName("");
-            setNamespace(currentNamespace && currentNamespace !== "all" ? currentNamespace : "platform-infra");
+            setNamespace(currentNamespace && currentNamespace !== "all" ? currentNamespace : defaultPlatformNamespace);
             setSecretType("Opaque");
             setRows([
                 { id: crypto.randomUUID(), key: "", value: "", isVisible: !isSecret },
@@ -135,11 +137,6 @@ export const ConfigEditorModal = ({
             setErrorMessage((err as any)?.message || "Hiba történt a mentés során.");
         }
     };
-
-    const namespaceOptions = [
-        { value: "platform-infra", label: "platform-infra" },
-        { value: "app-mes", label: "app-mes" },
-    ];
 
     const secretTypeOptions = [
         { value: "Opaque", label: "Opaque (Általános titok)" },

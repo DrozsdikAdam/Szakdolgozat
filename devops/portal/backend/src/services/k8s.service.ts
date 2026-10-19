@@ -3,6 +3,14 @@ import { K8sConfigService } from "./k8s/k8s-config.service.js";
 import { K8sHealthService } from "./k8s/k8s-health.service.js";
 import { K8sDeploymentService } from "./k8s/k8s-deployment.service.js";
 import { K8sTelemetryService } from "./k8s/k8s-telemetry.service.js";
+import {
+    DEFAULT_APP_NAMESPACE,
+    DEFAULT_PLATFORM_NAMESPACE,
+    DEFAULT_APP_NAME,
+    DEFAULT_HPA_NAME,
+    DEFAULT_VPA_NAME,
+    getManagedNamespaces
+} from "../constants/namespace.constants.js";
 import type { JobTriggerResponseDto } from "../dtos/backup.dto.js";
 import type {
     ClusterOverviewDto,
@@ -59,39 +67,39 @@ export class K8sService {
         return this.workloadService.getClusterOverView();
     };
 
-    getRateLimit = async (namespace = 'app-mes', ingressName = 'mes-ingress'): Promise<RateLimitResponseDto> => {
+    getRateLimit = async (namespace = DEFAULT_APP_NAMESPACE, ingressName = 'mes-ingress'): Promise<RateLimitResponseDto> => {
         return this.workloadService.getRateLimit(namespace, ingressName);
     };
 
-    updateRateLimit = async (request: UpdateRateLimitDto, namespace = 'app-mes', ingressName = 'mes-ingress'): Promise<void> => {
+    updateRateLimit = async (request: UpdateRateLimitDto, namespace = DEFAULT_APP_NAMESPACE, ingressName = 'mes-ingress'): Promise<void> => {
         return this.workloadService.updateRateLimit(request, namespace, ingressName);
     };
 
-    setMaintenanceMode = async (enabled: boolean, namespace = 'app-mes', ingressName = 'mes-ingress'): Promise<{ success: boolean; message: string }> => {
+    setMaintenanceMode = async (enabled: boolean, namespace = DEFAULT_APP_NAMESPACE, ingressName = 'mes-ingress'): Promise<{ success: boolean; message: string }> => {
         return this.workloadService.setMaintenanceMode(enabled, namespace, ingressName);
     };
 
-    triggerBackupJob = async (namespace = 'platform-infra', cronjob = 'db-backup'): Promise<JobTriggerResponseDto> => {
+    triggerBackupJob = async (namespace = DEFAULT_PLATFORM_NAMESPACE, cronjob = 'db-backup'): Promise<JobTriggerResponseDto> => {
         return this.workloadService.triggerBackupJob(namespace, cronjob);
     };
 
-    triggerRestore = async (targetBackup = 'latest', namespace = 'platform-infra', cronjob = 'db-restore'): Promise<JobTriggerResponseDto> => {
+    triggerRestore = async (targetBackup = 'latest', namespace = DEFAULT_PLATFORM_NAMESPACE, cronjob = 'db-restore'): Promise<JobTriggerResponseDto> => {
         return this.workloadService.triggerRestore(targetBackup, namespace, cronjob);
     };
 
-    getHpa = async (namespace = 'app-mes', name = 'mes-backend-hpa'): Promise<UpdateHpaDto> => {
+    getHpa = async (namespace = DEFAULT_APP_NAMESPACE, name = DEFAULT_HPA_NAME): Promise<UpdateHpaDto> => {
         return this.workloadService.getHpa(namespace, name);
     };
 
-    updateHpa = async (request: UpdateHpaDto, namespace = 'app-mes', name = 'mes-backend-hpa'): Promise<void> => {
+    updateHpa = async (request: UpdateHpaDto, namespace = DEFAULT_APP_NAMESPACE, name = DEFAULT_HPA_NAME): Promise<void> => {
         return this.workloadService.updateHpa(request, namespace, name);
     };
 
-    getVpa = async (namespace = 'app-mes', name = 'mes-backend-vpa'): Promise<VpaOverviewDto> => {
+    getVpa = async (namespace = DEFAULT_APP_NAMESPACE, name = DEFAULT_VPA_NAME): Promise<VpaOverviewDto> => {
         return this.workloadService.getVpa(namespace, name);
     };
 
-    updateVpa = async (request: UpdateVpaDto, namespace = 'app-mes', name = 'mes-backend-vpa'): Promise<void> => {
+    updateVpa = async (request: UpdateVpaDto, namespace = DEFAULT_APP_NAMESPACE, name = DEFAULT_VPA_NAME): Promise<void> => {
         return this.workloadService.updateVpa(request, namespace, name);
     };
 
@@ -99,8 +107,12 @@ export class K8sService {
         return this.workloadService.deployDatabaseEngine(engine, mode);
     };
 
-    applyInstanceSize = async (size: InstanceSize, namespace = 'app-mes', deploymentName = 'mes-backend'): Promise<{ success: boolean; message: string }> => {
+    applyInstanceSize = async (size: InstanceSize, namespace = DEFAULT_APP_NAMESPACE, deploymentName = DEFAULT_APP_NAME): Promise<{ success: boolean; message: string }> => {
         return this.workloadService.applyInstanceSize(size, namespace, deploymentName);
+    };
+
+    getNamespaces = async (): Promise<string[]> => {
+        return getManagedNamespaces();
     };
 
     scaleDeployment = async (name: string, namespace: string, replicas: number) => {

@@ -2,7 +2,14 @@ import { Pause, Play, RotateCcw, Sliders, Zap } from "lucide-react";
 import { Button } from "../../common/Button";
 import type { RolloutControlPanelProps } from "../../../types/component/deployments/rolloutControlPanelProps";
 
-export const RolloutControlPanel = ({ onAction, isActing }: RolloutControlPanelProps) => {
+export const RolloutControlPanel = ({
+    onAction,
+    isActing,
+    activeStrategy,
+    onSwitchStrategy,
+    namespace = "app-mes",
+    appName = "mes-backend"
+}: RolloutControlPanelProps) => {
     return (
         <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -15,16 +22,45 @@ export const RolloutControlPanel = ({ onAction, isActing }: RolloutControlPanelP
                             Argo Rollout Vezérlőpult
                         </span>
                         <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-950/70 border border-slate-800 text-slate-400">
-                            app-mes / mes-backend-canary
+                            {namespace} / {appName} ({activeStrategy === "bluegreen" ? "Blue-Green" : "Canary"})
                         </span>
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">
-                        A futó canary vagy blue-green kiadás közvetlen manuális felülbírálása és irányítása.
+                        A futó canary vagy blue-green kiadás közvetlen felülbírálása, manuális léptetése és stratégiaváltás.
                     </p>
                 </div>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
+                {onSwitchStrategy && (
+                    <div className="flex items-center gap-1 p-1 bg-slate-950/80 rounded-lg border border-slate-800 text-xs mr-2">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 px-1.5">Stratégia:</span>
+                        <button
+                            type="button"
+                            disabled={isActing}
+                            onClick={() => onSwitchStrategy("canary")}
+                            className={`px-2 py-1 rounded text-xs font-semibold transition-all cursor-pointer ${
+                                activeStrategy === "canary"
+                                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm"
+                                    : "text-slate-400 hover:text-slate-200"
+                            }`}
+                        >
+                            Canary
+                        </button>
+                        <button
+                            type="button"
+                            disabled={isActing}
+                            onClick={() => onSwitchStrategy("bluegreen")}
+                            className={`px-2 py-1 rounded text-xs font-semibold transition-all cursor-pointer ${
+                                activeStrategy === "bluegreen"
+                                    ? "bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-sm"
+                                    : "text-slate-400 hover:text-slate-200"
+                            }`}
+                        >
+                            Blue-Green
+                        </button>
+                    </div>
+                )}
                 <Button
                     variant="primary"
                     size="sm"

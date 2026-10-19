@@ -5,14 +5,10 @@ import { Select } from "../../common/Select";
 import { EmptyState } from "../../common/EmptyState";
 import { Skeleton } from "../../common/Skeleton";
 import { WorkloadTelemetryRow } from "./WorkloadTelemetryRow";
-
-const NAMESPACE_OPTIONS = [
-    { value: "all", label: "Minden névtér (All)" },
-    { value: "platform-infra", label: "platform-infra" },
-    { value: "app-mes", label: "app-mes" }
-];
+import { useNamespaces } from "../../../hooks/useNamespaces";
 
 export const WorkloadTelemetryTable = ({ workloads, selectedNamespace = "all", onNamespaceChange, isLoading = false }: WorkloadTelemetryTableProps) => {
+    const { namespaceOptions } = useNamespaces(true);
     return (
         <Card hoverEffect={false} className="p-4 sm:p-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
@@ -36,7 +32,7 @@ export const WorkloadTelemetryTable = ({ workloads, selectedNamespace = "all", o
                         <Select
                             value={selectedNamespace}
                             onChange={(val) => onNamespaceChange(val as string)}
-                            options={NAMESPACE_OPTIONS}
+                            options={namespaceOptions}
                         />
                     </div>
                 )}

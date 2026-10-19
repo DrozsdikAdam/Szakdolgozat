@@ -1,5 +1,13 @@
 import * as k8s from "@kubernetes/client-node";
 import { K8sClientService } from "./k8s-client.service.js";
+import {
+    DEFAULT_APP_NAMESPACE,
+    DEFAULT_PLATFORM_NAMESPACE,
+    DEFAULT_APP_NAME,
+    DEFAULT_FRONTEND_NAME,
+    DEFAULT_HPA_NAME,
+    DEFAULT_VPA_NAME
+} from "../../constants/namespace.constants.js";
 import { K8sMapper } from "../../mappers/k8s.mapper.js";
 import {
     createMssqlStatefulSetManifest,
@@ -33,8 +41,8 @@ export class K8sWorkloadService {
 
     getClusterOverView = async (): Promise<ClusterOverviewDto> => {
         try {
-            const platformPods = await this.client.coreApi.listNamespacedPod({ namespace: 'platform-infra' });
-            const appPods = await this.client.coreApi.listNamespacedPod({ namespace: 'app-mes' });
+            const platformPods = await this.client.coreApi.listNamespacedPod({ namespace: DEFAULT_PLATFORM_NAMESPACE });
+            const appPods = await this.client.coreApi.listNamespacedPod({ namespace: DEFAULT_APP_NAMESPACE });
 
             const platPodInfo = this.mapper.toPodInfos(platformPods.items ?? []);
             const appPodInfo = this.mapper.toPodInfos(appPods.items ?? []);
@@ -48,20 +56,20 @@ export class K8sWorkloadService {
             console.warn('[K8sWorkloadService] Nem sikerült elérni a valós K8s API-t, fallback adatok használata:', (error as any)?.message || error);
             return {
                 platformPods: [
-                    { name: 'portal-backend-78b9dc495d-m4k2p', namespace: 'platform-infra', ready: '1/1', status: 'Running', restarts: 0, age: '1h' },
-                    { name: 'portal-frontend-66c8f8b89d-7q9zt', namespace: 'platform-infra', ready: '1/1', status: 'Running', restarts: 0, age: '1h' }
+                    { name: 'portal-backend-78b9dc495d-m4k2p', namespace: DEFAULT_PLATFORM_NAMESPACE, ready: '1/1', status: 'Running', restarts: 0, age: '1h' },
+                    { name: 'portal-frontend-66c8f8b89d-7q9zt', namespace: DEFAULT_PLATFORM_NAMESPACE, ready: '1/1', status: 'Running', restarts: 0, age: '1h' }
                 ],
                 appPods: [
-                    { name: 'mes-backend-59df8546b8-x5rtk', namespace: 'app-mes', ready: '1/1', status: 'Running', restarts: 0, age: '3d' },
-                    { name: 'mes-frontend-6b74cb9745-9wlkj', namespace: 'app-mes', ready: '1/1', status: 'Running', restarts: 0, age: '3d' },
-                    { name: 'mes-postgres-0', namespace: 'app-mes', ready: '1/1', status: 'Running', restarts: 0, age: '5d' }
+                    { name: `${DEFAULT_APP_NAME}-59df8546b8-x5rtk`, namespace: DEFAULT_APP_NAMESPACE, ready: '1/1', status: 'Running', restarts: 0, age: '3d' },
+                    { name: `${DEFAULT_FRONTEND_NAME}-6b74cb9745-9wlkj`, namespace: DEFAULT_APP_NAMESPACE, ready: '1/1', status: 'Running', restarts: 0, age: '3d' },
+                    { name: `${DEFAULT_APP_NAME.replace(/-backend$/, '')}-postgres-0`, namespace: DEFAULT_APP_NAMESPACE, ready: '1/1', status: 'Running', restarts: 0, age: '5d' }
                 ],
                 timestamp: new Date().toISOString()
             };
         }
     };
 
-    getRateLimit = async (namespace = 'app-mes', ingressName = 'mes-ingress'): Promise<RateLimitResponseDto> => {
+    getRateLimit = async (namespace = DEFAULT_APP_NAMESPACE, ingressName = 'mes-ingress'): Promise<RateLimitResponseDto> => {
         try {
             const ingress = await this.client.networkApi.readNamespacedIngress({ name: ingressName, namespace });
             const rpsAnnotation = ingress.metadata?.annotations?.['nginx.ingress.kubernetes.io/limit-rps'];
@@ -76,7 +84,7 @@ export class K8sWorkloadService {
         }
     };
 
-    updateRateLimit = async (request: UpdateRateLimitDto, namespace = 'app-mes', ingressName = 'mes-ingress'): Promise<void> => {
+    updateRateLimit = async (request: UpdateRateLimitDto, namespace = DEFAULT_APP_NAMESPACE, ingressName = 'mes-ingress'): Promise<void> => {
         try {
             const ingress = await this.client.networkApi.readNamespacedIngress({
                 name: ingressName,
@@ -248,7 +256,7 @@ export class K8sWorkloadService {
         }
     };
 
-    getHpa = async (namespace = 'app-mes', name = 'mes-backend-hpa'): Promise<UpdateHpaDto> => {
+    getHpa = async (namespace = DEFAULT_APP_NAMESPACE, name = DEFAULT_HPA_NAME): Promise<UpdateHpaDto> => {
         try {
             const hpa = await this.client.autoscalingApi.readNamespacedHorizontalPodAutoscaler({
                 name,
@@ -274,7 +282,7 @@ export class K8sWorkloadService {
         }
     };
 
-    updateHpa = async (request: UpdateHpaDto, namespace = 'app-mes', name = 'mes-backend-hpa'): Promise<void> => {
+    updateHpa = async (request: UpdateHpaDto, namespace = DEFAULT_APP_NAMESPACE, name = DEFAULT_HPA_NAME): Promise<void> => {
         try {
             const hpa = await this.client.autoscalingApi.readNamespacedHorizontalPodAutoscaler({
                 name,
@@ -300,7 +308,7 @@ export class K8sWorkloadService {
         }
     };
 
-    getVpa = async (namespace = 'app-mes', name = 'mes-backend-vpa'): Promise<VpaOverviewDto> => {
+    getVpa = async (namespace = DEFAULT_APP_NAMESPACE, name = DEFAULT_VPA_NAME): Promise<VpaOverviewDto> => {
         try {
             const vpa = await this.client.customObjectsApi.getNamespacedCustomObject({
                 group: 'autoscaling.k8s.io',
@@ -341,7 +349,7 @@ export class K8sWorkloadService {
         }
     };
 
-    updateVpa = async (request: UpdateVpaDto, namespace = 'app-mes', name = 'mes-backend-vpa'): Promise<void> => {
+    updateVpa = async (request: UpdateVpaDto, namespace = DEFAULT_APP_NAMESPACE, name = DEFAULT_VPA_NAME): Promise<void> => {
         try {
             const vpa = await this.client.customObjectsApi.getNamespacedCustomObject({
                 group: 'autoscaling.k8s.io',
@@ -468,7 +476,7 @@ export class K8sWorkloadService {
         }
     };
 
-    applyInstanceSize = async (size: InstanceSize, namespace = 'app-mes', deploymentName = 'mes-backend'): Promise<{ success: boolean; message: string }> => {
+    applyInstanceSize = async (size: InstanceSize, namespace = DEFAULT_APP_NAMESPACE, deploymentName = DEFAULT_APP_NAME): Promise<{ success: boolean; message: string }> => {
         const sizeMap: Record<InstanceSize, { requests: { cpu: string; memory: string }; limits: { cpu: string; memory: string } }> = {
             nano: { requests: { cpu: '250m', memory: '512Mi' }, limits: { cpu: '500m', memory: '1024Mi' } },
             small: { requests: { cpu: '500m', memory: '1Gi' }, limits: { cpu: '1000m', memory: '2Gi' } },
@@ -550,7 +558,7 @@ export class K8sWorkloadService {
         }
     };
 
-    setMaintenanceMode = async (enabled: boolean, namespace = 'app-mes', ingressName = 'mes-ingress'): Promise<{ success: boolean; message: string }> => {
+    setMaintenanceMode = async (enabled: boolean, namespace = DEFAULT_APP_NAMESPACE, ingressName = 'mes-ingress'): Promise<{ success: boolean; message: string }> => {
         try {
             const ingress = await this.client.networkApi.readNamespacedIngress({ name: ingressName, namespace });
             if (!ingress.metadata) ingress.metadata = {};

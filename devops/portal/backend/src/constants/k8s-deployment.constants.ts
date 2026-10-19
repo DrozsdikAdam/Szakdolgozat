@@ -1,5 +1,6 @@
 import type { GitRepoConfig } from "../types/deployment.dto.js";
 import type { WorkloadMetadata } from "../types/k8s.types.js";
+import { DEFAULT_APP_NAMESPACE, DEFAULT_PLATFORM_NAMESPACE, DEFAULT_APP_NAME } from "./namespace.constants.js";
 export type { WorkloadMetadata };
 
 export const DEFAULT_GITOPS_REPO: GitRepoConfig = {
@@ -12,14 +13,14 @@ export const DEFAULT_GITOPS_REPO: GitRepoConfig = {
     lastSyncTime: new Date().toISOString(),
     lastCommit: {
         hash: "a4f891b",
-        message: "feat(gitops): update mes-backend canary traffic and pgbouncer config",
+        message: "feat(gitops): update canary traffic and pgbouncer config",
         author: "Drozsdik Ádám",
         timestamp: new Date(Date.now() - 1000 * 60 * 25).toISOString()
     }
 };
 
 export const DEFAULT_WORKLOAD_METADATA: Record<string, WorkloadMetadata> = {
-    "app-mes/mes-backend": {
+    [`${DEFAULT_APP_NAMESPACE}/${DEFAULT_APP_NAME}`]: {
         strategy: "Canary",
         canaryWeight: 20,
         blueGreenActive: "blue",
@@ -28,7 +29,7 @@ export const DEFAULT_WORKLOAD_METADATA: Record<string, WorkloadMetadata> = {
         history: [
             {
                 revision: 3,
-                imageTag: "mes-backend:1.4.2",
+                imageTag: `${DEFAULT_APP_NAME}:1.4.2`,
                 deployedAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
                 status: "active",
                 commitHash: "a4f891b",
@@ -37,7 +38,7 @@ export const DEFAULT_WORKLOAD_METADATA: Record<string, WorkloadMetadata> = {
             },
             {
                 revision: 2,
-                imageTag: "mes-backend:1.4.1",
+                imageTag: `${DEFAULT_APP_NAME}:1.4.1`,
                 deployedAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
                 status: "superseded",
                 commitHash: "7b32c0f",
@@ -46,7 +47,7 @@ export const DEFAULT_WORKLOAD_METADATA: Record<string, WorkloadMetadata> = {
             },
             {
                 revision: 1,
-                imageTag: "mes-backend:1.4.0",
+                imageTag: `${DEFAULT_APP_NAME}:1.4.0`,
                 deployedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
                 status: "superseded",
                 commitHash: "1e899d2",
@@ -55,7 +56,7 @@ export const DEFAULT_WORKLOAD_METADATA: Record<string, WorkloadMetadata> = {
             }
         ]
     },
-    "platform-infra/portal-backend": {
+    [`${DEFAULT_PLATFORM_NAMESPACE}/portal-backend`]: {
         strategy: "RollingUpdate",
         canaryWeight: 0,
         blueGreenActive: "blue",
@@ -82,7 +83,7 @@ export const DEFAULT_WORKLOAD_METADATA: Record<string, WorkloadMetadata> = {
             }
         ]
     },
-    "platform-infra/haproxy": {
+    [`${DEFAULT_PLATFORM_NAMESPACE}/haproxy`]: {
         strategy: "BlueGreen",
         canaryWeight: 0,
         blueGreenActive: "blue",
@@ -109,7 +110,7 @@ export const DEFAULT_WORKLOAD_METADATA: Record<string, WorkloadMetadata> = {
             }
         ]
     },
-    "platform-infra/pgbouncer": {
+    [`${DEFAULT_PLATFORM_NAMESPACE}/pgbouncer`]: {
         strategy: "RollingUpdate",
         canaryWeight: 0,
         blueGreenActive: "blue",
@@ -127,7 +128,7 @@ export const DEFAULT_WORKLOAD_METADATA: Record<string, WorkloadMetadata> = {
             }
         ]
     },
-    "platform-infra/minio": {
+    [`${DEFAULT_PLATFORM_NAMESPACE}/minio`]: {
         strategy: "RollingUpdate",
         canaryWeight: 0,
         blueGreenActive: "blue",

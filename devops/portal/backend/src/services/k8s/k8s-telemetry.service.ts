@@ -4,6 +4,7 @@ import {
     DEFAULT_GRAFANA_DASHBOARD,
     TIME_RANGE_MULTIPLIERS
 } from "../../constants/k8s-telemetry.constants.js";
+import { DEFAULT_PLATFORM_NAMESPACE } from "../../constants/namespace.constants.js";
 import type {
     TelemetryOverViewDto,
     TelemetryTimeRange,
@@ -276,7 +277,7 @@ export class K8sTelemetryService {
 
             return {
                 name,
-                namespace: "platform-infra",
+                namespace: DEFAULT_PLATFORM_NAMESPACE,
                 cpuUsedMilli: cpuUsed,
                 cpuLimitMilli: base.cpuLimit,
                 cpuThrottlingEvents: multiplier > 1.15 ? 1 : 0,
