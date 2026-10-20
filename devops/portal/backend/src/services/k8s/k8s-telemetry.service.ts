@@ -187,7 +187,7 @@ export class K8sTelemetryService {
         }
 
         if (workloads.length === 0) {
-            return this.getFallbackWorkloads(multiplier);
+            return [];
         }
 
         return workloads;
@@ -209,25 +209,25 @@ export class K8sTelemetryService {
         const totalCpuReq = Math.round(totalCpuLimit * 0.6);
         const totalMemReq = Math.round(totalMemLimit * 0.7);
 
-        const cpuUsagePercent = totalCpuLimit > 0 ? Math.round((totalCpuUsed / totalCpuLimit) * 100) : 18;
-        const memUsagePercent = totalMemLimit > 0 ? Math.round((totalMemUsed / totalMemLimit) * 100) : 34;
+        const cpuUsagePercent = totalCpuLimit > 0 ? Math.round((totalCpuUsed / totalCpuLimit) * 100) : 0;
+        const memUsagePercent = totalMemLimit > 0 ? Math.round((totalMemUsed / totalMemLimit) * 100) : 0;
 
         return {
             cpu: {
-                usage: totalCpuUsed || 240,
-                requests: totalCpuReq || 1500,
-                limit: totalCpuLimit || 2600,
+                usage: totalCpuUsed,
+                requests: totalCpuReq,
+                limit: totalCpuLimit,
                 usagePercent: cpuUsagePercent
             },
             memory: {
-                usage: totalMemUsed || 890,
-                requests: totalMemReq || 1800,
-                limit: totalMemLimit || 3072,
+                usage: totalMemUsed,
+                requests: totalMemReq,
+                limit: totalMemLimit,
                 usagePercent: memUsagePercent
             },
             network: {
-                inbound: Math.round(285 * (totalCpuUsed / 200 || 1)),
-                outbound: Math.round(490 * (totalCpuUsed / 200 || 1))
+                inbound: totalCpuUsed > 0 ? Math.round(285 * (totalCpuUsed / 200)) : 0,
+                outbound: totalCpuUsed > 0 ? Math.round(490 * (totalCpuUsed / 200)) : 0
             },
             nodes: {
                 total: 1,

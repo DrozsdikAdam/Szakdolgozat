@@ -2,7 +2,6 @@ import { sequelize } from "../config/database.js";
 import type { FeatureTogglePayload } from "../dtos/feature.dto.js";
 import type { SetupWizardPayload } from "../dtos/setup.dto.js";
 import type { PlatformStatusResponse } from "../dtos/status.dto.js";
-import { BackupRecord } from "../models/BackupRecords.js";
 import { FeatureFlag } from "../models/FeatureFlag.js";
 import { SystemConfig } from "../models/SystemConfig.js";
 import type { FeatureFlagName, InactivationStrategy, FeatureWorkloadTarget } from "../types/feature.types.js";
@@ -61,46 +60,6 @@ export class ConfigService {
                         enabled: false
                     }
                 });
-            }
-
-            const backupCount = await BackupRecord.count();
-            if (backupCount === 0) {
-                const now = Date.now();
-                await BackupRecord.bulkCreate([
-                    {
-                        filename: 'mes-postgres-backup-2026-09-15T02-00-00.sql.gz',
-                        sizeBytes: 44236800, // ~42.19 MB
-                        status: 'SYNCED',
-                        s3Path: 's3://mes-backups/daily/mes-postgres-backup-2026-09-15T02-00-00.sql.gz',
-                        createdAt: new Date(now - 1000 * 60 * 60 * 12),
-                        updatedAt: new Date(now - 1000 * 60 * 60 * 12)
-                    },
-                    {
-                        filename: 'mes-postgres-backup-2026-09-14T02-00-00.sql.gz',
-                        sizeBytes: 43812000, // ~41.78 MB
-                        status: 'SYNCED',
-                        s3Path: 's3://mes-backups/daily/mes-postgres-backup-2026-09-14T02-00-00.sql.gz',
-                        createdAt: new Date(now - 1000 * 60 * 60 * 36),
-                        updatedAt: new Date(now - 1000 * 60 * 60 * 36)
-                    },
-                    {
-                        filename: 'mes-postgres-backup-2026-09-13T02-00-00.sql.gz',
-                        sizeBytes: 42991616, // ~41.00 MB
-                        status: 'STAGED_LOCALLY',
-                        s3Path: 's3://mes-backups/daily/mes-postgres-backup-2026-09-13T02-00-00.sql.gz',
-                        createdAt: new Date(now - 1000 * 60 * 60 * 60),
-                        updatedAt: new Date(now - 1000 * 60 * 60 * 60)
-                    },
-                    {
-                        filename: 'mes-postgres-backup-2026-09-12T02-00-00.sql.gz',
-                        sizeBytes: 41943040, // ~40.00 MB
-                        status: 'RESTORE_SUCCESS',
-                        s3Path: 's3://mes-backups/daily/mes-postgres-backup-2026-09-12T02-00-00.sql.gz',
-                        createdAt: new Date(now - 1000 * 60 * 60 * 84),
-                        updatedAt: new Date(now - 1000 * 60 * 60 * 84)
-                    }
-                ]);
-                console.log('[ConfigService] Initial backup records seeded successfully.');
             }
 
             console.log('Database connection has been established successfully.');

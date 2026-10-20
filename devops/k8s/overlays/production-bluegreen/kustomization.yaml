@@ -30,7 +30,7 @@ patches:
         value: mes-backend-bluegreen
       - op: replace
         path: /spec/minReplicas
-        value: 3
+        value: 1
       - op: replace
         path: /spec/maxReplicas
         value: 10

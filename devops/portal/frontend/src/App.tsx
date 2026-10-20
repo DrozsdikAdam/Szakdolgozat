@@ -8,6 +8,8 @@ import { Button } from './components/common/Button'
 import { ArrowLeft } from 'lucide-react'
 import { PlatformApi } from './client/api/platform'
 import { K8sApi } from './client/api/k8s'
+import { DatabaseApi } from './client/api/database'
+import { SecurityApi } from './client/api/security'
 import { ClusterOverviewTab } from './view/ClusterOverviewTab'
 import { TrafficTab } from './view/TrafficTab'
 import { ConfigsTab } from './view/ConfigsTab'
@@ -76,6 +78,8 @@ function App() {
 
   const platformApi = useMemo(() => new PlatformApi(), [])
   const k8sApi = useMemo(() => new K8sApi(), [])
+  const dbApi = useMemo(() => new DatabaseApi(), [])
+  const securityApi = useMemo(() => new SecurityApi(), [])
 
   const loadPortalData = useCallback(async () => {
     if (!auth.isAuthenticated) {
@@ -83,31 +87,44 @@ function App() {
     }
     setIsRefreshing(true)
     try {
-      const [statusRes, clusterRes] = await Promise.allSettled([
+      const [statusRes, clusterRes, dbRes, rateLimitRes, secRes] = await Promise.allSettled([
         platformApi.getStatus(),
-        k8sApi.getOverview()
+        k8sApi.getOverview(),
+        dbApi.getOverview(),
+        k8sApi.getRateLimit(),
+        securityApi.getOverview()
       ])
 
       const status = statusRes.status === 'fulfilled' ? statusRes.value : null
       const cluster = clusterRes.status === 'fulfilled' ? clusterRes.value : null
-      const isHealthy = statusRes.status === 'fulfilled'
+      const dbOverview = dbRes.status === 'fulfilled' ? dbRes.value : null
+      const rateLimit = rateLimitRes.status === 'fulfilled' ? rateLimitRes.value : null
+      const securityOverview = secRes.status === 'fulfilled' ? secRes.value : null
+      const isHealthy = statusRes.status === 'fulfilled' || clusterRes.status === 'fulfilled'
 
       setIsClusterHealthy(isHealthy)
-      if (status) {
-        setService(computeDynamicServices(status, cluster, isHealthy))
-      } else {
-        setService(DEFAULT_SERVICES)
-      }
+      setService(computeDynamicServices({
+        status,
+        clusterOverview: cluster,
+        dbOverview,
+        rateLimit,
+        securityOverview,
+        isClusterHealthy: isHealthy
+      }))
     } catch {
       setIsClusterHealthy(false)
       setService(DEFAULT_SERVICES)
     } finally {
       setIsRefreshing(false)
     }
-  }, [auth.isAuthenticated, platformApi, k8sApi])
+  }, [auth.isAuthenticated, platformApi, k8sApi, dbApi, securityApi])
 
   const handleSelectService = (id: ServiceId) => {
-    navigate(`/${id}`)
+    if (id === 'configs' || id === 'features') {
+      navigate('/configs?tab=features')
+    } else {
+      navigate(`/${id}`)
+    }
   }
 
   const handleRefresh = () => {
@@ -150,8 +167,8 @@ function App() {
               <Route path="/traffic" element={<TrafficTab />} />
               <Route path="/autoscaling" element={<TrafficTab initialTab="hpa" />} />
               <Route path="/setup" element={<ConfigsTab initialTab="wizard" onNavigate={handleSelectService} />} />
-              <Route path="/configs" element={<ConfigsTab initialTab="config" onNavigate={handleSelectService} />} />
-              <Route path="/config" element={<ConfigsTab initialTab="config" onNavigate={handleSelectService} />} />
+              <Route path="/configs" element={<ConfigsTab initialTab="features" onNavigate={handleSelectService} />} />
+              <Route path="/config" element={<ConfigsTab initialTab="features" onNavigate={handleSelectService} />} />
               <Route path="/health" element={<HealthcheckTab />} />
               <Route path="/deployments" element={<DeploymentsTab />} />
               <Route path="/telemetry" element={<TelemetryTab />} />

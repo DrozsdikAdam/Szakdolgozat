@@ -8,7 +8,7 @@ export const TrafficStats = ({ currentRps, ingressName, namespace, burstMultipli
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard
                 title="Aktuális Küszöbérték"
-                value={`${currentRps} RPS`}
+                value={currentRps > 0 ? `${currentRps} RPS` : "Nincs korlát (Inaktív)"}
                 icon={<Activity className="w-5 h-5" />}
                 iconBoxClassName="bg-slate-800/80 text-cud-skyblue border border-slate-700/60"
             />

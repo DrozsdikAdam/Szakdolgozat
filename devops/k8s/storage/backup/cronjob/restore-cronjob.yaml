@@ -7,11 +7,11 @@ spec:
   schedule: "0 0 1 1 *"
   suspend: true
   concurrencyPolicy: "Forbid"
-  successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
-      ttlSecondsAfterFinished: 300
+      ttlSecondsAfterFinished: 60
       backoffLimit: 2
       template:
         metadata:

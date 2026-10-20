@@ -48,7 +48,6 @@ export class SecurityService {
 
     public getVulnerabilities = async (severity?: SeverityType, component?: string): Promise<VulnerabilityItem[]> => {
         let items = this.loadReportVulnerabilities();
-        if (items.length === 0) items = [...BASELINE_VULNERABILITIES];
 
         if (severity) {
             items = items.filter((item) => item.severity === severity);
@@ -69,7 +68,7 @@ export class SecurityService {
         const localCert = this.fetchLocalTlsCertificate();
         if (localCert) return [localCert];
 
-        return [...FALLBACK_TLS_CERTIFICATES];
+        return [];
     };
 
     private fetchK8sTlsCertificate = async (): Promise<TlsCertificateStatus | null> => {
@@ -178,8 +177,6 @@ export class SecurityService {
         } catch (err) {
             console.warn("[SecurityService] Hiba a K8s Secrets lekérésekor:", err);
         }
-
-        if (complianceList.length === 0) return [...FALLBACK_SECRET_COMPLIANCE];
 
         return complianceList;
     };

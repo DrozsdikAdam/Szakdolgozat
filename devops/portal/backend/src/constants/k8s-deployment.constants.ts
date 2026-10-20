@@ -21,8 +21,8 @@ export const DEFAULT_GITOPS_REPO: GitRepoConfig = {
 
 export const DEFAULT_WORKLOAD_METADATA: Record<string, WorkloadMetadata> = {
     [`${DEFAULT_APP_NAMESPACE}/${DEFAULT_APP_NAME}`]: {
-        strategy: "Canary",
-        canaryWeight: 20,
+        strategy: "BlueGreen",
+        canaryWeight: 0,
         blueGreenActive: "blue",
         syncStatus: "Synced",
         healthStatus: "Healthy",

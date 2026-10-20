@@ -1,5 +1,36 @@
 import type { WorkloadHealthDto } from "../dtos/healthcheck.dto.js";
+import type { InstanceSize } from "../types/setup.types.js";
 import { DEFAULT_APP_NAMESPACE, DEFAULT_PLATFORM_NAMESPACE, DEFAULT_APP_NAME } from "./namespace.constants.js";
+
+export const ARGO_ROLLOUT_CRD = {
+    GROUP: "argoproj.io",
+    VERSION: "v1alpha1",
+    PLURAL: "rollouts"
+} as const;
+
+export const HPA_DEFAULTS = {
+    DEFAULT_MIN_REPLICAS: 1,
+    DEFAULT_MAX_REPLICAS: 10
+} as const;
+
+export const K8S_CONTENT_TYPES = {
+    MERGE_PATCH: "application/merge-patch+json",
+    JSON_PATCH: "application/json-patch+json"
+} as const;
+
+export interface InstanceResourceRequirement {
+    requests: { cpu: string; memory: string };
+    limits: { cpu: string; memory: string };
+}
+
+export const INSTANCE_SIZE_MAP: Record<InstanceSize, InstanceResourceRequirement> = {
+    nano: { requests: { cpu: "250m", memory: "512Mi" }, limits: { cpu: "500m", memory: "1024Mi" } },
+    small: { requests: { cpu: "500m", memory: "1Gi" }, limits: { cpu: "1000m", memory: "2Gi" } },
+    medium: { requests: { cpu: "1000m", memory: "2Gi" }, limits: { cpu: "2000m", memory: "4Gi" } },
+    large: { requests: { cpu: "2000m", memory: "4Gi" }, limits: { cpu: "4000m", memory: "8Gi" } }
+} as const;
+
+export const DEFAULT_INSTANCE_RESOURCES: InstanceResourceRequirement = INSTANCE_SIZE_MAP.small;
 
 export const DEFAULT_WORKLOAD_HEALTH: WorkloadHealthDto[] = [
     {

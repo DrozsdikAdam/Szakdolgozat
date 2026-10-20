@@ -53,13 +53,52 @@ export class K8sDeploymentService {
                             )
                         );
                     }
+
+                    // Argo Rolloutok lekérdezése
+                    try {
+                        const rolloutsRes = await (this.client.customObjectsApi as any).listNamespacedCustomObject({
+                            group: "argoproj.io",
+                            version: "v1alpha1",
+                            namespace: ns,
+                            plural: "rollouts"
+                        });
+                        const rolloutsList = rolloutsRes?.items || rolloutsRes?.body?.items || [];
+                        for (const ro of rolloutsList) {
+                            const roName = ro.metadata?.name || "";
+                            const container = ro.spec?.template?.spec?.containers?.[0];
+                            if (!container) continue;
+
+                            const roStrategy = ro.spec?.strategy?.canary ? "Canary" : "BlueGreen";
+                            const meta: WorkloadMetadata = this.workloadMeta.get(`${ns}/${roName}`) || {
+                                strategy: roStrategy,
+                                canaryWeight: ro.status?.canary?.weights?.[0]?.weight ?? 20,
+                                blueGreenActive: ro.status?.blueGreen?.activeSelector ? "blue" : "green",
+                                syncStatus: "Synced",
+                                healthStatus: (ro.status?.phase === "Healthy" || ro.status?.availableReplicas > 0) ? "Healthy" : "Progressing",
+                                history: []
+                            };
+
+                            const desired = ro.spec?.replicas ?? 1;
+                            const current = ro.status?.replicas ?? desired;
+                            const updated = ro.status?.updatedReplicas ?? current;
+                            const available = ro.status?.availableReplicas ?? 0;
+
+                            workloads.push(
+                                this.toWorkloadDto(
+                                    roName,
+                                    ns,
+                                    container.image || `${roName}:latest`,
+                                    meta,
+                                    { desired, current, updated, available }
+                                )
+                            );
+                        }
+                    } catch {
+                        // Nem kritikus, ha az adott névtérben nincs Rollout CRD vagy nincs jogosultság
+                    }
                 } catch (nsErr) {
                     console.warn(`[K8sDeploymentService] Nem sikerült lekérni a(z) '${ns}' névtér deploymentjeit:`, (nsErr as any)?.message || nsErr);
                 }
-            }
-
-            if (workloads.length === 0) {
-                return this.getFallbackOverview(namespace);
             }
 
             return {
@@ -68,7 +107,10 @@ export class K8sDeploymentService {
             };
         } catch (error) {
             console.error("[K8sDeploymentService] Hiba a deployments lekérésekor:", error);
-            return this.getFallbackOverview(namespace);
+            return {
+                gitRepo: this.gitRepo,
+                workloads: []
+            };
         }
     };
 

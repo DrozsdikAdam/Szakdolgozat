@@ -8,11 +8,11 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         label: "Klaszter & Munkamenetek",
         description: "Kubernetes pod állapotok, élő konténer naplók (log streamer) és klaszter életesemények valós időben.",
         iconName: <Server className="w-6 h-6" />,
-        badgeText: "Podok & Naplók",
-        badgeVariant: 'skyblue',
-        isConfigured: true,
-        statusLabel: "Klaszter kapcsolat aktív",
-        statusVariant: 'teal'
+        badgeText: "Kapcsolódás...",
+        badgeVariant: 'orange',
+        isConfigured: false,
+        statusLabel: "Klaszter állapot lekérdezése...",
+        statusVariant: 'orange'
     },
     {
         id: 'traffic',
@@ -20,11 +20,11 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         label: "Forgalom & Skálázás",
         description: "NGINX Ingress kérés-korlátozás (RPS), terhelésalapú horizontális (HPA) és vertikális (VPA) skálázás.",
         iconName: <Activity className="w-6 h-6" />,
-        badgeText: "RPS & Autoscaling",
-        badgeVariant: 'skyblue',
-        isConfigured: true,
-        statusLabel: "Ingress védelem aktív",
-        statusVariant: 'teal'
+        badgeText: "Nincs korlát (Inaktív)",
+        badgeVariant: 'orange',
+        isConfigured: false,
+        statusLabel: "Forgalomkorlátozás nincs beállítva",
+        statusVariant: 'orange'
     },
     {
         id: 'database',
@@ -32,11 +32,11 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         label: "Adattárház & Katasztrófa-helyreállítás",
         description: "PostgreSQL HA, MSSQL és Oracle adatbázisok, Zero-Downtime migráció és S3/MinIO biztonsági mentések.",
         iconName: <Database className="w-6 h-6" />,
-        badgeText: "DBaaS & S3 Backup",
-        badgeVariant: 'teal',
-        isConfigured: true,
-        statusLabel: "Adatbázis platform üzemkész",
-        statusVariant: 'teal'
+        badgeText: "Adatbázis lekérése...",
+        badgeVariant: 'orange',
+        isConfigured: false,
+        statusLabel: "Adatbázis kapcsolat ellenőrzése...",
+        statusVariant: 'orange'
     },
     {
         id: 'security',
@@ -44,11 +44,11 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         label: "Biztonság & Megfelelőség",
         description: "Trivy CVE konténer vizsgálat, TLS tanúsítványok, jelszórotáció és részletes műveleti audit naplózás.",
         iconName: <Shield className="w-6 h-6" />,
-        badgeText: "Trivy & Audit",
-        badgeVariant: 'teal',
-        isConfigured: true,
-        statusLabel: "Biztonsági felügyelet aktív",
-        statusVariant: 'teal'
+        badgeText: "Biztonság...",
+        badgeVariant: 'orange',
+        isConfigured: false,
+        statusLabel: "Biztonsági állapot lekérdezése...",
+        statusVariant: 'orange'
     },
     {
         id: 'configs',
@@ -56,11 +56,11 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         label: "Konfigurációk & Funkciókapcsolók",
         description: "Futásidejű Feature Flag vezérlés, K8s ConfigMaps & Secrets szerkesztő és 6-lépéses Rendszer Varázsló.",
         iconName: <Sliders className="w-6 h-6" />,
-        badgeText: "Flags & Secrets",
+        badgeText: "0 bekapcsolt switch",
         badgeVariant: 'purple',
-        isConfigured: true,
-        statusLabel: "Konfigurációkezelő aktív",
-        statusVariant: 'teal'
+        isConfigured: false,
+        statusLabel: "0/7 funkciókapcsoló bekapcsolva",
+        statusVariant: 'orange'
     },
     {
         id: 'deployments',
@@ -70,9 +70,9 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         iconName: <Rocket className="w-6 h-6" />,
         badgeText: "GitOps Rollout",
         badgeVariant: 'orange',
-        isConfigured: true,
-        statusLabel: "Rollout motor üzemkész",
-        statusVariant: 'teal'
+        isConfigured: false,
+        statusLabel: "Rollout adatok lekérése...",
+        statusVariant: 'orange'
     },
     {
         id: 'health',
@@ -80,11 +80,11 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         label: "Egészségellenőrzés & Szondák",
         description: "Startup, Liveness és Readiness szondák monitorozása, finomhangolása és valós idejű HTTP ping tesztelés.",
         iconName: <HeartPulse className="w-6 h-6" />,
-        badgeText: "K8s Szondák",
+        badgeText: "Szondák...",
         badgeVariant: 'teal',
-        isConfigured: true,
-        statusLabel: "Szonda felügyelet aktív",
-        statusVariant: 'teal'
+        isConfigured: false,
+        statusLabel: "Szonda állapot lekérdezése...",
+        statusVariant: 'orange'
     },
     {
         id: 'resilience',
@@ -94,9 +94,9 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         iconName: <Zap className="w-6 h-6" />,
         badgeText: "Káosz & Telemetria",
         badgeVariant: 'purple',
-        isConfigured: true,
-        statusLabel: "Reziliencia tesztelő kész",
-        statusVariant: 'teal'
+        isConfigured: false,
+        statusLabel: "Reziliencia állapot lekérdezése...",
+        statusVariant: 'orange'
     }
 ];
 

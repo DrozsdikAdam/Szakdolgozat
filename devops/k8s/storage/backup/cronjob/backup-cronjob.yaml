@@ -7,10 +7,13 @@ spec:
   # minute hour day_of_month month day_of_week
   schedule: "0 2 * * *" # every day at 2 AM
   concurrencyPolicy: "Forbid"
-  successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
+      ttlSecondsAfterFinished: 60
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
       template:
         metadata:
           labels:

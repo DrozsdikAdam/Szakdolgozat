@@ -50,12 +50,12 @@ export class DatabaseMapper {
             username: config.username,
             replicas,
             maxReplicas: DATABASE_LIMITS.MAX_REPLICAS,
-            activeConnections: isOnline ? (config.savedReplicas * 4 || 12) : 0,
+            activeConnections: isOnline ? (replicas * 2) : 0,
             poolSize: config.poolSize,
-            latencyMs: pingResult.latencyMs || (isOnline ? 2 : 0),
+            latencyMs: pingResult.latencyMs || 0,
             status,
-            serverVersion: pingResult.serverVersion || `${config.engine.toUpperCase()} 2022 HA (K8s Managed)`,
-            pgbouncerEnabled: true,
+            serverVersion: pingResult.serverVersion || (isOnline ? `${config.engine.toUpperCase()} Klaszter (Fut)` : 'Nem elérhető'),
+            pgbouncerEnabled: config.engine === 'postgres',
             multiDbEnabled: true
         };
     }

@@ -54,12 +54,7 @@ export class PipelineService {
             console.warn("[PipelineService] GitHub API nem elerheto:", (error as Error)?.message);
         }
 
-        return createFallbackPipelineRuns(
-            pipelineConfig.repoOwner,
-            pipelineConfig.repoName,
-            pipelineConfig.productionBranch,
-            pipelineConfig.stagingBranch
-        );
+        return [];
     };
 
     triggerPipeline = async (branch?: string): Promise<PipelineJobResponseDto> => {
