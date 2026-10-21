@@ -7,4 +7,10 @@ export interface ReplicaScalingCardProps {
     onPoolSizeChange: (poolSize: number) => void;
     onApplyScale: () => void;
     disabled?: boolean | undefined;
+    engine?: string;
+    pgbouncerEnabled?: boolean;
+    onTogglePgbouncer?: (next: boolean) => void;
+    haproxyEnabled?: boolean;
+    onToggleHaproxy?: (next: boolean) => void;
+    isProxyToggling?: boolean;
 }

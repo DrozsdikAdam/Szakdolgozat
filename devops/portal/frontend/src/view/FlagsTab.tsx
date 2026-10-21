@@ -17,6 +17,7 @@ export const FlagsTab = ({ onNavigate }: FlagsTabProps) => {
     const {
         flags,
         featureParams,
+        dbEngine,
         inactivationStrategy,
         setInactivationStrategy,
         loading,
@@ -148,6 +149,7 @@ export const FlagsTab = ({ onNavigate }: FlagsTabProps) => {
                             isToggling={isCardToggling(feature.key)}
                             strategy={inactivationStrategy}
                             params={featureParams[feature.key]}
+                            dbEngine={dbEngine}
                             onNavigate={onNavigate}
                             onToggle={handleToggle}
                         />

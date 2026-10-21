@@ -6,8 +6,9 @@ export type DatabaseMode = 'internal' | 'external'
 export type DatabaseEngine = 'postgres' | 'mssql' | 'oracle'
 
 export type S3Provider = 'internal' | 'external'
+export type StorageMode = 'internal' | 'external'
 
-export type FeatureFlagName = 'rate_limiting' | 'pgbouncer' | 'haproxy' | 'cronjob_backup' | 'hpa_scaling' | 'vpa_scaling' | 'maintenance_mode'
+export type FeatureFlagName = 'rate_limiting' | 'pgbouncer' | 'haproxy' | 'cronjob_backup' | 'hpa_scaling' | 'vpa_scaling' | 'maintenance_mode' | 'app_storage' | 'backup_storage'
 
 export type InactivationStrategy = 'scale_to_zero' | 'hot_standby'
 

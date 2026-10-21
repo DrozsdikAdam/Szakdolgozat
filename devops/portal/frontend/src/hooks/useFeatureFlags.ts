@@ -23,9 +23,12 @@ export const useFeatureFlags = () => {
         cronjob_backup: false,
         hpa_scaling: false,
         vpa_scaling: false,
-        maintenance_mode: false
+        maintenance_mode: false,
+        app_storage: false,
+        backup_storage: false
     });
     const [featureParams, setFeatureParams] = useState<Partial<Record<FeatureFlagName, Record<string, any>>>>({});
+    const [dbEngine, setDbEngine] = useState<string>("postgres");
     const [inactivationStrategy, setInactivationStrategy] = useState<InactivationStrategy>("scale_to_zero");
     const [loading, setLoading] = useState<boolean>(true);
     const [togglingKey, setTogglingKey] = useState<FeatureFlagName | null>(null);
@@ -50,6 +53,8 @@ export const useFeatureFlags = () => {
                 setFlags(res.activeFeatures);
             if (res.featureParams)
                 setFeatureParams(res.featureParams);
+            if (res.dbEngine)
+                setDbEngine(res.dbEngine);
             if (res.inactivationStrategy)
                 setInactivationStrategy(res.inactivationStrategy);
             setLastUpdated(new Date());
@@ -65,7 +70,7 @@ export const useFeatureFlags = () => {
         loadPlatformStatus();
     }, [loadPlatformStatus]);
 
-    const handleToggle = async (key: FeatureFlagName, nextState: boolean) => {
+    const handleToggle = async (key: FeatureFlagName, nextState: boolean, customParams?: Record<string, any>) => {
         if (togglingKey) return;
 
         setTogglingKey(key);
@@ -77,10 +82,18 @@ export const useFeatureFlags = () => {
             return updated;
         });
 
+        if (customParams) {
+            setFeatureParams((prev) => ({
+                ...prev,
+                [key]: { ...(prev[key] || {}), ...customParams }
+            }));
+        }
+
         try {
             await platformApi.toggleFeature({
                 name: key,
                 enabled: nextState,
+                params: customParams,
                 strategy: inactivationStrategy
             });
             await loadPlatformStatus();
@@ -113,6 +126,7 @@ export const useFeatureFlags = () => {
     return {
         flags,
         featureParams,
+        dbEngine,
         inactivationStrategy,
         setInactivationStrategy,
         loading,

@@ -9,6 +9,16 @@ export const STORAGE_LIMITS = {
     DEFAULT_SIZE_GB: 5
 } as const;
 
+export const DEFAULT_STORAGE_ENDPOINTS = {
+    INTERNAL: "http://app-storage.platform-infra.svc.cluster.local:9000",
+    EXTERNAL_S3: "https://s3.eu-central-1.amazonaws.com"
+} as const;
+
+export const DEFAULT_STORAGE_BUCKETS = {
+    APP_STORAGE: "mes-app-storage",
+    BACKUP_STORAGE: "mes-backups"
+} as const;
+
 export const STORAGE_SIZE_MARKS: SliderMark[] = [
     { value: 1, label: "1 GB" },
     { value: 2, label: "2 GB" },

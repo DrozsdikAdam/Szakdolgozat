@@ -4,6 +4,7 @@ import { K8sClientService } from "./k8s/k8s-client.service.js";
 import { AuditService } from "./audit.service.js";
 import { DatabaseMapper } from "../mappers/database.mapper.js";
 import { SystemConfig } from "../models/SystemConfig.js";
+import { FeatureFlag } from "../models/FeatureFlag.js";
 import { updatePlatformEnvFile } from "../utils/env.util.js";
 import { DATABASE_LIMITS, DATABASE_DEFAULTS, FALLBACK_DATABASE_OVERVIEW, DEFAULT_INTERNAL_CREDENTIALS, DEFAULT_INTERNAL_HOSTS, DEFAULT_DB_PORTS } from "../constants/database.constants.js";
 import type {
@@ -213,6 +214,38 @@ export class DatabaseService {
         ).catch(() => { });
     };
 
+    private syncProxiesForEngine = async (targetEngine: DatabaseEngine, strategy: InactivationStrategy = 'scale_to_zero'): Promise<void> => {
+        const isPostgres = targetEngine === 'postgres';
+        const pgbouncerEnabled = isPostgres;
+        const haproxyEnabled = !isPostgres;
+
+        try {
+            await FeatureFlag.upsert({ name: 'pgbouncer', enabled: pgbouncerEnabled });
+            await FeatureFlag.upsert({ name: 'haproxy', enabled: haproxyEnabled });
+
+            const infraNamespace = DATABASE_DEFAULTS.INFRA_NAMESPACE;
+
+            if (isPostgres) {
+                await this.k8sService.scaleDeployment('postgres-postgresql-ha-pgpool', infraNamespace, 1).catch(() => { });
+                await this.k8sService.scaleDeployment(DATABASE_DEFAULTS.PGBOUNCER_DEPLOYMENT, infraNamespace, 1).catch(() => { });
+                const haproxyReplicas = strategy === 'scale_to_zero' ? 0 : 1;
+                await this.k8sService.scaleDeployment('haproxy', infraNamespace, haproxyReplicas).catch(() => { });
+            } else {
+                await this.k8sService.scaleDeployment('haproxy', infraNamespace, 1).catch(() => { });
+                const pgPoolReplicas = strategy === 'scale_to_zero' ? 0 : 1;
+                await this.k8sService.scaleDeployment('postgres-postgresql-ha-pgpool', infraNamespace, pgPoolReplicas).catch(() => { });
+                await this.k8sService.scaleDeployment(DATABASE_DEFAULTS.PGBOUNCER_DEPLOYMENT, infraNamespace, pgPoolReplicas).catch(() => { });
+            }
+
+            await this.auditService.logAudit(
+                'PROXY_COORDINATION',
+                `Adatbázis proxy-k automatikusan összehangolva (${targetEngine}): PgBouncer/PgPool=${pgbouncerEnabled ? 'BE' : 'KI'}, HAProxy=${haproxyEnabled ? 'BE' : 'KI'}`
+            ).catch(() => { });
+        } catch (err) {
+            console.warn('[DatabaseService] Nem sikerült automatikusan szinkronizálni a proxy-kat:', (err as any)?.message || err);
+        }
+    };
+
     scaleDatabase = async (dto: ScaleDatabaseDto): Promise<ScaleDatabaseResult> => {
         if (!dto.engine) {
             throw new Error("Az adatbázis motor megadása kötelező a skálázáshoz.");
@@ -284,6 +317,7 @@ export class DatabaseService {
 
             await this.restartWorkloadsIfNeeded(dto.restartWorkload);
             await this.applyInactivationStrategy(dto.engine, dto.mode);
+            await this.syncProxiesForEngine(dto.engine);
 
             await this.auditService.logAudit(
                 'DATABASE_CONFIG_UPDATE',

@@ -25,7 +25,9 @@ import { RestoreModal } from "../components/dashboard/backup/RestoreModal";
 import { SearchInput } from "../components/common/SearchInput";
 import { SegmentedControl } from "../components/common/SegmentedControl";
 import { Button } from "../components/common/Button";
-import { CheckCircle2, Database, Play, RefreshCw, XCircle } from "lucide-react";
+import { Toggle } from "../components/common/Toggle";
+import { useFeatureFlags } from "../hooks/useFeatureFlags";
+import { CheckCircle2, Database, Play, RefreshCw, XCircle, Archive, Server } from "lucide-react";
 
 export const DatabaseTab = ({ initialTab = "engines" }: DatabaseTabProps) => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -100,6 +102,12 @@ export const DatabaseTab = ({ initialTab = "engines" }: DatabaseTabProps) => {
         handleTestConnection: handleStorageTestConnection,
         handleSaveConfig: handleStorageSaveConfig
     } = useStorage();
+
+    const {
+        flags,
+        handleToggle: handleFeatureToggle,
+        isCardToggling: isFeatureToggling
+    } = useFeatureFlags();
 
     const handleTabChange = useCallback((tab: DatabaseSubTab) => {
         setActiveTab(tab);
@@ -216,6 +224,12 @@ export const DatabaseTab = ({ initialTab = "engines" }: DatabaseTabProps) => {
                             onPoolSizeChange={(p) => handleFieldChange("poolSize", p)}
                             onApplyScale={() => handleScale(form.replicas, form.poolSize)}
                             disabled={isSaving || isMigrating}
+                            engine={form.engine}
+                            pgbouncerEnabled={Boolean(flags.pgbouncer)}
+                            onTogglePgbouncer={(next) => handleFeatureToggle("pgbouncer", next)}
+                            haproxyEnabled={Boolean(flags.haproxy)}
+                            onToggleHaproxy={(next) => handleFeatureToggle("haproxy", next)}
+                            isProxyToggling={isFeatureToggling("pgbouncer") || isFeatureToggling("haproxy")}
                         />
                     </div>
                 </div>
@@ -237,6 +251,58 @@ export const DatabaseTab = ({ initialTab = "engines" }: DatabaseTabProps) => {
 
             {activeTab === "backups" && (
                 <div className="flex flex-col gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2.5 rounded-xl border ${flags.backup_storage ? 'bg-cud-orange/10 border-cud-orange/30 text-cud-orange' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                                    <Server className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-sm font-semibold text-slate-100">Mentési Tárhely Célállomás</h3>
+                                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${flags.backup_storage ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
+                                            {flags.backup_storage ? "Bekapcsolva" : "Kikapcsolva"}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-0.5">
+                                        Adatbázis snapshotok és dumpok tárolási modulja.
+                                    </p>
+                                </div>
+                            </div>
+                            <Toggle
+                                checked={Boolean(flags.backup_storage)}
+                                loading={isFeatureToggling("backup_storage")}
+                                onChange={(next) => handleFeatureToggle("backup_storage", next)}
+                                ariaLabel="Mentési Tárhely Ki/Be kapcsolása"
+                            />
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2.5 rounded-xl border ${flags.cronjob_backup ? 'bg-cud-teal/10 border-cud-teal/30 text-cud-teal' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                                    <Archive className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-sm font-semibold text-slate-100">Automatikus Mentési CronJob</h3>
+                                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${flags.cronjob_backup ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
+                                            {flags.cronjob_backup ? "Ütemezve (02:00)" : "Felfüggesztve"}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-0.5">
+                                        Ütemezett éjszakai adatbázis mentési feladat.
+                                    </p>
+                                </div>
+                            </div>
+                            <Toggle
+                                checked={Boolean(flags.cronjob_backup)}
+                                loading={isFeatureToggling("cronjob_backup")}
+                                onChange={(next) => handleFeatureToggle("cronjob_backup", next)}
+                                ariaLabel="CronJob Mentés Ki/Be kapcsolása"
+                            />
+                        </div>
+                    </div>
+
                     <BackupStats
                         totalCount={history?.totalCount ?? 0}
                         latestBackup={history?.latestBackup}
@@ -287,6 +353,9 @@ export const DatabaseTab = ({ initialTab = "engines" }: DatabaseTabProps) => {
                         selectedMode={storageForm.mode}
                         onModeChange={handleStorageModeChange}
                         disabled={isStorageSaving || isStorageTesting}
+                        appStorageEnabled={Boolean(flags.app_storage)}
+                        onToggleAppStorage={(next) => handleFeatureToggle("app_storage", next)}
+                        isToggling={isFeatureToggling("app_storage")}
                     />
 
                     {storageForm.mode === "internal" ? (

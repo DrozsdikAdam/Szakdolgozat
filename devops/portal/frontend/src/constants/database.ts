@@ -1,6 +1,7 @@
 import type { DatabaseEngine, DatabaseMode, DatabaseFormData, DatabaseStatus, MigrationStep } from "../types/database";
 import type { PresetItem } from "../types/component/common/presetGroupProps";
 import type { BadgeProps } from "../types/component/badgeProps";
+import type { SliderMark } from "../types/component/common/sliderProps";
 
 export const DEFAULT_DB_PORTS: Record<DatabaseEngine, number> = {
     postgres: 5432,
@@ -107,3 +108,46 @@ export const MIGRATION_STEP_LABELS: Record<MigrationStep, string> = {
     COMPLETED: "Migráció befejezve",
     FAILED: "Migrációs hiba"
 };
+
+export const DATABASE_POOL_LIMITS = {
+    MIN_SIZE: 10,
+    MAX_SIZE: 100,
+    STEP: 5,
+    DEFAULT_SIZE: 20
+} as const;
+
+export const DEFAULT_POOL_MARKS: SliderMark[] = [
+    { value: 10, label: "10" },
+    { value: 20, label: "20" },
+    { value: 50, label: "50" },
+    { value: 100, label: "100" }
+];
+
+export const DATABASE_REPLICA_LIMITS = {
+    MIN_REPLICAS: 1,
+    MAX_REPLICAS: 5,
+    STEP: 1,
+    DEFAULT_REPLICAS: 1
+} as const;
+
+export const DEFAULT_REPLICA_MARKS: SliderMark[] = [
+    { value: 1, label: "1 db" },
+    { value: 2, label: "2 db" },
+    { value: 3, label: "3 db" },
+    { value: 4, label: "4 db" },
+    { value: 5, label: "5 db" }
+];
+
+export const getReplicaMarks = (maxReplicas: number = DATABASE_REPLICA_LIMITS.MAX_REPLICAS): SliderMark[] =>
+    Array.from({ length: maxReplicas }, (_, i) => ({
+        value: i + 1,
+        label: `${i + 1} db`
+    }));
+
+export const HA_REPLICA_DESCRIPTIONS: Record<number, string> = {
+    1: "Egypéldányos alap fejlesztői vagy teszt felállás (Standalone).",
+    2: "Magas rendelkezésre állás (HA) automatikus failoverrel (1 Leader + 1 Standby).",
+    3: "Optimális termelési HA klaszter quorum konszenzussal (1 Leader + 2 Standby)."
+};
+
+export const DEFAULT_HA_REPLICA_DESCRIPTION = "Nagy teljesítményű olvasási fürt horizontálisan terheléselosztva.";

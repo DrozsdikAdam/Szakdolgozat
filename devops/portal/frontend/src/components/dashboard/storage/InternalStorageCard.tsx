@@ -4,7 +4,7 @@ import { Card } from "../../common/Card";
 import { Slider } from "../../common/Slider";
 import { Button } from "../../common/Button";
 import { InfoCallout } from "../../common/InfoCallout";
-import { STORAGE_LIMITS, STORAGE_SIZE_MARKS } from "../../../constants/storage";
+import { STORAGE_LIMITS, STORAGE_SIZE_MARKS, DEFAULT_STORAGE_ENDPOINTS, DEFAULT_STORAGE_BUCKETS } from "../../../constants/storage";
 
 export const InternalStorageCard = ({
     overview,
@@ -67,7 +67,7 @@ export const InternalStorageCard = ({
                             Klaszter Belső S3 Végpont
                         </span>
                         <code className="text-xs font-mono text-cud-teal break-all select-all">
-                            {overview?.internal.endpoint || "http://app-storage.platform-infra.svc.cluster.local:9000"}
+                            {overview?.internal.endpoint || DEFAULT_STORAGE_ENDPOINTS.INTERNAL}
                         </code>
                     </div>
 
@@ -77,7 +77,7 @@ export const InternalStorageCard = ({
                             Kezdő Objektumtár Vödör (Bucket)
                         </span>
                         <code className="text-xs font-mono text-indigo-400 break-all select-all">
-                            {overview?.internal.bucketName || "mes-app-storage"}
+                            {overview?.internal.bucketName || DEFAULT_STORAGE_BUCKETS.APP_STORAGE}
                         </code>
                     </div>
                 </div>
