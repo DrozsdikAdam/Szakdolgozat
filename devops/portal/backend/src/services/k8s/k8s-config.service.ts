@@ -176,12 +176,20 @@ export class K8sConfigService {
     saveSecret = async (dto: SaveConfigDto): Promise<SecretDto> => {
         try {
             let exists = false;
+            let existingData: Record<string, string> = {};
             try {
-                await this.client.coreApi.readNamespacedSecret({ name: dto.name, namespace: dto.namespace });
+                const existingSecret = await this.client.coreApi.readNamespacedSecret({ name: dto.name, namespace: dto.namespace });
                 exists = true;
+                if (existingSecret?.data) {
+                    for (const [k, v] of Object.entries(existingSecret.data)) {
+                        existingData[k] = Buffer.from(v, 'base64').toString('utf-8');
+                    }
+                }
             } catch {
                 exists = false;
             }
+
+            const mergedData = { ...existingData, ...dto.data };
 
             const secretBody: k8s.V1Secret = {
                 metadata: {
@@ -189,7 +197,7 @@ export class K8sConfigService {
                     namespace: dto.namespace
                 },
                 type: dto.secretType || 'Opaque',
-                stringData: dto.data
+                stringData: mergedData
             };
 
             if (exists) {

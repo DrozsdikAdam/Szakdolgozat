@@ -28,7 +28,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: backend
-          image: mes-backend:v13
+          image: mes-backend:v16
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

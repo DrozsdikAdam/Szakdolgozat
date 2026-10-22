@@ -23,7 +23,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: frontend
-          image: mes-frontend:v4
+          image: mes-frontend:v8
           imagePullPolicy: IfNotPresent
           securityContext:
             runAsNonRoot: true

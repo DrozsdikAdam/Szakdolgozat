@@ -12,7 +12,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -50,12 +49,10 @@ public class QuarantineQueue extends BaseEntity {
     @Column(name = "endpoint_url", nullable = false, length = 255)
     private String endpointUrl;
 
-    @Lob
-    @Column(name = "payload_json")
+    @Column(name = "payload_json", columnDefinition = "TEXT")
     private String payloadJson;
 
-    @Lob
-    @Column(name = "server_state_json")
+    @Column(name = "server_state_json", columnDefinition = "TEXT")
     private String serverStateJson;
 
     @Column(name = "error_message", length = 2000)

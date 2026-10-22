@@ -231,4 +231,17 @@ public class PlcSimulatorService {
         log.error("Telemetria adatok generálása sikertelen: " + throwable.getMessage());
     }
 
+    @Scheduled(fixedRate = 300000) // Every 5 minutes
+    public void cleanupOldTelemetryData() {
+        try {
+            LocalDateTime cutoff = LocalDateTime.now().minusHours(24);
+            int deleted = telemetryRepository.deleteByTimestampBefore(cutoff);
+            if (deleted > 0) {
+                log.info("Telemetry retention cleanup removed {} obsolete records older than 24h.", deleted);
+            }
+        } catch (Exception e) {
+            log.warn("Telemetry retention cleanup warning: {}", e.getMessage());
+        }
+    }
+
 }

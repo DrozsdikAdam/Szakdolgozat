@@ -155,13 +155,13 @@ export const WorkOrderView = () => {
     }
 
     useEffect(() => {
-        loadData(true)
-        const interval = setInterval(() => loadData(false), 5000)
+        loadData(pagedOrders.content.length === 0)
+        const interval = setInterval(() => loadData(false), 15000)
         return () => clearInterval(interval)
     }, [pagedOrders.pageNumber, pagedOrders.pageSize, statusFilter])
 
     useEffect(() => {
-        setPagedOrders(prev => ({ ...prev, pageNumber: 0 }))
+        setPagedOrders(prev => prev.pageNumber === 0 ? prev : ({ ...prev, pageNumber: 0 }))
     }, [statusFilter, priorityFilter, workOrderUserFilter, searchTerm])
 
     return (
@@ -172,7 +172,7 @@ export const WorkOrderView = () => {
 
             <EditWorkOrder isOpen={!!selectedEditOrder} closeModal={() => setSelectedEditOrder(null)} order={selectedEditOrder} users={users} onSuccess={loadData} />
 
-            {isLoading && <LoadingSpinner />}
+            {isLoading && pagedOrders.content.length === 0 && <LoadingSpinner />}
 
             <div className="page-card space-y-4 sm:space-y-5">
 

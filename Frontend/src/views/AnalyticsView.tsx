@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { Background } from "../components/common/Background"
 import { Title } from "../components/common/Title"
 import { LoadingSpinner } from "../components/common/LoadingSpinner"
@@ -90,7 +90,7 @@ export const AnalyticsView = () => {
         if (isLive && selectedMachineId)
             pollIntervalRef.current = window.setInterval(() => {
                 loadTelemetryData(false)
-            }, 5000)
+            }, 15000)
 
 
         return () => {

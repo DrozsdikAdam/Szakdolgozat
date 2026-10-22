@@ -59,7 +59,8 @@ describe("Navbar component", () => {
             conflictCount: 0,
             current: 0,
             total: 0,
-            syncNow: vi.fn()
+            syncNow: vi.fn(),
+            refreshCount: vi.fn().mockResolvedValue(0)
         });
     });
 
@@ -181,7 +182,8 @@ describe("Navbar component", () => {
             conflictCount: 0,
             current: 2,
             total: 5,
-            syncNow: vi.fn()
+            syncNow: vi.fn(),
+            refreshCount: vi.fn().mockResolvedValue(0)
         });
 
         render(

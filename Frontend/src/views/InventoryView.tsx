@@ -58,13 +58,13 @@ export const InventoryView = () => {
     }
 
     useEffect(() => {
-        loadInventories(true)
-        const interval = setInterval(() => loadInventories(false), 5000)
+        loadInventories(pagedInventories.content.length === 0)
+        const interval = setInterval(() => loadInventories(false), 15000)
         return () => clearInterval(interval)
     }, [pagedInventories.pageNumber, pagedInventories.pageSize])
 
     useEffect(() => {
-        setPagedInventories(prev => ({ ...prev, pageNumber: 0 }))
+        setPagedInventories(prev => prev.pageNumber === 0 ? prev : ({ ...prev, pageNumber: 0 }))
     }, [searchTerm, locationFilter])
 
     const filteredInventories = pagedInventories.content.filter((inv) => {
