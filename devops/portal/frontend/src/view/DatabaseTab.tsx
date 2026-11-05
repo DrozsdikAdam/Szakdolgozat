@@ -22,6 +22,7 @@ import {
 import { BackupStats } from "../components/dashboard/backup/Stats";
 import { BackupTable } from "../components/dashboard/backup/Table";
 import { RestoreModal } from "../components/dashboard/backup/RestoreModal";
+import { BackupTargetCard } from "../components/dashboard/backup/BackupTargetCard";
 import { SearchInput } from "../components/common/SearchInput";
 import { SegmentedControl } from "../components/common/SegmentedControl";
 import { Button } from "../components/common/Button";
@@ -302,6 +303,8 @@ export const DatabaseTab = ({ initialTab = "engines" }: DatabaseTabProps) => {
                             />
                         </div>
                     </div>
+
+                    <BackupTargetCard onTargetChanged={loadBackups} />
 
                     <BackupStats
                         totalCount={history?.totalCount ?? 0}

@@ -43,9 +43,11 @@ export const useBackupHistory = () => {
         try {
             const res = await backupApi.triggerBackup()
             showToast(`A mentési K8s Job sikeresen elindult: ${res.jobName}`, "success")
-            setTimeout(() => {
-                loadBackups()
-            }, 3000)
+            setTimeout(() => { loadBackups() }, 2000)
+            setTimeout(() => { loadBackups() }, 5000)
+            setTimeout(() => { loadBackups() }, 8000)
+            setTimeout(() => { loadBackups() }, 12000)
+            setTimeout(() => { loadBackups() }, 16000)
         } catch {
             showToast("Hiba történt a mentés elindítása közben", "error")
         } finally {

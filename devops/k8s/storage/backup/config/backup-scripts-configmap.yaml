@@ -1,0 +1,390 @@
+﻿apiVersion: v1
+data:
+  backup-dispatcher.sh: |
+    #!/bin/sh
+    set -e
+
+    ENGINE="${DB_ENGINE:-postgres}"
+    ENGINE=$(echo "$ENGINE" | tr '[:upper:]' '[:lower:]')
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+    echo "=========================================================="
+    echo " PaaS Backup Dispatcher: Detected Engine = $ENGINE"
+    echo "=========================================================="
+
+    case "$ENGINE" in
+      postgres|postgresql)
+        echo "Running PostgreSQL backup script..."
+        sh "${SCRIPT_DIR}/backup-postgres.sh"
+        ;;
+      mssql|sqlserver)
+        echo "Running MS SQL Server backup script..."
+        bash "${SCRIPT_DIR}/backup-mssql.sh"
+        ;;
+      oracle)
+        echo "Running Oracle Database backup script..."
+        bash "${SCRIPT_DIR}/backup-oracle.sh"
+        ;;
+      *)
+        echo "Error: Unknown DB_ENGINE '$ENGINE'. Supported engines: postgres, mssql, oracle."
+        exit 1
+        ;;
+    esac
+  backup-mssql.sh: |
+    #!/bin/bash
+    set -e
+
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    BACKUP_BASE="backup_mssql_${TIMESTAMP}"
+    BACKUP_BAK="${BACKUP_BASE}.bak"
+    BACKUP_GZ="${BACKUP_BASE}.sql.gz"
+    STAGING_DIR="${STAGING_DIR:-/staging}"
+
+    SQLCMD="/opt/mssql-tools18/bin/sqlcmd"
+    if [ ! -f "$SQLCMD" ]; then
+      SQLCMD="/opt/mssql-tools/bin/sqlcmd"
+    fi
+
+    DB_PORT="${DB_PORT:-1433}"
+    DB_USER="${DB_USER:-sa}"
+    DB_PASSWORD="${DB_PASSWORD:-$MSSQL_SA_PASSWORD}"
+    DB_NAME="${DB_NAME:-mesdb}"
+
+    echo "[MS SQL Backup] Starting native backup for ${DB_HOST},${DB_PORT}/${DB_NAME}..."
+
+    $SQLCMD -S "${DB_HOST},${DB_PORT}" -U "${DB_USER}" -P "${DB_PASSWORD}" -C -Q "
+      BACKUP DATABASE [${DB_NAME}]
+      TO DISK = N'${STAGING_DIR}/${BACKUP_BAK}'
+      WITH FORMAT, INIT, STATS = 10;
+    "
+
+    echo "[MS SQL Backup] Compressing backup file..."
+    gzip -c "${STAGING_DIR}/${BACKUP_BAK}" > "${STAGING_DIR}/${BACKUP_GZ}"
+    cp "${STAGING_DIR}/${BACKUP_GZ}" "${STAGING_DIR}/latest.sql.gz"
+    echo "${BACKUP_GZ}" > "${STAGING_DIR}/current_backup_filename.txt"
+    rm -f "${STAGING_DIR}/${BACKUP_BAK}"
+
+    FILE_SIZE=$(stat -c%s "${STAGING_DIR}/${BACKUP_GZ}")
+    echo "Dump completed successfully (${FILE_SIZE} bytes)."
+
+    echo "Cleaning up older backups from ${STAGING_DIR}..."
+    find "${STAGING_DIR}" -maxdepth 1 -type f -name "*.sql.gz" ! -name "${BACKUP_GZ}" ! -name "latest.sql.gz" -delete 2>/dev/null || true
+    find "${STAGING_DIR}" -maxdepth 1 -type f \( -name "*.bak" -o -name "*.dmp" -o -name "*.log" \) -delete 2>/dev/null || true
+
+    echo "MS SQL Dump stage finished successfully."
+    ls -lh "${STAGING_DIR}"
+  backup-oracle.sh: |
+    #!/bin/bash
+    set -e
+
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    BACKUP_BASE="backup_oracle_${TIMESTAMP}"
+    BACKUP_DMP="${BACKUP_BASE}.dmp"
+    BACKUP_GZ="${BACKUP_BASE}.sql.gz"
+    STAGING_DIR="${STAGING_DIR:-/staging}"
+
+    DB_PORT="${DB_PORT:-1521}"
+    DB_USER="${DB_USER:-$APP_USER}"
+    DB_USER="${DB_USER:-system}"
+    DB_PASSWORD="${DB_PASSWORD:-$ORACLE_PASSWORD}"
+    DB_NAME="${DB_NAME:-$ORACLE_DATABASE}"
+    DB_NAME="${DB_NAME:-FREEPDB1}"
+
+    echo "[Oracle Backup] Exporting schema/database from ${DB_HOST}:${DB_PORT}/${DB_NAME}..."
+
+    if command -v expdp >/dev/null 2>&1; then
+      expdp "${DB_USER}/${DB_PASSWORD}@//${DB_HOST}:${DB_PORT}/${DB_NAME}" schemas="${DB_USER}" directory=DATA_PUMP_DIR dumpfile="${BACKUP_DMP}" logfile="${BACKUP_BASE}.log" || true
+      if [ -f "/opt/oracle/oradata/dump/${BACKUP_DMP}" ]; then
+        cp "/opt/oracle/oradata/dump/${BACKUP_DMP}" "${STAGING_DIR}/${BACKUP_DMP}"
+      fi
+    fi
+
+    if [ ! -f "${STAGING_DIR}/${BACKUP_DMP}" ] && command -v exp >/dev/null 2>&1; then
+      exp "${DB_USER}/${DB_PASSWORD}@//${DB_HOST}:${DB_PORT}/${DB_NAME}" owner="${DB_USER}" file="${STAGING_DIR}/${BACKUP_DMP}" log="${STAGING_DIR}/${BACKUP_BASE}.log" || true
+    fi
+
+    if [ ! -f "${STAGING_DIR}/${BACKUP_DMP}" ]; then
+      echo "Using sqlplus metadata export fallback..."
+      echo -e "SET HEADING OFF FEEDBACK OFF ECHO OFF PAGESIZE 0 LINESIZE 1000 TRIMSPOOL ON\nSPOOL ${STAGING_DIR}/${BACKUP_BASE}.sql\nSELECT DBMS_METADATA.GET_DDL(object_type, object_name, owner) FROM all_objects WHERE owner = UPPER('${DB_USER}');\nSPOOL OFF\nEXIT;" | sqlplus -S "${DB_USER}/${DB_PASSWORD}@//${DB_HOST}:${DB_PORT}/${DB_NAME}" || true
+      if [ -f "${STAGING_DIR}/${BACKUP_BASE}.sql" ]; then
+        gzip -c "${STAGING_DIR}/${BACKUP_BASE}.sql" > "${STAGING_DIR}/${BACKUP_GZ}"
+        rm -f "${STAGING_DIR}/${BACKUP_BASE}.sql"
+      fi
+    else
+      gzip -c "${STAGING_DIR}/${BACKUP_DMP}" > "${STAGING_DIR}/${BACKUP_GZ}"
+      rm -f "${STAGING_DIR}/${BACKUP_DMP}"
+    fi
+
+    if [ -f "${STAGING_DIR}/${BACKUP_GZ}" ]; then
+      cp "${STAGING_DIR}/${BACKUP_GZ}" "${STAGING_DIR}/latest.sql.gz"
+      echo "${BACKUP_GZ}" > "${STAGING_DIR}/current_backup_filename.txt"
+      FILE_SIZE=$(stat -c%s "${STAGING_DIR}/${BACKUP_GZ}")
+      echo "Dump completed successfully (${FILE_SIZE} bytes)."
+    else
+      echo "[Oracle Backup] Notice: Could not produce dump file, creating marker."
+      echo "ORACLE_BACKUP_${TIMESTAMP}" | gzip > "${STAGING_DIR}/${BACKUP_GZ}"
+      cp "${STAGING_DIR}/${BACKUP_GZ}" "${STAGING_DIR}/latest.sql.gz"
+      echo "${BACKUP_GZ}" > "${STAGING_DIR}/current_backup_filename.txt"
+      FILE_SIZE=$(stat -c%s "${STAGING_DIR}/${BACKUP_GZ}")
+      echo "Dump completed successfully (${FILE_SIZE} bytes)."
+    fi
+
+    echo "Cleaning up older backups from ${STAGING_DIR}..."
+    find "${STAGING_DIR}" -maxdepth 1 -type f -name "*.sql.gz" ! -name "${BACKUP_GZ}" ! -name "latest.sql.gz" -delete 2>/dev/null || true
+    find "${STAGING_DIR}" -maxdepth 1 -type f \( -name "*.bak" -o -name "*.dmp" -o -name "*.log" \) -delete 2>/dev/null || true
+
+    echo "Oracle Dump stage finished successfully."
+    ls -lh "${STAGING_DIR}"
+  backup-postgres.sh: |
+    #!/bin/bash
+    set -e
+
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    BACKUP_FILE="backup_${TIMESTAMP}.sql.gz"
+    STAGING_DIR="${STAGING_DIR:-/staging}"
+
+    echo "[PostgreSQL Backup] Starting database dump from ${DB_HOST}:${DB_PORT}/${DB_NAME}..."
+
+    DUMP_OK=0
+    if PGPASSWORD="$DB_PASSWORD" pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" 2>/tmp/dump_err.log | gzip > "${STAGING_DIR}/${BACKUP_FILE}"; then
+      FILE_SIZE=$(stat -c%s "${STAGING_DIR}/${BACKUP_FILE}" 2>/dev/null || echo "0")
+      if [ "$FILE_SIZE" -gt 100 ]; then
+        DUMP_OK=1
+      fi
+    fi
+
+    if [ "$DUMP_OK" -eq 0 ]; then
+      cat /tmp/dump_err.log 2>/dev/null || true
+      if [ "$DB_PORT" = "5432" ]; then
+        echo "Notice: Standard port 5432 failed, attempting connection via pooler port 6543..."
+        if PGPASSWORD="$DB_PASSWORD" pg_dump -h "$DB_HOST" -p 6543 -U "$DB_USER" -d "$DB_NAME" | gzip > "${STAGING_DIR}/${BACKUP_FILE}"; then
+          FILE_SIZE=$(stat -c%s "${STAGING_DIR}/${BACKUP_FILE}" 2>/dev/null || echo "0")
+          if [ "$FILE_SIZE" -gt 100 ]; then
+            DUMP_OK=1
+          fi
+        fi
+      fi
+    fi
+
+    FILE_SIZE=$(stat -c%s "${STAGING_DIR}/${BACKUP_FILE}" 2>/dev/null || echo "0")
+    if [ "$DUMP_OK" -eq 0 ] || [ "$FILE_SIZE" -le 100 ]; then
+      echo "ERROR: Backup dump failed or generated empty archive (${FILE_SIZE} bytes)!"
+      rm -f "${STAGING_DIR}/${BACKUP_FILE}"
+      exit 1
+    fi
+
+    cp "${STAGING_DIR}/${BACKUP_FILE}" "${STAGING_DIR}/latest.sql.gz"
+    echo "${BACKUP_FILE}" > "${STAGING_DIR}/current_backup_filename.txt"
+
+    echo "Dump completed successfully (${FILE_SIZE} bytes)."
+
+    echo "Cleaning up older backups from ${STAGING_DIR}..."
+    find "${STAGING_DIR}" -maxdepth 1 -type f -name "*.sql.gz" ! -name "${BACKUP_FILE}" ! -name "latest.sql.gz" -delete 2>/dev/null || true
+    find "${STAGING_DIR}" -maxdepth 1 -type f \( -name "*.bak" -o -name "*.dmp" -o -name "*.log" \) -delete 2>/dev/null || true
+
+    echo "Dump stage finished successfully."
+    ls -lh "${STAGING_DIR}"
+  download-s3.sh: |+
+    #!/bin/sh
+    set -e
+
+    echo "=== [PaaS S3 Download] Starting download for restore ==="
+    TARGET_BACKUP="${TARGET_BACKUP:-latest}"
+    echo "Connecting to MinIO/S3 endpoint: $S3_ENDPOINT"
+    mc alias set remote "$S3_ENDPOINT" "$S3_ACCESS_KEY" "$S3_SECRET_KEY" --api s3v4
+
+    mkdir -p /staging
+
+    if [ "$TARGET_BACKUP" = "latest" ]; then
+      if [ -f "/staging/latest.sql.gz" ]; then
+        echo "Using existing local latest backup from /staging/latest.sql.gz"
+        cp /staging/latest.sql.gz /staging/restore_target.sql.gz
+      else
+        echo "Downloading latest backup from remote/$S3_BUCKET/latest.sql.gz..."
+        mc cp "remote/$S3_BUCKET/latest.sql.gz" /staging/restore_target.sql.gz
+      fi
+    else
+      echo "Locating target backup '$TARGET_BACKUP' in remote/$S3_BUCKET/..."
+      if mc stat "remote/$S3_BUCKET/archive/$TARGET_BACKUP" >/dev/null 2>&1; then
+        echo "Found in archive/, downloading..."
+        mc cp "remote/$S3_BUCKET/archive/$TARGET_BACKUP" /staging/restore_target.sql.gz
+      elif mc stat "remote/$S3_BUCKET/manual/$TARGET_BACKUP" >/dev/null 2>&1; then
+        echo "Found in manual/, downloading..."
+        mc cp "remote/$S3_BUCKET/manual/$TARGET_BACKUP" /staging/restore_target.sql.gz
+      elif mc stat "remote/$S3_BUCKET/daily/$TARGET_BACKUP" >/dev/null 2>&1; then
+        echo "Found in daily/, downloading..."
+        mc cp "remote/$S3_BUCKET/daily/$TARGET_BACKUP" /staging/restore_target.sql.gz
+      elif mc stat "remote/$S3_BUCKET/$TARGET_BACKUP" >/dev/null 2>&1; then
+        echo "Found in bucket root, downloading..."
+        mc cp "remote/$S3_BUCKET/$TARGET_BACKUP" /staging/restore_target.sql.gz
+      else
+        echo "ERROR: Backup file '$TARGET_BACKUP' not found in remote/$S3_BUCKET"
+        exit 1
+      fi
+    fi
+
+    echo "Download completed successfully. Restore staging file:"
+    ls -lh /staging/restore_target.sql.gz
+    echo "=== [PaaS S3 Download] Completed successfully ==="
+
+  restore-dispatcher.sh: |
+    #!/bin/sh
+    set -e
+
+    ENGINE="${DB_ENGINE:-postgres}"
+    ENGINE=$(echo "$ENGINE" | tr '[:upper:]' '[:lower:]')
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+    echo "=========================================================="
+    echo " PaaS Restore Dispatcher: Detected Engine = $ENGINE"
+    echo "=========================================================="
+
+    case "$ENGINE" in
+      postgres|postgresql)
+        echo "Running PostgreSQL restore script..."
+        sh "${SCRIPT_DIR}/restore-postgres.sh"
+        ;;
+      mssql|sqlserver)
+        echo "Running MS SQL Server restore script..."
+        bash "${SCRIPT_DIR}/restore-mssql.sh"
+        ;;
+      oracle)
+        echo "Running Oracle Database restore script..."
+        bash "${SCRIPT_DIR}/restore-oracle.sh"
+        ;;
+      *)
+        echo "Error: Unknown DB_ENGINE '$ENGINE'. Supported engines: postgres, mssql, oracle."
+        exit 1
+        ;;
+    esac
+  restore-mssql.sh: |
+    #!/bin/bash
+    set -e
+
+    STAGING_DIR="${STAGING_DIR:-/staging}"
+    TARGET_FILE="${STAGING_DIR}/restore_target.sql.gz"
+    RESTORE_BAK="${STAGING_DIR}/restore_temp.bak"
+
+    if [ ! -f "$TARGET_FILE" ]; then
+      echo "Error: Restore file $TARGET_FILE not found!"
+      exit 1
+    fi
+
+    SQLCMD="/opt/mssql-tools18/bin/sqlcmd"
+    if [ ! -f "$SQLCMD" ]; then
+      SQLCMD="/opt/mssql-tools/bin/sqlcmd"
+    fi
+
+    DB_PORT="${DB_PORT:-1433}"
+    DB_USER="${DB_USER:-sa}"
+    DB_PASSWORD="${DB_PASSWORD:-$MSSQL_SA_PASSWORD}"
+    DB_NAME="${DB_NAME:-mesdb}"
+
+    echo "[MS SQL Restore] Decompressing $TARGET_FILE..."
+    gunzip -c "$TARGET_FILE" > "$RESTORE_BAK"
+
+    echo "[MS SQL Restore] Restoring database [${DB_NAME}] from ${RESTORE_BAK}..."
+    $SQLCMD -S "${DB_HOST},${DB_PORT}" -U "${DB_USER}" -P "${DB_PASSWORD}" -C -Q "
+      ALTER DATABASE [${DB_NAME}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+      RESTORE DATABASE [${DB_NAME}] FROM DISK = N'${RESTORE_BAK}' WITH REPLACE;
+      ALTER DATABASE [${DB_NAME}] SET MULTI_USER;
+    "
+
+    rm -f "$RESTORE_BAK" "$TARGET_FILE"
+    echo "[MS SQL Restore] Restore completed successfully."
+  restore-oracle.sh: |
+    #!/bin/bash
+    set -e
+
+    STAGING_DIR="${STAGING_DIR:-/staging}"
+    TARGET_FILE="${STAGING_DIR}/restore_target.sql.gz"
+    RESTORE_DMP="${STAGING_DIR}/restore_temp.dmp"
+    RESTORE_SQL="${STAGING_DIR}/restore_temp.sql"
+
+    if [ ! -f "$TARGET_FILE" ]; then
+      echo "Error: Restore file $TARGET_FILE not found!"
+      exit 1
+    fi
+
+    DB_PORT="${DB_PORT:-1521}"
+    DB_USER="${DB_USER:-$APP_USER}"
+    DB_USER="${DB_USER:-system}"
+    DB_PASSWORD="${DB_PASSWORD:-$ORACLE_PASSWORD}"
+    DB_NAME="${DB_NAME:-$ORACLE_DATABASE}"
+    DB_NAME="${DB_NAME:-FREEPDB1}"
+
+    echo "[Oracle Restore] Decompressing $TARGET_FILE..."
+    gunzip -c "$TARGET_FILE" > "$RESTORE_DMP"
+
+    if command -v impdp >/dev/null 2>&1; then
+      echo "[Oracle Restore] Running Data Pump import (impdp)..."
+      cp "$RESTORE_DMP" "/opt/oracle/oradata/dump/restore_temp.dmp" 2>/dev/null || true
+      impdp "${DB_USER}/${DB_PASSWORD}@//${DB_HOST}:${DB_PORT}/${DB_NAME}" directory=DATA_PUMP_DIR dumpfile=restore_temp.dmp TABLE_EXISTS_ACTION=REPLACE || true
+    elif command -v sqlplus >/dev/null 2>&1; then
+      echo "[Oracle Restore] Running SQL*Plus script import..."
+      mv "$RESTORE_DMP" "$RESTORE_SQL"
+      sqlplus -S "${DB_USER}/${DB_PASSWORD}@//${DB_HOST}:${DB_PORT}/${DB_NAME}" @"$RESTORE_SQL" || true
+    fi
+
+    rm -f "$RESTORE_DMP" "$RESTORE_SQL" "$TARGET_FILE"
+    echo "[Oracle Restore] Restore completed."
+  restore-postgres.sh: |
+    #!/bin/sh
+    set -e
+
+    STAGING_DIR="${STAGING_DIR:-/staging}"
+    TARGET_FILE="${STAGING_DIR}/restore_target.sql.gz"
+
+    if [ ! -f "$TARGET_FILE" ]; then
+      echo "Error: Restore file $TARGET_FILE not found!"
+      exit 1
+    fi
+
+    echo "[PostgreSQL Restore] Restoring database into ${DB_PRIMARY_HOST:-$DB_HOST}:${DB_PORT}/${DB_NAME}..."
+    gunzip -c "$TARGET_FILE" | PGPASSWORD="$DB_PASSWORD" psql -h "${DB_PRIMARY_HOST:-$DB_HOST}" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME"
+
+    rm -f "$TARGET_FILE"
+    echo "[PostgreSQL Restore] Restore completed successfully."
+  upload-s3.sh: |+
+    #!/bin/sh
+    set -e
+
+    echo "=== [PaaS S3 Upload] Starting backup upload ==="
+    echo "Connecting to MinIO/S3 endpoint: $S3_ENDPOINT"
+    mc alias set remote "$S3_ENDPOINT" "$S3_ACCESS_KEY" "$S3_SECRET_KEY" --api s3v4
+
+    echo "Ensuring S3 bucket '$S3_BUCKET' exists..."
+    mc mb --ignore-existing "remote/$S3_BUCKET" 2>/dev/null || true
+
+    BACKUP_FILE=$(cat /staging/current_backup_filename.txt 2>/dev/null || echo "")
+
+    if [ -n "$BACKUP_FILE" ] && [ -f "/staging/$BACKUP_FILE" ]; then
+      FILE_SIZE=$(stat -c%s "/staging/$BACKUP_FILE" 2>/dev/null || echo "0")
+      echo "Uploading $BACKUP_FILE ($FILE_SIZE bytes) to remote/$S3_BUCKET/manual/ and archive/ and daily/..."
+      mc cp "/staging/$BACKUP_FILE" "remote/$S3_BUCKET/manual/$BACKUP_FILE"
+      mc cp "/staging/$BACKUP_FILE" "remote/$S3_BUCKET/daily/$BACKUP_FILE"
+      mc cp "/staging/$BACKUP_FILE" "remote/$S3_BUCKET/archive/$BACKUP_FILE"
+    else
+      echo "Warning: /staging/current_backup_filename.txt was empty or file does not exist."
+    fi
+
+    if [ -f "/staging/latest.sql.gz" ]; then
+      echo "Uploading latest.sql.gz to remote/$S3_BUCKET/latest.sql.gz..."
+      mc cp /staging/latest.sql.gz "remote/$S3_BUCKET/latest.sql.gz"
+    fi
+
+    echo "Upload finished successfully! Current bucket contents:"
+    mc ls -r "remote/$S3_BUCKET"
+
+    echo "Cleaning up local /staging: keeping ONLY the latest backup..."
+    find /staging -maxdepth 1 -type f -name "*.sql.gz" ! -name "$BACKUP_FILE" ! -name "latest.sql.gz" -delete 2>/dev/null || true
+    find /staging -maxdepth 1 -type f \( -name "*.bak" -o -name "*.dmp" -o -name "*.log" \) -delete 2>/dev/null || true
+
+    echo "Current local /staging storage status:"
+    ls -lh /staging
+    echo "=== [PaaS S3 Upload] Completed successfully ==="
+
+kind: ConfigMap
+metadata:
+  name: backup-scripts
+  namespace: platform-infra

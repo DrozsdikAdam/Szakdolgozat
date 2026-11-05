@@ -31,4 +31,10 @@ export type SystemConfigKey = 'is_initialized'
     | 'storage_external_region'
     | 'storage_external_access_key'
     | 'storage_external_secret_key'
-    | 'storage_scale_down_internal';
+    | 'storage_scale_down_internal'
+    | 'backup_target_mode'
+    | 'backup_s3_endpoint'
+    | 'backup_s3_bucket'
+    | 'backup_s3_region'
+    | 'backup_s3_access_key'
+    | 'backup_s3_secret_key';

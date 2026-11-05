@@ -62,7 +62,7 @@ function NotFoundPage() {
         troubleshootingSteps={[
           "Ellenőrizd a böngésző címsorába beírt útvonal helyességét",
           "Kattints a fenti 'Vissza a szolgáltatásokhoz' gombra a kezdőlap eléréséhez",
-          "Közvetlenül elérhető érvényes útvonalak: /telemetry, /cluster, /deployments, /audit, /traffic, /backup, /resilience, /security"
+          "Közvetlenül elérhető érvényes útvonalak: /telemetry, /cluster, /deployments, /audit, /traffic, /backup, /storage, /autoscaling, /vpa, /resilience, /security, /database"
         ]}
       />
     </div>
@@ -119,9 +119,11 @@ function App() {
     }
   }, [auth.isAuthenticated, platformApi, k8sApi, dbApi, securityApi])
 
-  const handleSelectService = (id: ServiceId) => {
+  const handleSelectService = (id: ServiceId | string) => {
     if (id === 'configs' || id === 'features') {
       navigate('/configs?tab=features')
+    } else if (id.startsWith('/')) {
+      navigate(id)
     } else {
       navigate(`/${id}`)
     }
@@ -164,8 +166,10 @@ function App() {
               <Route path="/features" element={<ConfigsTab initialTab="features" onNavigate={handleSelectService} />} />
               <Route path="/audit" element={<SecurityTab initialTab="audit" />} />
               <Route path="/backup" element={<DatabaseTab initialTab="backups" />} />
+              <Route path="/storage" element={<DatabaseTab initialTab="storage" />} />
               <Route path="/traffic" element={<TrafficTab />} />
               <Route path="/autoscaling" element={<TrafficTab initialTab="hpa" />} />
+              <Route path="/vpa" element={<TrafficTab initialTab="vpa" />} />
               <Route path="/setup" element={<ConfigsTab initialTab="wizard" onNavigate={handleSelectService} />} />
               <Route path="/configs" element={<ConfigsTab initialTab="features" onNavigate={handleSelectService} />} />
               <Route path="/config" element={<ConfigsTab initialTab="features" onNavigate={handleSelectService} />} />

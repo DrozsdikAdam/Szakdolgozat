@@ -315,6 +315,27 @@ export class DatabaseService {
                 data: secretData
             }).catch(err => console.warn('[DatabaseService] backend-secret K8s frissítés figyelmeztetés:', (err as any)?.message || err));
 
+            try {
+                const infraSecrets = await this.k8sClient.coreApi.listNamespacedSecret({ namespace: 'platform-infra' });
+                const backupSecrets = (infraSecrets.items || []).filter(s => s.metadata?.name?.startsWith('backup-secret'));
+                for (const bs of backupSecrets) {
+                    const secretName = bs.metadata!.name!;
+                    await this.k8sService.saveSecret({
+                        name: secretName,
+                        namespace: 'platform-infra',
+                        data: {
+                            DB_HOST: dto.host,
+                            DB_PORT: String(dto.port),
+                            DB_NAME: dto.database,
+                            DB_USER: dto.username,
+                            DB_PASSWORD: dto.password || ''
+                        }
+                    }).catch(() => { });
+                }
+            } catch (backupSecretErr) {
+                console.warn('[DatabaseService] backup-secret frissítési figyelmeztetés:', (backupSecretErr as any)?.message || backupSecretErr);
+            }
+
             await this.restartWorkloadsIfNeeded(dto.restartWorkload);
             await this.applyInactivationStrategy(dto.engine, dto.mode);
             await this.syncProxiesForEngine(dto.engine);

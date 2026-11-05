@@ -140,15 +140,15 @@ export const DeploymentStrategyModal = ({ isOpen, onClose, workload, onSave, isS
                         <input
                             type="range"
                             min="5"
-                            max="90"
+                            max="100"
                             step="5"
                             value={canaryWeight}
                             onChange={(e) => setCanaryWeight(Number(e.target.value))}
                             className="w-full accent-cud-orange cursor-pointer"
                         />
 
-                        <div className="flex items-center gap-2 pt-1">
-                            {[10, 20, 30, 50].map((pct) => (
+                        <div className="flex items-center gap-2 pt-1 flex-wrap">
+                            {[10, 20, 30, 50, 75, 100].map((pct) => (
                                 <button
                                     key={pct}
                                     type="button"

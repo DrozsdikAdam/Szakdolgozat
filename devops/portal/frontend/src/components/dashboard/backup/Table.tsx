@@ -13,6 +13,11 @@ export const BackupTable = ({ backups, isLoading, searchQuery, onSelectRestore }
         return backups.filter((backup) => backup.filename.toLowerCase().includes(searchQuery.toLowerCase()))
     }, [backups, searchQuery])
 
+    const formatBytes = (bytes?: number) => {
+        if (!bytes || bytes <= 0) return "0 B"
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
+    }
 
     return (
         <Card hoverEffect={false} className="p-0 overflow-hidden border border-slate-800">
@@ -59,8 +64,8 @@ export const BackupTable = ({ backups, isLoading, searchQuery, onSelectRestore }
                                     <td className="py-3.5 px-4 whitespace-nowrap text-xs text-slate-400 font-mono">
                                         {backup.filename}
                                     </td>
-                                    <td className="py-3.5 px-4 whitespace-nowrap">
-                                        {(backup.size / (1024 * 1024)).toFixed(2)} MB
+                                    <td className="py-3.5 px-4 whitespace-nowrap font-medium text-slate-300">
+                                        {formatBytes(backup.size)}
                                     </td>
                                     <td className="py-3.5 px-4 text-slate-200 text-sm leading-relaxed">
                                         {backup.s3Path}

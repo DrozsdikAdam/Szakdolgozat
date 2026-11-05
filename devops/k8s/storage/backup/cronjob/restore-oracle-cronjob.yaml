@@ -1,0 +1,93 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-restore-oracle
+  namespace: platform-infra
+  labels:
+    app: db-restore-oracle
+    app.kubernetes.io/component: restore
+    app.kubernetes.io/part-of: paas-platform
+spec:
+  schedule: "0 0 31 2 *"  # Manuális indításra tervezve
+  suspend: true
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app: db-restore-oracle
+        spec:
+          restartPolicy: OnFailure
+          initContainers:
+            - name: minio-download
+              image: minio/mc:latest
+              command: ["/bin/sh", "/scripts/download-s3.sh"]
+              env:
+                - name: TARGET_BACKUP
+                  value: "latest"
+                - name: S3_ENDPOINT
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: S3_ENDPOINT
+                - name: S3_BUCKET
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: S3_BUCKET
+                - name: S3_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: S3_ACCESS_KEY
+                - name: S3_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: S3_SECRET_KEY
+              volumeMounts:
+                - name: staging-volume
+                  mountPath: /staging
+                - name: backup-scripts
+                  mountPath: /scripts
+          containers:
+            - name: oracle-restore
+              image: gvenzl/oracle-free:latest
+              securityContext:
+                runAsUser: 0
+              command: ["/bin/bash", "/scripts/restore-oracle.sh"]
+              env:
+                - name: DB_HOST
+                  value: "oracle.platform-infra.svc.cluster.local"
+                - name: DB_PORT
+                  value: "1521"
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: ORACLE_DATABASE
+                - name: ORACLE_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: ORACLE_PASSWORD
+                - name: APP_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-secret
+                      key: APP_USER
+              volumeMounts:
+                - name: staging-volume
+                  mountPath: /staging
+                - name: backup-scripts
+                  mountPath: /scripts
+          volumes:
+            - name: staging-volume
+              persistentVolumeClaim:
+                claimName: backup-staging-pvc
+            - name: backup-scripts
+              configMap:
+                name: backup-scripts
+                defaultMode: 0777

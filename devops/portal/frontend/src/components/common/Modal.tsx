@@ -1,4 +1,5 @@
 import { useEffect } from "react"
+import { createPortal } from "react-dom"
 import { X } from "lucide-react"
 import type { ModalProps } from "../../types/component/common/modalProps"
 
@@ -38,10 +39,10 @@ export const Modal = ({
         "5xl": "max-w-5xl"
     }
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
             <div
-                className={`w-full ${maxWidthClasses[maxWidth]} h-[88vh] max-h-212.5 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100 ${className}`}
+                className={`w-full ${maxWidthClasses[maxWidth]} max-h-[90vh] bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100 ${className}`}
                 role="dialog"
                 aria-modal="true"
             >
@@ -87,6 +88,7 @@ export const Modal = ({
                     </div>
                 )}
             </div>
-        </div>
+        </div>,
+        document.body
     )
 }

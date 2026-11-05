@@ -7,4 +7,8 @@ export interface RolloutControlPanelProps {
     onSwitchStrategy?: (strategy: 'canary' | 'bluegreen') => Promise<void>;
     namespace?: string;
     appName?: string;
+    canaryWeight?: number;
+    blueGreenActive?: 'blue' | 'green';
+    isPaused?: boolean;
+    onStepCanary?: (nextWeight: number) => Promise<void> | void;
 }

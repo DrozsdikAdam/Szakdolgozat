@@ -82,13 +82,16 @@ export const CATEGORY_CONFIG: Record<
     operations: { label: "Üzemeltetés", variant: "orange" }
 }
 
-export const NAVIGATION_TARGETS: Partial<Record<FeatureFlagName, { target: string; label: string }>> = {
+export const NAVIGATION_TARGETS: Record<FeatureFlagName, { target: string; label: string }> = {
     rate_limiting: { target: "traffic", label: "Beállítások a Forgalom oldalon" },
-    app_storage: { target: "storage", label: "Tárhely áttekintés" },
-    backup_storage: { target: "storage", label: "Tárhely áttekintés" },
-    hpa_scaling: { target: "autoscaling", label: "Finomhangolás a Skálázás oldalon" },
-    vpa_scaling: { target: "autoscaling", label: "Finomhangolás a Skálázás oldalon" },
-    cronjob_backup: { target: "database", label: "Mentési napló az Adatbázis oldalon" }
+    pgbouncer: { target: "database", label: "Adatbázis & Connection Pooler" },
+    haproxy: { target: "database", label: "Adatbázis & Terheléselosztó" },
+    app_storage: { target: "storage", label: "Objektumtár áttekintés" },
+    backup_storage: { target: "backup", label: "Mentési célpont & Tárhely" },
+    cronjob_backup: { target: "backup", label: "Mentési archívum & Napló" },
+    hpa_scaling: { target: "autoscaling", label: "Horizontális skálázás (HPA)" },
+    vpa_scaling: { target: "vpa", label: "Erőforráskeretek (VPA)" },
+    maintenance_mode: { target: "traffic", label: "Forgalomszabályozás" }
 }
 
 export const CATEGORY_TABS: { id: "all" | "traffic" | "database" | "scaling" | "storage" | "operations"; label: string }[] = [

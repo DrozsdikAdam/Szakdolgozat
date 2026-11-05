@@ -7,6 +7,7 @@ export type AuditAction =
     | 'TOGGLE_FEATURE'
     | 'TRIGGER_BACKUP'
     | 'TRIGGER_RESTORE'
+    | 'BACKUP_TARGET_UPDATE'
     | 'SETUP_WIZARD'
     | 'SETUP_DATABASE_PROVISION'
     | 'SETUP_INSTANCE_SIZE'

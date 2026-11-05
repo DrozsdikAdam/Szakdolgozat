@@ -3,24 +3,27 @@ kind: CronJob
 metadata:
   name: db-restore
   namespace: platform-infra
+  labels:
+    app: db-restore
+    app.kubernetes.io/component: restore
+    app.kubernetes.io/part-of: paas-platform
 spec:
-  schedule: "0 0 1 1 *"
+  schedule: "0 0 31 2 *"  # Manuális indításra tervezve
   suspend: true
-  concurrencyPolicy: "Forbid"
-  successfulJobsHistoryLimit: 1
-  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
-      ttlSecondsAfterFinished: 60
-      backoffLimit: 2
+      backoffLimit: 1
+      activeDeadlineSeconds: 600
       template:
         metadata:
           labels:
             app: db-restore
         spec:
+          restartPolicy: OnFailure
           initContainers:
-            - name: fetch-backup
+            - name: minio-download
               image: minio/mc:latest
+              command: ["/bin/sh", "/scripts/download-s3.sh"]
               env:
                 - name: TARGET_BACKUP
                   value: "latest"
@@ -47,24 +50,12 @@ spec:
               volumeMounts:
                 - name: staging-volume
                   mountPath: /staging
-              command: ["/bin/sh", "-c"]
-              args:
-                - >
-                  set -e;
-                  mc alias set remote $S3_ENDPOINT $S3_ACCESS_KEY $S3_SECRET_KEY;
-                  if [ -n "$TARGET_BACKUP" ] && [ "$TARGET_BACKUP" != "latest" ] && mc stat remote/$S3_BUCKET/archive/$TARGET_BACKUP >/dev/null 2>&1; then
-                    echo "Fetching target backup from archive: $TARGET_BACKUP";
-                    mc cp remote/$S3_BUCKET/archive/$TARGET_BACKUP /staging/restore_target.sql.gz;
-                  elif [ -f /staging/latest.sql.gz ]; then
-                    echo "Using latest local staging backup";
-                    cp /staging/latest.sql.gz /staging/restore_target.sql.gz;
-                  else
-                    echo "Fetching latest backup from S3 bucket";
-                    mc cp remote/$S3_BUCKET/latest.sql.gz /staging/restore_target.sql.gz;
-                  fi;
+                - name: backup-scripts
+                  mountPath: /scripts
           containers:
             - name: postgres-restore
               image: bitnami/postgresql:latest
+              command: ["/bin/sh", "/scripts/restore-postgres.sh"]
               env:
                 - name: DB_HOST
                   valueFrom:
@@ -92,23 +83,17 @@ spec:
                       name: backup-secret
                       key: DB_NAME
                 - name: DB_PRIMARY_HOST
-                  valueFrom:
-                    secretKeyRef:
-                      name: backup-secret
-                      key: DB_HOST
+                  value: "postgres-postgresql-primary"
               volumeMounts:
                 - name: staging-volume
                   mountPath: /staging
-              command: ["/bin/sh", "-c"]
-              args:
-                - >
-                  set -e;
-                  gunzip -c /staging/restore_target.sql.gz | PGPASSWORD=$DB_PASSWORD psql -h $DB_PRIMARY_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME;
-                  PGPASSWORD=$DB_PASSWORD psql -h $DB_PRIMARY_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "INSERT INTO backup_catalog (filename, size_bytes, status) VALUES ('RESTORE_COMPLETED', $(stat -c%s /staging/restore_target.sql.gz), 'RESTORE_SUCCESS');";
-                  echo "Database restore completed successfully.";
-                  rm -f /staging/restore_target.sql.gz;
-          restartPolicy: OnFailure
+                - name: backup-scripts
+                  mountPath: /scripts
           volumes:
             - name: staging-volume
               persistentVolumeClaim:
                 claimName: backup-staging-pvc
+            - name: backup-scripts
+              configMap:
+                name: backup-scripts
+                defaultMode: 0777

@@ -12,7 +12,7 @@ import type { ToastMessage } from "../types/component/common";
 
 export type { StrategyFilterType };
 
-export const useDeployments = () => {
+export const useDeployments = (onMutated?: () => void) => {
     const [overview, setOverview] = useState<DeploymentsOverviewDto | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [namespace, setNamespace] = useState<string>("all");
@@ -99,6 +99,7 @@ export const useDeployments = () => {
                 };
             });
             await loadData();
+            onMutated?.();
         } catch (err: any) {
             showToast(`Nem sikerült frissíteni a stratégiát: ${err.message || err}`, "error");
         } finally {
@@ -123,6 +124,7 @@ export const useDeployments = () => {
                 };
             });
             await loadData();
+            onMutated?.();
         } catch (err: any) {
             showToast(`Hiba a visszaállítás (rollback) során: ${err.message || err}`, "error");
         } finally {
@@ -131,29 +133,54 @@ export const useDeployments = () => {
     };
 
     const handleQuickPromote = async (workload: WorkloadDeploymentDto) => {
-        if (workload.strategy !== "BlueGreen") return;
         setIsMutating(true);
         try {
-            const updated = await api.updateStrategy({
-                deploymentName: workload.name,
-                namespace: workload.namespace,
-                strategy: "BlueGreen",
-                promoteBlueGreen: true
-            });
-            const newColor = updated.blueGreenActive === "green" ? "Zöld" : "Kék";
-            showToast(`A forgalom sikeresen átkapcsolva az aktív környezetre (${newColor})!`, "success");
+            if (workload.strategy === "BlueGreen") {
+                const updated = await api.updateStrategy({
+                    deploymentName: workload.name,
+                    namespace: workload.namespace,
+                    strategy: "BlueGreen",
+                    promoteBlueGreen: true
+                });
+                const newColor = updated.blueGreenActive === "green" ? "Zöld" : "Kék";
+                showToast(`A forgalom sikeresen átkapcsolva az aktív környezetre (${newColor})!`, "success");
 
-            setOverview(prev => {
-                if (!prev) return prev;
-                return {
-                    ...prev,
-                    workloads: prev.workloads.map(w =>
-                        w.name === workload.name && w.namespace === workload.namespace ? updated : w
-                    )
-                };
-            });
+                setOverview(prev => {
+                    if (!prev) return prev;
+                    return {
+                        ...prev,
+                        workloads: prev.workloads.map(w =>
+                            w.name === workload.name && w.namespace === workload.namespace ? updated : w
+                        )
+                    };
+                });
+                await loadData();
+                onMutated?.();
+            } else if (workload.strategy === "Canary") {
+                const currentWeight = workload.canaryWeight ?? 20;
+                const nextWeight = Math.min(100, currentWeight + 25);
+                const updated = await api.updateStrategy({
+                    deploymentName: workload.name,
+                    namespace: workload.namespace,
+                    strategy: "Canary",
+                    canaryWeight: nextWeight
+                });
+                showToast(`Canary forgalom aránya sikeresen növelve: ${nextWeight}%-ra!`, "success");
+
+                setOverview(prev => {
+                    if (!prev) return prev;
+                    return {
+                        ...prev,
+                        workloads: prev.workloads.map(w =>
+                            w.name === workload.name && w.namespace === workload.namespace ? updated : w
+                        )
+                    };
+                });
+                await loadData();
+                onMutated?.();
+            }
         } catch (err: any) {
-            showToast(`Hiba a forgalom átkapcsolásakor: ${err.message || err}`, "error");
+            showToast(`Hiba a művelet végrehajtásakor: ${err.message || err}`, "error");
         } finally {
             setIsMutating(false);
         }

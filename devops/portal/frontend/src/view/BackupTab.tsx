@@ -6,6 +6,7 @@ import { Archive, CheckCircle2, AlertCircle, Play, RefreshCw, X } from "lucide-r
 import { BackupStats } from "../components/dashboard/backup/Stats"
 import { SearchInput } from "../components/common/SearchInput"
 import { RestoreModal } from "../components/dashboard/backup/RestoreModal"
+import { BackupTargetCard } from "../components/dashboard/backup/BackupTargetCard"
 import { BackupApi } from "../client/api/backup"
 
 interface FeedbackMessage {
@@ -32,7 +33,7 @@ export const BackupTab = () => {
             const res = await new BackupApi().getHistory()
             setHistory(res)
             setLastUpdate(new Date())
-        } catch (err) {
+        } catch {
             setFeedBackMessage({
                 text: "Hiba történt a mentési archívumok lekérése során",
                 type: "error"
@@ -55,11 +56,15 @@ export const BackupTab = () => {
                 text: `A mentési K8s Job sikeresen elindult: ${res.jobName} (${res.message})`,
                 type: "success"
             })
+            setTimeout(() => handleLoadBackups(), 2000)
+            setTimeout(() => handleLoadBackups(), 5000)
+            setTimeout(() => handleLoadBackups(), 8000)
+            setTimeout(() => handleLoadBackups(), 12000)
             setTimeout(() => {
                 setFeedBackMessage(null)
                 handleLoadBackups()
-            }, 3000)
-        } catch (err) {
+            }, 16000)
+        } catch {
             setFeedBackMessage({
                 text: "Hiba történt a mentés elindítása közben",
                 type: "error"
@@ -89,11 +94,15 @@ export const BackupTab = () => {
                 text: `A visszaállítási Job elindult: ${res.jobName}`,
                 type: "success"
             })
+            setTimeout(() => handleLoadBackups(), 2000)
+            setTimeout(() => handleLoadBackups(), 5000)
+            setTimeout(() => handleLoadBackups(), 8000)
+            setTimeout(() => handleLoadBackups(), 12000)
             setTimeout(() => {
                 setFeedBackMessage(null)
                 handleLoadBackups()
-            }, 3000)
-        } catch (err) {
+            }, 16000)
+        } catch {
             setFeedBackMessage({
                 text: "Hiba történt a visszaállítás elindítása közben",
                 type: "error"
@@ -171,6 +180,8 @@ export const BackupTab = () => {
                     </button>
                 </div>
             )}
+
+            <BackupTargetCard onTargetChanged={handleLoadBackups} />
 
             <BackupStats
                 totalCount={history?.totalCount ?? 0}

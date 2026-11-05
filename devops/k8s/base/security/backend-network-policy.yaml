@@ -40,9 +40,11 @@ spec:
         - port: 9000
           protocol: TCP
     - ports:
+        - port: 5432
+          protocol: TCP
+        - port: 6543
+          protocol: TCP
         - port: 6379
           protocol: TCP
         - port: 1025
           protocol: TCP
-
-

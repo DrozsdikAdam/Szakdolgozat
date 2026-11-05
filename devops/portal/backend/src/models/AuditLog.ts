@@ -25,7 +25,7 @@ AuditLog.init(
             allowNull: false
         },
         details: {
-            type: DataTypes.STRING,
+            type: DataTypes.TEXT,
             allowNull: false
         },
         status: {

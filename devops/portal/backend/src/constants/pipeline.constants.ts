@@ -64,6 +64,14 @@ export const createFallbackPipelineRuns = (repoOwner: string, repoName: string, 
             workflowUrl: baseUrl,
             createdAt: tenMinsAgo,
             updatedAt: now.toISOString(),
+            rollout: {
+                name: BLUEGREEN_ROLLOUT,
+                namespace: DEFAULT_APP_NAMESPACE,
+                strategy: "Canary",
+                canaryWeight: 100,
+                phase: "Healthy",
+                isPaused: false
+            },
             stages: [
                 { id: "backend-test", name: "Backend Tesztek", status: "success", durationSeconds: 45 },
                 { id: "frontend-test", name: "Frontend Tesztek", status: "success", durationSeconds: 32 },

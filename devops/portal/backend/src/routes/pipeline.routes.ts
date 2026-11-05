@@ -5,6 +5,7 @@ const router = Router();
 const controller = new PipelineController();
 
 router.get("/", controller.getPipelineRuns);
+router.get("/overview", controller.getPipelineOverview);
 
 router.post("/trigger", controller.triggerPipeline);
 

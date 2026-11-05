@@ -3,6 +3,8 @@ import { PipelineService } from "../services/pipeline.service.js";
 import { AuditService } from "../services/audit.service.js";
 import { sendSuccess, sendError } from "../utils/response.util.js";
 import { pipelineConfig } from "../config/pipeline.config.js";
+import { K8sDeploymentService } from "../services/k8s/k8s-deployment.service.js";
+import { K8sClientService } from "../services/k8s/k8s-client.service.js";
 import type {
     ManualApprovalRequest,
     RolloutActionRequest
@@ -145,6 +147,20 @@ export class PipelineController {
 
             await this.pipelineService.saveStrategyToEnv(strategy);
 
+            try {
+                const k8sClient = K8sClientService.getInstance();
+                const rolloutName = await (this.pipelineService as any).resolveLiveRolloutName(pipelineConfig.appNamespace, pipelineConfig.defaultAppName);
+                const deploymentService = new K8sDeploymentService(k8sClient);
+                await deploymentService.updateDeploymentStrategy({
+                    deploymentName: rolloutName,
+                    namespace: pipelineConfig.appNamespace,
+                    strategy: strategy === "bluegreen" ? "BlueGreen" : "Canary",
+                    canaryWeight: 20
+                });
+            } catch (k8sErr: any) {
+                console.warn("[PipelineController] Nem sikerült a live Rollout stratégiáját módosítani:", k8sErr?.message || k8sErr);
+            }
+
             await this.auditService.logAudit(
                 "UPDATE_DEPLOYMENT_STRATEGY",
                 `Telepítési stratégia átállítva: ${strategy}`,
@@ -152,6 +168,23 @@ export class PipelineController {
             );
 
             sendSuccess(res, { strategy }, `Alapértelmezett stratégia sikeresen átállítva: ${strategy}`);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getPipelineOverview = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const [runs, drift] = await Promise.all([
+                this.pipelineService.getPipelineRuns(),
+                this.pipelineService.getGitOpsDrift()
+            ]);
+            sendSuccess(res, {
+                config: pipelineConfig,
+                drift,
+                runs,
+                totalRuns: runs.length
+            });
         } catch (error) {
             next(error);
         }

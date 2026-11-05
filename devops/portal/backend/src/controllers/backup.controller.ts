@@ -18,6 +18,33 @@ export class BackupController {
         }
     };
 
+    getTarget = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const target = await this.backupService.getBackupTarget();
+            sendSuccess(res, target);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    saveTarget = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const result = await this.backupService.saveBackupTarget(req.body);
+            sendSuccess(res, undefined, result.message);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    testTarget = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const result = await this.backupService.testBackupTarget(req.body);
+            sendSuccess(res, result, result.message);
+        } catch (error) {
+            next(error);
+        }
+    };
+
     triggerBackup = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const result = await this.backupService.triggerBackup();

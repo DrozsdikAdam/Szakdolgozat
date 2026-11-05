@@ -287,7 +287,7 @@ export const FeatureCard = ({
                         )}
                     </div>
 
-                    {enabled && navInfo && onNavigate && (
+                    {navInfo && onNavigate && (
                         <button
                             type="button"
                             onClick={() => onNavigate(navInfo.target)}
