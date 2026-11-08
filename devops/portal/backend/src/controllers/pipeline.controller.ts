@@ -1,12 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
 import { PipelineService } from "../services/pipeline.service.js";
 import { AuditService } from "../services/audit.service.js";
-import type { ApiResponse } from "../dtos/common.dto.js";
-import type { PipelineJobResponseDto } from "../dtos/pipeline.dto.js";
+import { sendSuccess, sendError } from "../utils/response.util.js";
+import { pipelineConfig } from "../config/pipeline.config.js";
+import { K8sDeploymentService } from "../services/k8s/k8s-deployment.service.js";
+import { K8sClientService } from "../services/k8s/k8s-client.service.js";
 import type {
-    GitOpsDriftReport,
     ManualApprovalRequest,
-    PipelineRun,
     RolloutActionRequest
 } from "../types/pipeline.types.js";
 
@@ -22,14 +22,7 @@ export class PipelineController {
     getPipelineRuns = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const runs = await this.pipelineService.getPipelineRuns();
-
-            const response: ApiResponse<PipelineRun[]> = {
-                success: true,
-                data: runs,
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, runs);
         } catch (error) {
             next(error);
         }
@@ -46,14 +39,7 @@ export class PipelineController {
                 result.success ? "SUCCESS" : "FAILED"
             );
 
-            const response: ApiResponse<PipelineJobResponseDto> = {
-                success: result.success,
-                data: result,
-                message: result.message,
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, result, result.message);
         } catch (error) {
             next(error);
         }
@@ -83,14 +69,7 @@ export class PipelineController {
                 result.success ? "SUCCESS" : "FAILED"
             );
 
-            const response: ApiResponse<PipelineJobResponseDto> = {
-                success: result.success,
-                data: result,
-                message: result.message,
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, result, result.message);
         } catch (error) {
             next(error);
         }
@@ -99,14 +78,7 @@ export class PipelineController {
     getGitOpsDrift = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const driftReport = await this.pipelineService.getGitOpsDrift();
-
-            const response: ApiResponse<GitOpsDriftReport> = {
-                success: true,
-                data: driftReport,
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, driftReport);
         } catch (error) {
             next(error);
         }
@@ -115,8 +87,12 @@ export class PipelineController {
     executeRolloutAction = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const action = req.body?.action as RolloutActionRequest["action"] || "status";
-            const rolloutName = typeof req.body?.rolloutName === "string" ? req.body.rolloutName.trim() : "mes-backend-canary";
-            const namespace = typeof req.body?.namespace === "string" ? req.body.namespace.trim() : "app-mes";
+            const rolloutName = typeof req.body?.rolloutName === "string" && req.body.rolloutName.trim()
+                ? req.body.rolloutName.trim()
+                : undefined;
+            const namespace = typeof req.body?.namespace === "string" && req.body.namespace.trim()
+                ? req.body.namespace.trim()
+                : undefined;
             const full = Boolean(req.body?.full);
 
             const rolloutReq: RolloutActionRequest = {
@@ -130,18 +106,85 @@ export class PipelineController {
 
             await this.auditService.logAudit(
                 "ROLLOUT_ACTION",
-                `Argo Rollout művelet (${action}) végrehajtva a(z) '${rolloutName}' erőforráson (${namespace} névtér).`,
+                `Argo Rollout művelet (${action}) végrehajtva a(z) '${rolloutName || "alapértelmezett"}' erőforráson (${namespace || "alapértelmezett"} névtér). Eredmény: ${result.message}`,
                 result.success ? "SUCCESS" : "FAILED"
             );
 
-            const response: ApiResponse<PipelineJobResponseDto> = {
-                success: result.success,
-                data: result,
-                message: result.message,
-                timestamp: new Date().toISOString()
-            };
+            if (!result.success) {
+                sendError(res, result.message, 400);
+                return;
+            }
 
-            res.status(200).json(response);
+            sendSuccess(res, result, result.message);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getPipelineConfig = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            sendSuccess(res, {
+                defaultStrategy: pipelineConfig.defaultStrategy,
+                defaultAppName: pipelineConfig.defaultAppName,
+                appNamespace: pipelineConfig.appNamespace,
+                stagingBranch: pipelineConfig.stagingBranch,
+                productionBranch: pipelineConfig.productionBranch
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    updatePipelineStrategy = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const rawStrategy = typeof req.body?.strategy === "string" ? req.body.strategy.trim().toLowerCase() : "";
+            if (!rawStrategy) {
+                sendError(res, "A 'strategy' paraméter megadása kötelező ('canary' vagy 'bluegreen').", 400);
+                return;
+            }
+
+            const strategy = rawStrategy.includes("blue") ? "bluegreen" : "canary";
+
+            await this.pipelineService.saveStrategyToEnv(strategy);
+
+            try {
+                const k8sClient = K8sClientService.getInstance();
+                const rolloutName = await (this.pipelineService as any).resolveLiveRolloutName(pipelineConfig.appNamespace, pipelineConfig.defaultAppName);
+                const deploymentService = new K8sDeploymentService(k8sClient);
+                await deploymentService.updateDeploymentStrategy({
+                    deploymentName: rolloutName,
+                    namespace: pipelineConfig.appNamespace,
+                    strategy: strategy === "bluegreen" ? "BlueGreen" : "Canary",
+                    canaryWeight: 20
+                });
+            } catch (k8sErr: any) {
+                console.warn("[PipelineController] Nem sikerült a live Rollout stratégiáját módosítani:", k8sErr?.message || k8sErr);
+            }
+
+            await this.auditService.logAudit(
+                "UPDATE_DEPLOYMENT_STRATEGY",
+                `Telepítési stratégia átállítva: ${strategy}`,
+                "SUCCESS"
+            );
+
+            sendSuccess(res, { strategy }, `Alapértelmezett stratégia sikeresen átállítva: ${strategy}`);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getPipelineOverview = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const [runs, drift] = await Promise.all([
+                this.pipelineService.getPipelineRuns(),
+                this.pipelineService.getGitOpsDrift()
+            ]);
+            sendSuccess(res, {
+                config: pipelineConfig,
+                drift,
+                runs,
+                totalRuns: runs.length
+            });
         } catch (error) {
             next(error);
         }

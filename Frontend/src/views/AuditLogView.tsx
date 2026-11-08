@@ -51,16 +51,16 @@ export const AuditLogView = () => {
     }, [pageData.content, searchTerm, selectedEntity, selectedAction])
 
     useEffect(() => {
-        loadData(true);
+        loadData(pageData.content.length === 0);
         const intervalId = setInterval(async () => {
             await loadData(false);
-        }, 5000);
+        }, 15000);
 
         return () => clearInterval(intervalId);
-    }, [pageData.pageNumber, pageData.pageSize, selectedEntity, selectedAction])
+    }, [pageData.pageNumber, pageData.pageSize, selectedEntity, selectedAction]);
 
     useEffect(() => {
-        setPageData(prev => ({ ...prev, pageNumber: 0 }));
+        setPageData(prev => prev.pageNumber === 0 ? prev : ({ ...prev, pageNumber: 0 }));
     }, [selectedEntity, selectedAction, searchTerm]);
 
     return (

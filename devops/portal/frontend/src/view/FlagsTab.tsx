@@ -1,123 +1,38 @@
-import { useState, useEffect, useMemo } from "react"
-import { RefreshCw, Sliders, Search, AlertTriangle } from "lucide-react"
-import { PlatformApi } from "../client/api/platform"
-import type { FeatureFlagName, InactivationStrategy } from "../types/platform"
-import type { FeatureMetaItem, FeatureCategory } from "../types/component/features/featureCardProps"
-import { CATEGORY_TABS, FeatureConfigs, INACTIVATION_PRESETS } from "../constants/featureFlags"
-import { FeatureStats } from "../components/dashboard/features/Stats"
-import { FeatureCard } from "../components/dashboard/features/Card"
-import { PresetGroup } from "../components/common/PresetGroup"
-import { SearchInput } from "../components/common/SearchInput"
-import { Button } from "../components/common/Button"
-import { EmptyState } from "../components/common/EmptyState"
-
-const ALL_FEATURES: FeatureMetaItem[] = (Object.keys(FeatureConfigs) as FeatureFlagName[]).map(
-    (key) => ({
-        key,
-        label: FeatureConfigs[key].label,
-        description: FeatureConfigs[key].description,
-        category: FeatureConfigs[key].category as FeatureCategory,
-        icon: FeatureConfigs[key].icon,
-        isCritical: FeatureConfigs[key].isCritical
-    })
-)
+import { RefreshCw, Sliders, Search, AlertTriangle } from "lucide-react";
+import { useFeatureFlags, ALL_FEATURES } from "../hooks/useFeatureFlags";
+import type { InactivationStrategy } from "../types/platform";
+import { CATEGORY_TABS, INACTIVATION_PRESETS } from "../constants/featureFlags";
+import { FeatureStats } from "../components/dashboard/features/Stats";
+import { FeatureCard } from "../components/dashboard/features/Card";
+import { PresetGroup } from "../components/common/PresetGroup";
+import { SearchInput } from "../components/common/SearchInput";
+import { Button } from "../components/common/Button";
+import { EmptyState } from "../components/common/EmptyState";
 
 interface FlagsTabProps {
-    onNavigate?: (serviceId: any) => void
+    onNavigate?: (serviceId: any) => void;
 }
 
 export const FlagsTab = ({ onNavigate }: FlagsTabProps) => {
-    const [flags, setFlags] = useState<Record<FeatureFlagName, boolean>>({
-        rate_limiting: false,
-        pgbouncer: false,
-        haproxy: false,
-        cronjob_backup: false,
-        hpa_scaling: false,
-        vpa_scaling: false,
-        maintenance_mode: false
-    })
-    const [featureParams, setFeatureParams] = useState<Partial<Record<FeatureFlagName, Record<string, any>>>>({})
-    const [inactivationStrategy, setInactivationStrategy] = useState<InactivationStrategy>("scale_to_zero")
-    const [loading, setLoading] = useState<boolean>(true)
-    const [togglingKey, setTogglingKey] = useState<FeatureFlagName | null>(null)
-    const [search, setSearch] = useState<string>("")
-    const [selectedCategory, setSelectedCategory] = useState<"all" | FeatureCategory>("all")
-    const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-
-    const isCardToggling = (key: FeatureFlagName) => {
-        if (togglingKey === key) return true
-        if ((key === 'hpa_scaling' || key === 'vpa_scaling') && (togglingKey === 'hpa_scaling' || togglingKey === 'vpa_scaling')) {
-            return true
-        }
-        return false
-    }
-
-    const loadPlatformStatus = async () => {
-        try {
-            const res = await new PlatformApi().getStatus()
-            if (res.activeFeatures)
-                setFlags(res.activeFeatures)
-            if (res.featureParams)
-                setFeatureParams(res.featureParams)
-            if (res.inactivationStrategy)
-                setInactivationStrategy(res.inactivationStrategy)
-            setLastUpdated(new Date())
-        } catch (err) {
-            console.warn("Nem sikerült lekérni a platform státuszt:", err)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    useEffect(() => {
-        setLoading(true)
-        loadPlatformStatus()
-    }, [])
-
-    const handleToggle = async (key: FeatureFlagName, nextState: boolean) => {
-        if (togglingKey) return
-
-        setTogglingKey(key)
-
-        setFlags((prev) => {
-            const updated = { ...prev, [key]: nextState }
-            if (key === 'hpa_scaling' && nextState) updated.vpa_scaling = false
-            else if (key === 'vpa_scaling' && nextState) updated.hpa_scaling = false
-            return updated
-        })
-
-        try {
-            await new PlatformApi().toggleFeature({
-                name: key,
-                enabled: nextState,
-                strategy: inactivationStrategy
-            })
-            await loadPlatformStatus()
-        } catch (err) {
-            console.error("Hiba a feature flag módosításakor:", err)
-            await loadPlatformStatus()
-        } finally {
-            setTogglingKey(null)
-        }
-    }
-
-    const filteredFeatures = useMemo(() => {
-        return ALL_FEATURES.filter((item) => {
-            const matchesCategory =
-                selectedCategory === "all" || item.category === selectedCategory
-            const matchesSearch =
-                item.label.toLowerCase().includes(search.toLowerCase()) ||
-                item.description.toLowerCase().includes(search.toLowerCase())
-
-            return matchesCategory && matchesSearch
-        })
-    }, [search, selectedCategory])
-
-    const activeCount = useMemo(() => {
-        return Object.values(flags).filter(Boolean).length
-    }, [flags])
-
-    const maintenanceActive = Boolean(flags.maintenance_mode)
+    const {
+        flags,
+        featureParams,
+        dbEngine,
+        inactivationStrategy,
+        setInactivationStrategy,
+        loading,
+        search,
+        setSearch,
+        selectedCategory,
+        setSelectedCategory,
+        lastUpdated,
+        isCardToggling,
+        loadPlatformStatus,
+        handleToggle,
+        filteredFeatures,
+        activeCount,
+        maintenanceActive
+    } = useFeatureFlags();
 
     return (
         <div className="flex flex-col gap-6">
@@ -200,7 +115,7 @@ export const FlagsTab = ({ onNavigate }: FlagsTabProps) => {
 
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
                     {CATEGORY_TABS.map((tab) => {
-                        const isSelected = selectedCategory === tab.id
+                        const isSelected = selectedCategory === tab.id;
                         return (
                             <button
                                 key={tab.id}
@@ -213,7 +128,7 @@ export const FlagsTab = ({ onNavigate }: FlagsTabProps) => {
                             >
                                 {tab.label}
                             </button>
-                        )
+                        );
                     })}
                 </div>
             </div>
@@ -234,6 +149,7 @@ export const FlagsTab = ({ onNavigate }: FlagsTabProps) => {
                             isToggling={isCardToggling(feature.key)}
                             strategy={inactivationStrategy}
                             params={featureParams[feature.key]}
+                            dbEngine={dbEngine}
                             onNavigate={onNavigate}
                             onToggle={handleToggle}
                         />
@@ -241,5 +157,5 @@ export const FlagsTab = ({ onNavigate }: FlagsTabProps) => {
                 </div>
             )}
         </div>
-    )
-}
+    );
+};

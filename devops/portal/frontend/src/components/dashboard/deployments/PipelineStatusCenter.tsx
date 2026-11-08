@@ -35,7 +35,8 @@ export const PipelineStatusCenter = ({ pipelineCenter }: PipelineStatusCenterPro
         handleOpenApprovalModal,
         handleCloseApprovalModal,
         handleApprovePipeline,
-        handleRolloutAction
+        handleRolloutAction,
+        handleStepCanary
     } = pipelineCenter;
 
     const onTrigger = async () => {
@@ -104,6 +105,14 @@ export const PipelineStatusCenter = ({ pipelineCenter }: PipelineStatusCenterPro
             <RolloutControlPanel
                 onAction={handleRolloutAction}
                 isActing={isRolloutActing}
+                activeStrategy={pipelineCenter.activeStrategy}
+                onSwitchStrategy={pipelineCenter.handleSwitchStrategy}
+                namespace={pipelineCenter.appNamespace}
+                appName={pipelineCenter.appName}
+                canaryWeight={pipelineCenter.canaryWeight}
+                blueGreenActive={pipelineCenter.blueGreenActive}
+                isPaused={pipelineCenter.isRolloutPaused}
+                onStepCanary={handleStepCanary}
             />
 
             <div className="space-y-3">
@@ -133,6 +142,9 @@ export const PipelineStatusCenter = ({ pipelineCenter }: PipelineStatusCenterPro
                                 key={run.id}
                                 run={run}
                                 onApproveClick={handleOpenApprovalModal}
+                                onRolloutAction={handleRolloutAction}
+                                onStepCanary={handleStepCanary}
+                                isRolloutActing={isRolloutActing}
                             />
                         ))}
                     </div>

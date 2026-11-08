@@ -1,12 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { K8sService } from "../services/k8s.service.js";
-import type { ApiResponse } from "../dtos/common.dto.js";
-import type {
-    TelemetryOverViewDto,
-    TelemetryTimeRange,
-    WorkloadMetricDto,
-    GrafanaDashboardDto
-} from "../dtos/telemetry.dto.js";
+import { sendSuccess } from "../utils/response.util.js";
+import type { TelemetryTimeRange } from "../dtos/telemetry.dto.js";
 
 export class TelemetryController {
     private k8sService: K8sService;
@@ -19,14 +14,7 @@ export class TelemetryController {
         try {
             const timeRange = (typeof req.query.timeRange === "string" ? req.query.timeRange : "1h") as TelemetryTimeRange;
             const overview = await this.k8sService.getTelemetryOverview(timeRange);
-
-            const response: ApiResponse<TelemetryOverViewDto> = {
-                success: true,
-                data: overview,
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, overview);
         } catch (error) {
             next(error);
         }
@@ -36,14 +24,7 @@ export class TelemetryController {
         try {
             const namespace = typeof req.query.namespace === "string" ? req.query.namespace : undefined;
             const workloads = await this.k8sService.getTelemetryWorkloads(namespace);
-
-            const response: ApiResponse<WorkloadMetricDto[]> = {
-                success: true,
-                data: workloads,
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, workloads);
         } catch (error) {
             next(error);
         }
@@ -52,14 +33,7 @@ export class TelemetryController {
     getDashboards = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const dashboards = this.k8sService.getTelemetryDashboards();
-
-            const response: ApiResponse<GrafanaDashboardDto[]> = {
-                success: true,
-                data: dashboards,
-                timestamp: new Date().toISOString()
-            };
-
-            res.status(200).json(response);
+            sendSuccess(res, dashboards);
         } catch (error) {
             next(error);
         }

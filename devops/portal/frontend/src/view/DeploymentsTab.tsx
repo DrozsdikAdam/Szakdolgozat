@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import {
     Rocket,
     RefreshCw,
@@ -18,13 +19,24 @@ import { Select } from "../components/common/Select";
 import { Button } from "../components/common/Button";
 import { EmptyState } from "../components/common/EmptyState";
 
-const namespaceOptions = [
-    { value: "all", label: "Minden névtér" },
-    { value: "platform-infra", label: "platform-infra" },
-    { value: "app-mes", label: "app-mes" }
-];
+import { useNamespaces } from "../hooks/useNamespaces";
 
 export const DeploymentsTab = () => {
+    const { namespaceOptions } = useNamespaces(true);
+    
+    const pipelineCenterRef = useRef<{ loadData: (silent?: boolean) => Promise<void> } | null>(null);
+    const deploymentsRef = useRef<{ loadData: () => Promise<void> } | null>(null);
+
+    const pipelineCenter = usePipelineCenter(() => {
+        deploymentsRef.current?.loadData();
+    });
+    pipelineCenterRef.current = pipelineCenter;
+
+    const deploymentsHook = useDeployments(() => {
+        pipelineCenterRef.current?.loadData(true);
+    });
+    deploymentsRef.current = deploymentsHook;
+
     const {
         gitRepo,
         filteredWorkloads,
@@ -51,9 +63,7 @@ export const DeploymentsTab = () => {
         handleUpdateStrategy,
         handleRollback,
         handleQuickPromote
-    } = useDeployments();
-
-    const pipelineCenter = usePipelineCenter();
+    } = deploymentsHook;
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">

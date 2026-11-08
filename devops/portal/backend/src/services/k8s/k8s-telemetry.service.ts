@@ -4,6 +4,7 @@ import {
     DEFAULT_GRAFANA_DASHBOARD,
     TIME_RANGE_MULTIPLIERS
 } from "../../constants/k8s-telemetry.constants.js";
+import { DEFAULT_PLATFORM_NAMESPACE } from "../../constants/namespace.constants.js";
 import type {
     TelemetryOverViewDto,
     TelemetryTimeRange,
@@ -15,13 +16,7 @@ import type {
     RiskLevel,
     NodeStatus
 } from "../../dtos/telemetry.dto.js";
-
-interface WorkloadBaseline {
-    cpuBase: number;
-    cpuLimit: number;
-    memBase: number;
-    memLimit: number;
-}
+import type { WorkloadBaseline } from "../../types/k8s.types.js";
 
 const WORKLOAD_BASELINES: Record<string, WorkloadBaseline> = {
     haproxy: { cpuBase: 25, cpuLimit: 300, memBase: 64, memLimit: 256 },
@@ -192,7 +187,7 @@ export class K8sTelemetryService {
         }
 
         if (workloads.length === 0) {
-            return this.getFallbackWorkloads(multiplier);
+            return [];
         }
 
         return workloads;
@@ -214,25 +209,25 @@ export class K8sTelemetryService {
         const totalCpuReq = Math.round(totalCpuLimit * 0.6);
         const totalMemReq = Math.round(totalMemLimit * 0.7);
 
-        const cpuUsagePercent = totalCpuLimit > 0 ? Math.round((totalCpuUsed / totalCpuLimit) * 100) : 18;
-        const memUsagePercent = totalMemLimit > 0 ? Math.round((totalMemUsed / totalMemLimit) * 100) : 34;
+        const cpuUsagePercent = totalCpuLimit > 0 ? Math.round((totalCpuUsed / totalCpuLimit) * 100) : 0;
+        const memUsagePercent = totalMemLimit > 0 ? Math.round((totalMemUsed / totalMemLimit) * 100) : 0;
 
         return {
             cpu: {
-                usage: totalCpuUsed || 240,
-                requests: totalCpuReq || 1500,
-                limit: totalCpuLimit || 2600,
+                usage: totalCpuUsed,
+                requests: totalCpuReq,
+                limit: totalCpuLimit,
                 usagePercent: cpuUsagePercent
             },
             memory: {
-                usage: totalMemUsed || 890,
-                requests: totalMemReq || 1800,
-                limit: totalMemLimit || 3072,
+                usage: totalMemUsed,
+                requests: totalMemReq,
+                limit: totalMemLimit,
                 usagePercent: memUsagePercent
             },
             network: {
-                inbound: Math.round(285 * (totalCpuUsed / 200 || 1)),
-                outbound: Math.round(490 * (totalCpuUsed / 200 || 1))
+                inbound: totalCpuUsed > 0 ? Math.round(285 * (totalCpuUsed / 200)) : 0,
+                outbound: totalCpuUsed > 0 ? Math.round(490 * (totalCpuUsed / 200)) : 0
             },
             nodes: {
                 total: 1,
@@ -282,7 +277,7 @@ export class K8sTelemetryService {
 
             return {
                 name,
-                namespace: "platform-infra",
+                namespace: DEFAULT_PLATFORM_NAMESPACE,
                 cpuUsedMilli: cpuUsed,
                 cpuLimitMilli: base.cpuLimit,
                 cpuThrottlingEvents: multiplier > 1.15 ? 1 : 0,

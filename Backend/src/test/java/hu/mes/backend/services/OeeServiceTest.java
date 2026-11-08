@@ -8,11 +8,10 @@ package hu.mes.backend.services;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,10 +22,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import hu.mes.backend.dtos.telemetry.OeeAggregationProjection;
 import hu.mes.backend.dtos.telemetry.OeeResponse;
 import hu.mes.backend.models.Machine;
-import hu.mes.backend.models.MachineTelemetry;
-import hu.mes.backend.models.enums.MachineStatus;
 import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.MachineTelemetryRepository;
 
@@ -63,9 +61,9 @@ public class OeeServiceTest {
 
     @Test
     void calculateMachineOee_EmptyTelemetry_ReturnsZeroOee() {
-        when(telemetryRepository.findByMachineIdAndTimestampBetween(machineId, start, end))
-                .thenReturn(Collections.emptyList());
         when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
+        when(telemetryRepository.calculateOeeAggregation(machineId, start, end))
+                .thenReturn(null);
 
         OeeResponse response = oeeService.calculateMachineOee(machineId, start, end);
 
@@ -80,8 +78,6 @@ public class OeeServiceTest {
 
     @Test
     void calculateMachineOee_MachineNotFound_ThrowsRuntimeException() {
-        when(telemetryRepository.findByMachineIdAndTimestampBetween(machineId, start, end))
-                .thenReturn(Collections.emptyList());
         when(machineRepository.findById(machineId)).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () -> oeeService.calculateMachineOee(machineId, start, end));
@@ -96,23 +92,15 @@ public class OeeServiceTest {
         // levágva 100%-ra
         // oee = (0.5 * 1.0 * 0.8) * 100 = 40%
 
-        MachineTelemetry t1 = MachineTelemetry.builder()
-                .status(MachineStatus.RUNNING)
-                .producedCount(10)
-                .scrapCount(2)
-                .timestamp(start.plusMinutes(10))
-                .build();
+        OeeAggregationProjection agg = mock(OeeAggregationProjection.class);
+        when(agg.getTotalSamples()).thenReturn(2L);
+        when(agg.getRunningSamples()).thenReturn(1L);
+        when(agg.getTotalProduced()).thenReturn(10L);
+        when(agg.getTotalScrap()).thenReturn(2L);
 
-        MachineTelemetry t2 = MachineTelemetry.builder()
-                .status(MachineStatus.IDLE)
-                .producedCount(0)
-                .scrapCount(0)
-                .timestamp(start.plusMinutes(20))
-                .build();
-
-        when(telemetryRepository.findByMachineIdAndTimestampBetween(machineId, start, end))
-                .thenReturn(List.of(t1, t2));
         when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
+        when(telemetryRepository.calculateOeeAggregation(machineId, start, end))
+                .thenReturn(agg);
 
         OeeResponse response = oeeService.calculateMachineOee(machineId, start, end);
 

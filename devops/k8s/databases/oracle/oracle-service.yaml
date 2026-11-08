@@ -3,11 +3,17 @@ kind: Service
 metadata:
   name: oracle
   namespace: platform-infra
+  labels:
+    app: oracle
+    app.kubernetes.io/name: oracle
+    app.kubernetes.io/part-of: paas-platform
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: oracle
+    statefulset.kubernetes.io/pod-name: oracle-0
   ports:
     - port: 1521
       targetPort: 1521
+      nodePort: 31521
       name: oracle

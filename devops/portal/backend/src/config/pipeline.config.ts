@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import type { PipelineConfig } from "../types/pipeline.types.js";
+import { DEFAULT_APP_NAMESPACE, DEFAULT_PLATFORM_NAMESPACE } from "../constants/namespace.constants.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,10 +49,11 @@ export function loadPipelineConfig(): PipelineConfig {
         repoName: repoMatch?.[2] || "Szakdolgozat",
         stagingBranch: get("STAGING_BRANCH", "develop"),
         productionBranch: get("PRODUCTION_BRANCH", "main"),
-        appNamespace: get("APP_NAMESPACE", "app-mes"),
+        appNamespace: get("APP_NAMESPACE", DEFAULT_APP_NAMESPACE),
         stagingUrl: get("STAGING_URL", "http://staging.mes.localhost"),
         targetUrl: get("TARGET_URL", "http://mes.localhost"),
-        defaultStrategy: (get("DEFAULT_STRATEGY", "canary").toLowerCase() === "bluegreen") ? "bluegreen" : "canary",
+        defaultStrategy: get("DEFAULT_STRATEGY", "canary").toLowerCase().includes("blue") ? "bluegreen" : "canary",
+        defaultAppName: get("APP_NAME", get("BACKEND_IMAGE", "mes-backend")),
         githubToken: process.env.GITHUB_TOKEN || ""
     };
 }

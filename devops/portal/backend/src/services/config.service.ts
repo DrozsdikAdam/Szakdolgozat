@@ -2,24 +2,24 @@ import { sequelize } from "../config/database.js";
 import type { FeatureTogglePayload } from "../dtos/feature.dto.js";
 import type { SetupWizardPayload } from "../dtos/setup.dto.js";
 import type { PlatformStatusResponse } from "../dtos/status.dto.js";
-import { BackupRecord } from "../models/BackupRecords.js";
 import { FeatureFlag } from "../models/FeatureFlag.js";
 import { SystemConfig } from "../models/SystemConfig.js";
-import type { FeatureFlagName, InactivationStrategy } from "../types/feature.types.js";
+import type { FeatureFlagName, InactivationStrategy, FeatureWorkloadTarget } from "../types/feature.types.js";
 import type { DatabaseEngine, DatabaseMode, GitProvider, InstanceSize, S3Provider } from "../types/setup.types.js";
 import { AuditService } from "./audit.service.js";
 import { K8sService } from "./k8s.service.js";
-
-interface FeatureWorkloadTarget {
-    type: 'deployment' | 'cronjob';
-    name: string;
-    namespace: string;
-}
+import {
+    DEFAULT_APP_NAMESPACE,
+    DEFAULT_PLATFORM_NAMESPACE,
+    DEFAULT_APP_NAME,
+    DEFAULT_FRONTEND_NAME
+} from "../constants/namespace.constants.js";
 
 const FEATURE_WORKLOAD_MAP: Partial<Record<FeatureFlagName, FeatureWorkloadTarget>> = {
-    pgbouncer: { type: 'deployment', name: 'pgbouncer', namespace: 'platform-infra' },
-    haproxy: { type: 'deployment', name: 'haproxy', namespace: 'platform-infra' },
-    cronjob_backup: { type: 'cronjob', name: 'db-backup', namespace: 'platform-infra' },
+    pgbouncer: { type: 'deployment', name: 'pgbouncer', namespace: DEFAULT_PLATFORM_NAMESPACE },
+    haproxy: { type: 'deployment', name: 'haproxy', namespace: DEFAULT_PLATFORM_NAMESPACE },
+    cronjob_backup: { type: 'cronjob', name: 'db-backup', namespace: DEFAULT_PLATFORM_NAMESPACE },
+    app_storage: { type: 'statefulset', name: 'app-storage', namespace: DEFAULT_PLATFORM_NAMESPACE }
 };
 
 const PLATFORM_FEATURE_DEFAULTS: Partial<Record<FeatureFlagName, Record<string, any>>> = {
@@ -32,7 +32,17 @@ const PLATFORM_FEATURE_DEFAULTS: Partial<Record<FeatureFlagName, Record<string, 
         minAllowedMemory: '128Mi',
         maxAllowedMemory: '2Gi'
     },
-    cronjob_backup: { schedule: '0 2 * * *' }
+    cronjob_backup: { schedule: '0 2 * * *' },
+    app_storage: {
+        mode: 'internal',
+        bucket: 'mes-app-storage',
+        endpoint: 'http://app-storage.platform-infra.svc.cluster.local:9000'
+    },
+    backup_storage: {
+        mode: 'internal',
+        bucket: 'mes-backups',
+        endpoint: 'http://app-storage.platform-infra.svc.cluster.local:9000'
+    }
 };
 
 export class ConfigService {
@@ -49,58 +59,30 @@ export class ConfigService {
         try {
             await sequelize.sync();
 
-            const options: FeatureFlagName[] = ['rate_limiting', 'pgbouncer', 'haproxy', 'cronjob_backup', 'hpa_scaling', 'vpa_scaling', 'maintenance_mode'];
+            const options: FeatureFlagName[] = [
+                'rate_limiting',
+                'pgbouncer',
+                'haproxy',
+                'cronjob_backup',
+                'hpa_scaling',
+                'vpa_scaling',
+                'maintenance_mode',
+                'app_storage',
+                'backup_storage'
+            ];
 
             for (const option of options) {
+                const defaults = PLATFORM_FEATURE_DEFAULTS[option] || {};
                 await FeatureFlag.findOrCreate({
                     where: {
                         name: option
                     },
                     defaults: {
                         name: option,
-                        enabled: false
+                        enabled: option === 'app_storage' || option === 'backup_storage',
+                        params: defaults
                     }
                 });
-            }
-
-            const backupCount = await BackupRecord.count();
-            if (backupCount === 0) {
-                const now = Date.now();
-                await BackupRecord.bulkCreate([
-                    {
-                        filename: 'mes-postgres-backup-2026-09-15T02-00-00.sql.gz',
-                        sizeBytes: 44236800, // ~42.19 MB
-                        status: 'SYNCED',
-                        s3Path: 's3://mes-backups/daily/mes-postgres-backup-2026-09-15T02-00-00.sql.gz',
-                        createdAt: new Date(now - 1000 * 60 * 60 * 12),
-                        updatedAt: new Date(now - 1000 * 60 * 60 * 12)
-                    },
-                    {
-                        filename: 'mes-postgres-backup-2026-09-14T02-00-00.sql.gz',
-                        sizeBytes: 43812000, // ~41.78 MB
-                        status: 'SYNCED',
-                        s3Path: 's3://mes-backups/daily/mes-postgres-backup-2026-09-14T02-00-00.sql.gz',
-                        createdAt: new Date(now - 1000 * 60 * 60 * 36),
-                        updatedAt: new Date(now - 1000 * 60 * 60 * 36)
-                    },
-                    {
-                        filename: 'mes-postgres-backup-2026-09-13T02-00-00.sql.gz',
-                        sizeBytes: 42991616, // ~41.00 MB
-                        status: 'STAGED_LOCALLY',
-                        s3Path: 's3://mes-backups/daily/mes-postgres-backup-2026-09-13T02-00-00.sql.gz',
-                        createdAt: new Date(now - 1000 * 60 * 60 * 60),
-                        updatedAt: new Date(now - 1000 * 60 * 60 * 60)
-                    },
-                    {
-                        filename: 'mes-postgres-backup-2026-09-12T02-00-00.sql.gz',
-                        sizeBytes: 41943040, // ~40.00 MB
-                        status: 'RESTORE_SUCCESS',
-                        s3Path: 's3://mes-backups/daily/mes-postgres-backup-2026-09-12T02-00-00.sql.gz',
-                        createdAt: new Date(now - 1000 * 60 * 60 * 84),
-                        updatedAt: new Date(now - 1000 * 60 * 60 * 84)
-                    }
-                ]);
-                console.log('[ConfigService] Initial backup records seeded successfully.');
             }
 
             console.log('Database connection has been established successfully.');
@@ -180,7 +162,6 @@ export class ConfigService {
             const dbResult = await this.k8sService.deployDatabaseEngine(engine, request.dbMode);
             await this.auditService.logAudit('SETUP_DATABASE_PROVISION', `Database provisioning (${engine}, ${request.dbMode}): ${dbResult.message}`, dbResult.success ? 'SUCCESS' : 'FAILED');
 
-            // Ha nincs autoscaling, a választott statikus példányméretet (requests & limits) állítjuk be a podra
             const isAutoscalingActive = request.enabledFeatures.includes('hpa_scaling') || request.enabledFeatures.includes('vpa_scaling');
             if (!isAutoscalingActive) {
                 const sizeResult = await this.k8sService.applyInstanceSize(size);
@@ -197,16 +178,35 @@ export class ConfigService {
         }
     }
 
-    private applyWorkloadStrategy = async (featureName: FeatureFlagName, enabled: boolean, strategy: InactivationStrategy): Promise<void> => {
+    private applyWorkloadStrategy = async (featureName: FeatureFlagName, enabled: boolean, strategy: InactivationStrategy, params?: Record<string, any>): Promise<void> => {
         const target = FEATURE_WORKLOAD_MAP[featureName];
         if (!target) return;
 
         if (target.type === 'deployment') {
-            // Ha aktív -> 1 pod; ha inaktív és scale_to_zero -> 0 pod; ha hot_standby -> 1 pod marad
             const replicas = enabled ? 1 : (strategy === 'scale_to_zero' ? 0 : 1);
             await this.k8sService.scaleDeployment(target.name, target.namespace, replicas);
+            if (featureName === 'pgbouncer') {
+                await this.k8sService.scaleDeployment('postgres-postgresql-ha-pgpool', target.namespace, replicas).catch(() => { });
+            }
+        } else if (target.type === 'statefulset') {
+            const isExternal = params?.mode === 'external';
+            const replicas = (enabled && !isExternal) ? 1 : (strategy === 'scale_to_zero' ? 0 : 1);
+            await this.k8sService.scaleStatefulSet(target.name, target.namespace, replicas);
+
+            const mode = params?.mode || 'internal';
+            const endpoint = mode === 'external' ? (params?.endpoint || '') : 'http://app-storage.platform-infra.svc.cluster.local:9000';
+            const bucket = params?.bucket || (featureName === 'app_storage' ? 'mes-app-storage' : 'mes-backups');
+
+            await this.k8sService.saveSecret({
+                name: 'backend-secret',
+                namespace: DEFAULT_APP_NAMESPACE,
+                data: {
+                    S3_ENDPOINT: endpoint,
+                    S3_BUCKET: bucket,
+                    APP_STORAGE_BUCKET: bucket
+                }
+            }).catch(() => { });
         } else if (target.type === 'cronjob') {
-            // CronJob felfüggesztése csak kikapcsolt + scale_to_zero állapotban
             const isSuspended = !enabled && strategy === 'scale_to_zero';
             await this.k8sService.setCronJobSuspended(target.name, target.namespace, isSuspended);
         }
@@ -227,7 +227,23 @@ export class ConfigService {
             flag.params = mergedParams;
             await flag.save();
 
-            if (request.name === 'rate_limiting') {
+            if (request.name === 'app_storage') {
+                const mode = mergedParams.mode || 'internal';
+                const endpoint = mode === 'external' ? (mergedParams.endpoint || '') : 'http://app-storage.platform-infra.svc.cluster.local:9000';
+                const bucket = mergedParams.bucket || 'mes-app-storage';
+                await SystemConfig.upsert({ key: 'storage_mode', value: mode });
+                await SystemConfig.upsert({ key: 's3_provider', value: mode });
+                await SystemConfig.upsert({ key: 's3_endpoint', value: endpoint });
+                await SystemConfig.upsert({ key: 's3_bucket', value: bucket });
+                await this.applyWorkloadStrategy(request.name, request.enabled, strategy, mergedParams);
+            } else if (request.name === 'backup_storage') {
+                const mode = mergedParams.mode || 'internal';
+                const endpoint = mode === 'external' ? (mergedParams.endpoint || '') : 'http://app-storage.platform-infra.svc.cluster.local:9000';
+                const bucket = mergedParams.bucket || 'mes-backups';
+                await SystemConfig.upsert({ key: 'backup_storage_mode', value: mode });
+                await SystemConfig.upsert({ key: 'backup_storage_endpoint', value: endpoint });
+                await SystemConfig.upsert({ key: 'backup_storage_bucket', value: bucket });
+            } else if (request.name === 'rate_limiting') {
                 if (request.enabled) {
                     await this.k8sService.updateRateLimit({
                         rps: Number(mergedParams.rps ?? 100),
@@ -253,12 +269,12 @@ export class ConfigService {
                         targetCpuUtil: Number(mergedParams.targetCpuUtil ?? 70)
                     });
                 } else {
-                    await this.k8sService.scaleDeployment('mes-backend', 'app-mes', 1);
+                    await this.k8sService.scaleDeployment(DEFAULT_APP_NAME, DEFAULT_APP_NAMESPACE, 1);
                 }
             } else if (request.name === 'vpa_scaling') {
                 if (request.enabled) {
                     await FeatureFlag.update({ enabled: false }, { where: { name: 'hpa_scaling' } });
-                    await this.k8sService.scaleDeployment('mes-backend', 'app-mes', 1);
+                    await this.k8sService.scaleDeployment(DEFAULT_APP_NAME, DEFAULT_APP_NAMESPACE, 1);
                 }
                 await this.k8sService.updateVpa({
                     minAllowedCpu: String(mergedParams.minAllowedCpu ?? '100m'),
@@ -269,8 +285,13 @@ export class ConfigService {
                 });
             } else if (request.name === 'maintenance_mode') {
                 await this.k8sService.setMaintenanceMode(request.enabled);
+                if (strategy === 'scale_to_zero') {
+                    const targetReplicas = request.enabled ? 0 : 1;
+                    await this.k8sService.scaleDeployment(DEFAULT_APP_NAME, DEFAULT_APP_NAMESPACE, targetReplicas).catch(() => { });
+                    await this.k8sService.scaleDeployment(DEFAULT_FRONTEND_NAME, DEFAULT_APP_NAMESPACE, targetReplicas).catch(() => { });
+                }
             } else {
-                await this.applyWorkloadStrategy(request.name, request.enabled, strategy);
+                await this.applyWorkloadStrategy(request.name, request.enabled, strategy, mergedParams);
             }
 
             await this.auditService.logAudit(

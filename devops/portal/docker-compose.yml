@@ -1,28 +1,44 @@
 services:
+  portal-db:
+    image: postgres:16-alpine
+    container_name: portal-db
+    restart: unless-stopped
+    env_file:
+      - ../platform.env
+    environment:
+      - POSTGRES_DB=${PORTAL_DB_NAME:-portal_db}
+      - POSTGRES_USER=${PORTAL_DB_USER:-portal_admin}
+      - POSTGRES_PASSWORD=${PORTAL_DB_PASSWORD:-PortalSecurePass2026!}
+    volumes:
+      - portal-db-data:/var/lib/postgresql/data
+    networks:
+      - portal-net
   portal-backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: portal-backend
     restart: unless-stopped
+    env_file:
+      - ../platform.env
     ports:
       - "${PORTAL_BACKEND_PORT:-3002}:3000"
     environment:
-      - NODE_ENV=production
       - PORT=3000
       - KUBECONFIG=/app/.kube/config
-      - K8S_SERVER_HOST=host.docker.internal
-      - PROMETHEUS_URL=http://host.docker.internal:9090
-      - GRAFANA_URL=http://host.docker.internal:3001
-      - PIPELINE_ENV_PATH=/app/ci/pipeline.env
+      - PIPELINE_ENV_PATH=/app/platform.env
+      - K8S_NODE_IP=${K8S_NODE_IP:-172.21.0.10}
     volumes:
       - portal-data:/app/data
       - ~/.kube:/app/.kube:ro
-      - ../ci/pipeline.env:/app/ci/pipeline.env:ro
+      - ../platform.env:/app/platform.env:rw
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
       - portal-net
+      - kind
+    depends_on:
+      - portal-db
 
   portal-frontend:
     build:
@@ -30,6 +46,8 @@ services:
       dockerfile: Dockerfile
     container_name: portal-frontend
     restart: unless-stopped
+    env_file:
+      - ../platform.env
     ports:
       - "${PORTAL_PORT:-8088}:80"
     depends_on:
@@ -41,7 +59,12 @@ networks:
   portal-net:
     name: portal-net
     driver: bridge
+  kind:
+    name: kind
+    external: true
 
 volumes:
   portal-data:
     name: portal-data
+  portal-db-data:
+    name: portal-db-data

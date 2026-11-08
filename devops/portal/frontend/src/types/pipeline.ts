@@ -10,6 +10,16 @@ export interface PipelineStage {
     completedAt?: string | undefined
 }
 
+export interface PipelineRunRolloutInfo {
+    name: string;
+    namespace: string;
+    strategy: 'Canary' | 'BlueGreen' | 'RollingUpdate';
+    canaryWeight?: number | undefined;
+    blueGreenActive?: 'blue' | 'green' | undefined;
+    phase?: string | undefined;
+    isPaused?: boolean | undefined;
+}
+
 export interface PipelineRun {
     id: string
     runNumber: number
@@ -22,6 +32,7 @@ export interface PipelineRun {
     workflowUrl: string
     createdAt: string
     updatedAt: string
+    rollout?: PipelineRunRolloutInfo
 }
 
 export interface ManualApprovalRequest {
@@ -44,8 +55,8 @@ export interface GitOpsDriftReport {
 }
 
 export interface RolloutActionRequest {
-    rolloutName: string
-    namespace: string
+    rolloutName?: string
+    namespace?: string
     action: 'promote' | 'pause' | 'resume' | 'abort' | 'rollback'
     full?: boolean
 }

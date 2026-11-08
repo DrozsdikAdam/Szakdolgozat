@@ -290,7 +290,7 @@ export const ReviewStep = ({ data, onGoToStep }: ReviewStepProps) => {
                         {renderDetailItem("Garantált Erőforrás-allokáció", currentSize.desc, <Layers className="w-3.5 h-3.5 text-cud-skyblue" />)}
                         {renderDetailItem("Példányszám", "spec.replicas: 1 (Dedikált pod)", <Radio className="w-3.5 h-3.5 text-slate-400" />)}
                         {renderDetailItem("Inaktiválási Stratégia", data.inactivationStrategy === "hot_standby" ? "Hot-Standby (1 Pod)" : "Scale-to-Zero (0 Pod)", <Shield className="w-3.5 h-3.5 text-cud-orange" />)}
-                        {renderDetailItem("Cél Deployment", "mes-backend (app-mes névtér)", <Zap className="w-3.5 h-3.5 text-slate-400" />)}
+                        {renderDetailItem("Cél Deployment", "Alkalmazás Backend", <Zap className="w-3.5 h-3.5 text-slate-400" />)}
                     </div>
                 );
             }

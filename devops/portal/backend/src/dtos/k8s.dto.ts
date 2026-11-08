@@ -14,6 +14,7 @@ export interface UpdateRateLimitDto {
 export interface RateLimitResponseDto {
     rps: number;
     burst: number;
+    isConfigured?: boolean;
 }
 
 export interface UpdateHpaDto {

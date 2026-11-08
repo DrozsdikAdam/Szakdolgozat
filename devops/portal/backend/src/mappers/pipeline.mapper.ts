@@ -51,7 +51,16 @@ export class PipelineMapper {
     static toDriftReport(appBody: any, defaultNamespace: string, defaultBranch: string): GitOpsDriftReport {
         const syncStatus = appBody?.status?.sync?.status || "Unknown";
         const isSynced = syncStatus === "Synced";
-        const targetRevision = appBody?.status?.sync?.revision || appBody?.spec?.source?.targetRevision || defaultBranch;
+        let rawTarget = appBody?.status?.sync?.revision || appBody?.spec?.source?.targetRevision || defaultBranch;
+
+        if (typeof rawTarget === "string" && rawTarget.includes("${")) {
+            const match = rawTarget.match(/:-(.+)\}$/);
+            rawTarget = match ? match[1] : defaultBranch;
+        }
+
+        const displayRevision = typeof rawTarget === "string"
+            ? (/^[0-9a-f]{40}$/i.test(rawTarget) ? rawTarget.substring(0, 7) : rawTarget)
+            : "HEAD";
 
         const rawResources = appBody?.status?.resources || [];
         const outOfSyncResources = rawResources
@@ -66,7 +75,7 @@ export class PipelineMapper {
         return {
             isSynced,
             syncStatus: isSynced ? "Synced" : "OutOfSync",
-            targetRevision: typeof targetRevision === "string" ? targetRevision.substring(0, 7) : "HEAD",
+            targetRevision: displayRevision,
             outOfSyncResources
         };
     }

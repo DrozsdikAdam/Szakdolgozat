@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: platform-infra
+
+resources:
+  - staging/backup-staging-pvc.yaml
+  - minio-pvc.yaml
+  - minio-deployment.yaml
+  - minio-service.yaml
+  - config/backup-configmap.yaml
+  - config/backup-scripts-configmap.yaml
+  - job/minio-init-bucket-job.yaml
+  - cronjob/backup-cronjob.yaml
+  - cronjob/backup-mssql-cronjob.yaml
+  - cronjob/backup-oracle-cronjob.yaml
+  - cronjob/restore-cronjob.yaml
+  - cronjob/restore-mssql-cronjob.yaml
+  - cronjob/restore-oracle-cronjob.yaml
+
+secretGenerator:
+  - name: backup-secret
+    envs:
+      - ../../../platform.env

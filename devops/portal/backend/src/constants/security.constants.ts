@@ -3,6 +3,7 @@ import type {
     TlsCertificateStatus,
     SecretComplianceItem
 } from "../types/security.types.js";
+import { DEFAULT_APP_NAMESPACE, DEFAULT_PLATFORM_NAMESPACE } from "./namespace.constants.js";
 
 export const SECURITY_SCORE_WEIGHTS = {
     VULNERABILITY: {
@@ -97,7 +98,7 @@ export const FALLBACK_TLS_CERTIFICATES: TlsCertificateStatus[] = [
 export const FALLBACK_SECRET_COMPLIANCE: SecretComplianceItem[] = [
     {
         name: "paas-portal-auth",
-        namespace: "platform-infra",
+        namespace: DEFAULT_PLATFORM_NAMESPACE,
         type: "Opaque",
         ageDays: 12,
         lastModified: new Date(Date.now() - 12 * 86400000).toISOString().split("T")[0],
@@ -105,7 +106,7 @@ export const FALLBACK_SECRET_COMPLIANCE: SecretComplianceItem[] = [
     },
     {
         name: "mes-tls-secret",
-        namespace: "app-mes",
+        namespace: DEFAULT_APP_NAMESPACE,
         type: "kubernetes.io/tls",
         ageDays: 35,
         lastModified: new Date(Date.now() - 35 * 86400000).toISOString().split("T")[0],
@@ -113,7 +114,7 @@ export const FALLBACK_SECRET_COMPLIANCE: SecretComplianceItem[] = [
     },
     {
         name: "backend-db-secret",
-        namespace: "platform-infra",
+        namespace: DEFAULT_PLATFORM_NAMESPACE,
         type: "Opaque",
         ageDays: 78,
         lastModified: new Date(Date.now() - 78 * 86400000).toISOString().split("T")[0],
@@ -121,7 +122,7 @@ export const FALLBACK_SECRET_COMPLIANCE: SecretComplianceItem[] = [
     },
     {
         name: "legacy-api-token",
-        namespace: "app-mes",
+        namespace: DEFAULT_APP_NAMESPACE,
         type: "Opaque",
         ageDays: 112,
         lastModified: new Date(Date.now() - 112 * 86400000).toISOString().split("T")[0],

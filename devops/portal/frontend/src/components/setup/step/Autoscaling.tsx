@@ -299,7 +299,7 @@ export const AutoScalingStep = ({ data, onChange, disabled }: SetupStepComponent
                             <div className="flex items-center gap-2 text-[11px] text-slate-400 bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/60">
                                 <Zap className="w-4 h-4 text-cud-teal shrink-0" />
                                 <span>
-                                    A platform automatikusan aktiválja a <code className="text-slate-300 font-mono">mes-backend-hpa</code> HorizontalPodAutoscaler erőforrást a fürtben, 15 másodperces metrika-lekérdezési ciklussal.
+                                    A platform automatikusan aktiválja a célalkalmazás HorizontalPodAutoscaler (HPA) erőforrását a fürtben, 15 másodperces metrika-lekérdezési ciklussal.
                                 </span>
                             </div>
                         </div>

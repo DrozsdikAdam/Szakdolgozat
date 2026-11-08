@@ -122,9 +122,10 @@ public class BOMInventoryServiceTest {
     }
 
     @Test
-    void validateComponentStock_EmptyTree_DoesNothing() {
+    void validateComponentStock_EmptyTree_ThrowsIllegalStateException() {
         Product parent = new Product();
         parent.setId(UUID.randomUUID());
+        parent.setName("Test Product");
 
         BOMTreeNode root = new BOMTreeNode();
         root.setProductId(parent.getId());
@@ -132,7 +133,8 @@ public class BOMInventoryServiceTest {
 
         when(bomService.getBOMTree(parent.getId(), BigDecimal.valueOf(1))).thenReturn(root);
 
-        assertDoesNotThrow(() -> bomInventoryService.validateComponentStock(parent, BigDecimal.valueOf(1)));
+        assertThrows(IllegalStateException.class,
+                () -> bomInventoryService.validateComponentStock(parent, BigDecimal.valueOf(1)));
         verify(inventoryRepository, never()).findByProductId(any());
     }
 

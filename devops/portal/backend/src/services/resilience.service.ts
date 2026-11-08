@@ -13,9 +13,9 @@ import type { KillPodResult, LoadTestItem, LoadTestJobStatus, NetworkFaultMode, 
 import { createJMeterJobManifest } from "../constants/resilience-job.template.js";
 import { K8sClientService } from "./k8s/k8s-client.service.js";
 import { AuditService } from "./audit.service.js";
+import { DEFAULT_PLATFORM_NAMESPACE } from "../constants/namespace.constants.js";
 
-const DEFAULT_PLATFORM_NAMESPACE = 'platform-infra';
-const DEFAULT_PROXY_URL = 'http://paas-resilience-proxy.platform-infra.svc.cluster.local:8080';
+const DEFAULT_PROXY_URL = process.env.RESILIENCE_PROXY_URL || `http://paas-resilience-proxy.${DEFAULT_PLATFORM_NAMESPACE}.svc.cluster.local:8080`;
 const MAX_HISTORY_ENTRIES = 100;
 const RECENT_HISTORY_LIMIT = 10;
 const MAX_RECOVERY_WAIT_MS = 120_000;
@@ -144,7 +144,7 @@ export class ResilienceService {
         const scenario = dto.scenario || 'baseline';
         const timestamp = Date.now();
         const jobName = `jmeter-${scenario}-${timestamp}`;
-        const targetHost = dto.targetHost || 'paas-portal-backend.platform-infra.svc.cluster.local';
+        const targetHost = dto.targetHost || process.env.TARGET_APP_HOST || `paas-portal-backend.${DEFAULT_PLATFORM_NAMESPACE}.svc.cluster.local`;
         const targetPort = String(dto.targetPort || 3000);
         const duration = String(dto.duration || 60);
         const threads = String(dto.threads || 10);

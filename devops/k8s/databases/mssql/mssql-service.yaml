@@ -3,11 +3,16 @@ kind: Service
 metadata:
   name: mssql
   namespace: platform-infra
+  labels:
+    app: mssql
+    app.kubernetes.io/name: mssql
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: mssql
+    statefulset.kubernetes.io/pod-name: mssql-0
   ports:
     - port: 1433
       targetPort: 1433
+      nodePort: 31433
       name: mssql

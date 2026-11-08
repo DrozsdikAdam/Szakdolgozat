@@ -176,12 +176,20 @@ export class K8sConfigService {
     saveSecret = async (dto: SaveConfigDto): Promise<SecretDto> => {
         try {
             let exists = false;
+            let existingData: Record<string, string> = {};
             try {
-                await this.client.coreApi.readNamespacedSecret({ name: dto.name, namespace: dto.namespace });
+                const existingSecret = await this.client.coreApi.readNamespacedSecret({ name: dto.name, namespace: dto.namespace });
                 exists = true;
+                if (existingSecret?.data) {
+                    for (const [k, v] of Object.entries(existingSecret.data)) {
+                        existingData[k] = Buffer.from(v, 'base64').toString('utf-8');
+                    }
+                }
             } catch {
                 exists = false;
             }
+
+            const mergedData = { ...existingData, ...dto.data };
 
             const secretBody: k8s.V1Secret = {
                 metadata: {
@@ -189,7 +197,7 @@ export class K8sConfigService {
                     namespace: dto.namespace
                 },
                 type: dto.secretType || 'Opaque',
-                stringData: dto.data
+                stringData: mergedData
             };
 
             if (exists) {
@@ -261,7 +269,16 @@ export class K8sConfigService {
                     successNames.push(name);
                 }
             } catch (err) {
-                console.warn(`[K8sConfigService] Nem sikerült újraindítani a '${name}' deploymentet:`, (err as any)?.message || err);
+                try {
+                    const { exec } = await import('child_process');
+                    const { promisify } = await import('util');
+                    const execAsync = promisify(exec);
+                    const k8sFlag = process.env.K8S_SERVER_HOST ? `--server=https://${process.env.K8S_SERVER_HOST}:61682 --insecure-skip-tls-verify=true` : '';
+                    await execAsync(`kubectl ${k8sFlag} patch rollout ${name} -n ${namespace} --type=merge -p '{"spec":{"template":{"metadata":{"annotations":{"kubectl.kubernetes.io/restartedAt":"${restartedAt}"}}}}}'`);
+                    successNames.push(name);
+                } catch {
+                    console.warn(`[K8sConfigService] Nem sikerült újraindítani a '${name}' workloadot (deployment vagy rollout):`, (err as any)?.message || err);
+                }
             }
         }
 

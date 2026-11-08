@@ -13,10 +13,29 @@ export const RolloutVisualizer = ({ workload, onQuickPromote, isMutating = false
                         <Zap className="w-3.5 h-3.5 text-cud-orange animate-pulse" />
                         <span className="font-semibold text-slate-200">Canary Forgalommegosztás</span>
                     </div>
-                    <div className="flex items-center gap-3 font-mono font-bold">
-                        <span className="text-cud-orange">{canaryWeight}% Canary</span>
-                        <span className="text-slate-500">/</span>
-                        <span className="text-cud-skyblue">{stableWeight}% Stabil</span>
+                    <div className="flex items-center gap-3">
+                        {onQuickPromote && (
+                            canaryWeight >= 100 ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    100% Élesben
+                                </span>
+                            ) : (
+                                <button
+                                    onClick={() => onQuickPromote(workload)}
+                                    disabled={isMutating}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-cud-orange/15 text-cud-orange hover:bg-cud-orange/25 border border-cud-orange/30 transition-all cursor-pointer disabled:opacity-50"
+                                >
+                                    <Zap className="w-3 h-3" />
+                                    <span>Súly Növelése (+25% → {Math.min(100, canaryWeight + 25)}%)</span>
+                                </button>
+                            )
+                        )}
+                        <div className="flex items-center gap-2 font-mono font-bold">
+                            <span className="text-cud-orange">{canaryWeight}% Canary</span>
+                            <span className="text-slate-500">/</span>
+                            <span className="text-cud-skyblue">{stableWeight}% Stabil</span>
+                        </div>
                     </div>
                 </div>
 

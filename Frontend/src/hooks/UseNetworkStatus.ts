@@ -13,7 +13,7 @@ export const useNetworkStatus = () => {
 
     useEffect(() => {
         refreshPendingCount()
-        const interval = setInterval(refreshPendingCount, 2000)
+        const interval = setInterval(refreshPendingCount, 15000)
 
         const handleOnline = () => { setIsOnline(true); refreshPendingCount(); }
         const handleOffline = () => { setIsOnline(false); refreshPendingCount(); }

@@ -1,61 +1,58 @@
 {
-  "dashboard": {
-    "uid": "k8s-cluster",
-    "title": "Kubernetes Klaszter Áttekintés",
-    "timezone": "browser",
-    "schemaVersion": 39,
-    "version": 2,
-    "refresh": "5s",
-    "time": {
-      "from": "now-15m",
-      "to": "now"
-    },
-    "panels": [
-      {
-        "id": 1,
-        "gridPos": { "h": 9, "w": 12, "x": 0, "y": 0 },
-        "type": "timeseries",
-        "title": "Klaszter CPU Terhelés (Összes Konténer)",
-        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-        "targets": [
-          {
-            "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-            "expr": "sum(rate(container_cpu_usage_seconds_total{container!=''}[1m]))",
-            "legendFormat": "CPU mag",
-            "refId": "A"
-          }
-        ]
-      },
-      {
-        "id": 2,
-        "gridPos": { "h": 9, "w": 12, "x": 12, "y": 0 },
-        "type": "timeseries",
-        "title": "Klaszter Memória Fogyasztás (Összes Konténer)",
-        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-        "targets": [
-          {
-            "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-            "expr": "sum(container_memory_working_set_bytes{container!=''}) / 1048576",
-            "legendFormat": "Memória (MB)",
-            "refId": "A"
-          }
-        ]
-      },
-      {
-        "id": 3,
-        "gridPos": { "h": 6, "w": 24, "x": 0, "y": 9 },
-        "type": "stat",
-        "title": "Aktív Konténerek Száma (cAdvisor)",
-        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-        "targets": [
-          {
-            "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-            "expr": "count(container_last_seen{container!=''})",
-            "refId": "A"
-          }
-        ]
-      }
-    ]
+  "uid": "k8s-cluster",
+  "title": "Kubernetes Klaszter Áttekintés",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 2,
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
   },
-  "overwrite": true
+  "panels": [
+    {
+      "id": 1,
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 0 },
+      "type": "timeseries",
+      "title": "Klaszter CPU Terhelés (Összes Konténer)",
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "expr": "sum(rate(container_cpu_usage_seconds_total{container!=''}[1m]))",
+          "legendFormat": "CPU mag",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 0 },
+      "type": "timeseries",
+      "title": "Klaszter Memória Fogyasztás (Összes Konténer)",
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "expr": "sum(container_memory_working_set_bytes{container!=''}) / 1048576",
+          "legendFormat": "Memória (MB)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 9 },
+      "type": "stat",
+      "title": "Aktív Konténerek Száma (cAdvisor)",
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "expr": "count(container_last_seen{container!=''})",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
 }

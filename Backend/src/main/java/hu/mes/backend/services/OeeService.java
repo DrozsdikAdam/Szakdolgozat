@@ -1,7 +1,6 @@
 package hu.mes.backend.services;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.cache.annotation.CacheConfig;
@@ -11,8 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import hu.mes.backend.dtos.telemetry.OeeResponse;
 import hu.mes.backend.models.Machine;
-import hu.mes.backend.models.MachineTelemetry;
-import hu.mes.backend.models.enums.MachineStatus;
 import hu.mes.backend.repositories.MachineRepository;
 import hu.mes.backend.repositories.MachineTelemetryRepository;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -32,14 +29,13 @@ public class OeeService {
 	@Cacheable
 	@CircuitBreaker(name = "oeeService", fallbackMethod = "calculateOeeFallback")
 	public OeeResponse calculateMachineOee(UUID machineId, LocalDateTime start, LocalDateTime end) {
-		List<MachineTelemetry> telemetries = telemetryRepository.findByMachineIdAndTimestampBetween(machineId,
-				start,
-				end);
-
 		Machine machine = machineRepository.findById(machineId)
 				.orElseThrow(() -> new RuntimeException("Machine not found: " + machineId));
 
-		if (telemetries.isEmpty()) {
+		hu.mes.backend.dtos.telemetry.OeeAggregationProjection agg = telemetryRepository
+				.calculateOeeAggregation(machineId, start, end);
+
+		if (agg == null || agg.getTotalSamples() == null || agg.getTotalSamples() == 0L) {
 			return OeeResponse.builder()
 					.availabilityPercentage(0.0)
 					.performancePercentage(0.0)
@@ -52,20 +48,16 @@ public class OeeService {
 					.build();
 		}
 
-		Long totalSamples = (long) telemetries.size();
-		Long runningSamples = telemetries.stream().filter(t -> t.getStatus() == MachineStatus.RUNNING).count();
+		Long totalSamples = agg.getTotalSamples();
+		Long runningSamples = agg.getRunningSamples() != null ? agg.getRunningSamples() : 0L;
 		Long downtimeSamples = totalSamples - runningSamples;
 
 		Long uptimeMinutes = (runningSamples * 5) / 60;
 		Long downtimeMinutes = (downtimeSamples * 5) / 60;
 		Double availabilityPercentage = (runningSamples.doubleValue() / totalSamples.doubleValue()) * 100.0;
 
-		Long totalScrap = telemetries.stream()
-				.mapToLong(t -> t.getScrapCount() != null ? t.getScrapCount() : 0)
-				.sum();
-		Long totalProduced = telemetries.stream()
-				.mapToLong(t -> t.getProducedCount() != null ? t.getProducedCount() : 0)
-				.sum();
+		Long totalScrap = agg.getTotalScrap() != null ? agg.getTotalScrap() : 0L;
+		Long totalProduced = agg.getTotalProduced() != null ? agg.getTotalProduced() : 0L;
 
 		Long goodCount = totalProduced - totalScrap;
 		Double qualityPercentage = totalProduced > 0

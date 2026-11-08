@@ -19,30 +19,61 @@ spec:
       labels:
         app: mes-backend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: backend
-          image: mes-backend:latest
+          image: mes-backend:v16
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           ports:
             - containerPort: 8080
               name: http
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
-            limits:
-              cpu: 500m
+              cpu: 250m
               memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+          envFrom:
+            - secretRef:
+                name: backend-secret
+          env:
+            - name: SPRING_DATA_REDIS_HOST
+              value: "host.docker.internal"
+            - name: SPRING_DATA_REDIS_PORT
+              value: "6379"
+            - name: SPRING_MAIL_HOST
+              value: "host.docker.internal"
+            - name: SPRING_MAIL_PORT
+              value: "1025"
+            - name: SPRING_JPA_PROPERTIES_HIBERNATE_TYPE_PREFERRED__UUID__JDBC__TYPE
+              value: "CHAR"
+            - name: SPRING_JPA_PROPERTIES_HIBERNATE_GLOBALLY__QUOTED__IDENTIFIERS
+              value: "true"
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Dspring.jpa.properties.hibernate.type.preferred_uuid_jdbc_type=CHAR -Dhibernate.type.preferred_uuid_jdbc_type=CHAR -Dhibernate.auto_quote_keyword=true -Dspring.jpa.properties.hibernate.auto_quote_keyword=true"
           readinessProbe:
             httpGet:
-              path: /actuator/health
+              path: /actuator/health/readiness
               port: 8080
-            initialDelaySeconds: 15
+            initialDelaySeconds: 30
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /actuator/health
+              path: /actuator/health/liveness
               port: 8080
-            initialDelaySeconds: 30
+            initialDelaySeconds: 45
             periodSeconds: 15
 
   strategy:

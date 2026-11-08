@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: oracle
+  namespace: platform-infra
+  labels:
+    app: oracle
+    app.kubernetes.io/name: oracle
+    app.kubernetes.io/part-of: paas-platform
+spec:
+  serviceName: oracle-headless
+  replicas: 0
+  selector:
+    matchLabels:
+      app: oracle
+  template:
+    metadata:
+      labels:
+        app: oracle
+        app.kubernetes.io/name: oracle
+        app.kubernetes.io/part-of: paas-platform
+    spec:
+      terminationGracePeriodSeconds: 90
+      containers:
+        - name: oracle
+          image: gvenzl/oracle-free:latest
+          ports:
+            - containerPort: 1521
+              name: oracle
+          env:
+            - name: APP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: oracle-secret
+                  key: APP_USER
+            - name: APP_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oracle-secret
+                  key: APP_USER_PASSWORD
+            - name: ORACLE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oracle-secret
+                  key: ORACLE_PASSWORD
+            - name: ORACLE_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: oracle-secret
+                  key: ORACLE_DATABASE
+          volumeMounts:
+            - name: oracle-data
+              mountPath: /opt/oracle/oradata
+          resources:
+            requests:
+              memory: "1024Mi"
+              cpu: "500m"
+            limits:
+              memory: "3Gi"
+              cpu: "2000m"
+  volumeClaimTemplates:
+    - metadata:
+        name: oracle-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 10Gi

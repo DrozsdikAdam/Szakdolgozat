@@ -1,174 +1,102 @@
-import { Activity, Archive, Cpu, HeartPulse, KeyRound, LineChart, Rocket, Server, Shield, ShieldAlert, Terminal, ToggleRight, Wrench, Zap } from "lucide-react";
+import { Activity, Database, HeartPulse, Rocket, Server, Shield, Sliders, Zap } from "lucide-react";
 import type { ServiceItem } from "../types/component/hub";
 
 export const DEFAULT_SERVICES: ServiceItem[] = [
     {
-        id: 'setup',
-        accentColor: 'teal',
-        label: "Rendszer Inicializálás (Setup)",
-        description: "GitOps repository, adatbázis motor, tároló réteg és erőforráskeretek beállítása és élesítése.",
-        iconName: <Wrench className="w-6 h-6" />,
-        badgeText: "Inicializálva",
-        badgeVariant: 'teal',
-        isConfigured: true,
-        statusLabel: "Rendszer élesítve",
-        statusVariant: 'teal'
-    },
-    {
-        id: 'features',
-        accentColor: 'orange',
-        label: "Funkciókapcsolók (Feature Flags)",
-        description: "Platform modulok (PgBouncer, HAProxy, Karbantartási mód) dinamikus kapcsolása futásidőben.",
-        iconName: <ToggleRight className="w-6 h-6" />,
-        badgeText: "7 aktív flag",
-        badgeVariant: 'orange',
-        isConfigured: true,
-        statusLabel: "Dinamikus funkcióvezérlés",
-        statusVariant: 'teal'
-    },
-    {
-        id: 'cluster',
-        accentColor: 'teal',
-        label: "Klaszter és Podok",
-        description: "Kubernetes workloadok, pod állapotok és újraindítások valós idejű monitorozása.",
-        iconName: <Server className="w-6 h-6" />,
-        badgeText: "Klaszter aktív",
-        badgeVariant: 'teal',
-        isConfigured: true,
-        statusLabel: "Klaszter kapcsolat aktív",
-        statusVariant: 'teal'
-    },
-    {
         id: 'configs',
-        accentColor: 'teal',
-        label: "Környezeti Változók & Titkok",
-        description: "Kubernetes ConfigMaps és Secrets böngészése, biztonságos feloldása és workload újraindítások.",
-        iconName: <KeyRound className="w-6 h-6" />,
-        badgeText: "Config & Secrets",
-        badgeVariant: 'teal',
-        isConfigured: true,
-        statusLabel: "Konfigurációkezelő aktív",
-        statusVariant: 'teal'
-    },
-    {
-        id: 'traffic',
-        accentColor: 'skyblue',
-        label: "Forgalom és Rate Limiting",
-        description: "NGINX Ingress kérés-szabályozás és RPS sávszélesség korlátozás valós időben.",
-        iconName: <Activity className="w-6 h-6" />,
-        badgeText: "100 rps limit",
-        badgeVariant: 'skyblue',
-        isConfigured: true,
-        statusLabel: "Ingress védelem aktív",
-        statusVariant: 'teal'
-    },
-    {
-        id: 'autoscaling',
         accentColor: 'purple',
-        label: "Automatikus Skálázás (HPA / VPA)",
-        description: "Horizontális pod autoscaling (terhelésalapú) és vertikális erőforrás-ajánlások.",
-        iconName: <Cpu className="w-6 h-6" />,
-        badgeText: "2 - 10 Pod skála",
+        label: "Konfigurációk & Funkciókapcsolók",
+        description: "Futásidejű Feature Flag vezérlés, K8s ConfigMaps & Secrets szerkesztő és 6-lépéses Rendszer Varázsló.",
+        iconName: <Sliders className="w-6 h-6" />,
+        badgeText: "0 bekapcsolt switch",
         badgeVariant: 'purple',
-        isConfigured: true,
-        statusLabel: "Autoscaling üzemkész",
-        statusVariant: 'teal'
+        isConfigured: false,
+        statusLabel: "0/7 funkciókapcsoló bekapcsolva",
+        statusVariant: 'orange'
     },
     {
-        id: 'backup',
+        id: 'database',
         accentColor: 'teal',
-        label: "Mentések és Visszaállítás",
-        description: "Katasztrófa-helyreállítási pillanatképek, K8s CronJob mentések és snapshot visszatöltés.",
-        iconName: <Archive className="w-6 h-6" />,
-        badgeText: "Mentések aktívak",
-        badgeVariant: 'teal',
-        isConfigured: true,
-        statusLabel: "Katasztrófa-helyreállítás aktív",
-        statusVariant: 'teal'
-    },
-    {
-        id: 'audit',
-        accentColor: 'purple',
-        label: "Audit és Biztonsági Naplók",
-        description: "Rendszerkonfigurációs módosítások és biztonsági események visszakövetése.",
-        iconName: <ShieldAlert className="w-6 h-6" />,
-        badgeText: "Audit naplózás",
-        badgeVariant: 'purple',
-        isConfigured: true,
-        statusLabel: "Biztonsági naplózás aktív",
-        statusVariant: 'teal'
-    },
-    {
-        id: 'events',
-        accentColor: 'skyblue',
-        label: "Pod Naplók és Események",
-        description: "Valós idejű konténer log streamer és K8s klaszter eseménynapló szűréssel és kereséssel.",
-        iconName: <Terminal className="w-6 h-6" />,
-        badgeText: "Streamer aktív",
-        badgeVariant: 'skyblue',
-        isConfigured: true,
-        statusLabel: "Valós idejű naplózás üzemkész",
-        statusVariant: 'teal'
-    },
-    {
-        id: 'health',
-        accentColor: 'teal',
-        label: "Egészségellenőrzés & Szondák",
-        description: "Konténer Startup, Liveness és Readiness szondák felügyelete, finomhangolása és élő tesztelése.",
-        iconName: <HeartPulse className="w-6 h-6" />,
-        badgeText: "Szondák aktívak",
-        badgeVariant: 'teal',
-        isConfigured: true,
-        statusLabel: "Szonda felügyelet aktív",
-        statusVariant: 'teal'
+        label: "Adattárház & Katasztrófa-helyreállítás",
+        description: "PostgreSQL HA, MSSQL és Oracle adatbázisok, Zero-Downtime migráció és S3/MinIO biztonsági mentések.",
+        iconName: <Database className="w-6 h-6" />,
+        badgeText: "Adatbázis lekérése...",
+        badgeVariant: 'orange',
+        isConfigured: false,
+        statusLabel: "Adatbázis kapcsolat ellenőrzése...",
+        statusVariant: 'orange'
     },
     {
         id: 'deployments',
         accentColor: 'orange',
         label: "Telepítések & GitOps",
-        description: "Deklaratív GitOps szinkronizáció, automatikus Self-Heal és rollout stratégiák (Rolling, Blue/Green, Canary).",
+        description: "Deklaratív Git szinkronizáció, automatikus Self-Heal és rollout stratégiák (RollingUpdate, Blue/Green, Canary).",
         iconName: <Rocket className="w-6 h-6" />,
-        badgeText: "GitOps aktív",
+        badgeText: "GitOps Rollout",
         badgeVariant: 'orange',
-        isConfigured: true,
-        statusLabel: "Rollout és visszaállítás kész",
-        statusVariant: 'teal'
+        isConfigured: false,
+        statusLabel: "Rollout adatok lekérése...",
+        statusVariant: 'orange'
     },
     {
-        id: 'telemetry',
+        id: 'cluster',
         accentColor: 'skyblue',
-        label: "Megfigyelhetőség & Metrikák",
-        description: "Prometheus és Grafana telemetria, Golden Signals, erőforrás metrikák és beágyazott dashboardok.",
-        iconName: <LineChart className="w-6 h-6" />,
-        badgeText: "Prometheus & Grafana",
-        badgeVariant: 'skyblue',
-        isConfigured: true,
-        statusLabel: "Telemetria adatgyűjtés aktív",
-        statusVariant: 'teal'
+        label: "Klaszter & Munkamenetek",
+        description: "Kubernetes pod állapotok, élő konténer naplók (log streamer) és klaszter életesemények valós időben.",
+        iconName: <Server className="w-6 h-6" />,
+        badgeText: "Kapcsolódás...",
+        badgeVariant: 'orange',
+        isConfigured: false,
+        statusLabel: "Klaszter állapot lekérdezése...",
+        statusVariant: 'orange'
     },
     {
-        id: 'resilience',
-        accentColor: 'purple',
-        label: "Reziliencia & Terhelésteszt",
-        description: "Pod Kill káoszkísérletek (RTO mérés), Apache JMeter terheléstesztek és NGINX hálózati proxy hibainjektálás.",
-        iconName: <Zap className="w-6 h-6" />,
-        badgeText: "Káosz & JMeter",
-        badgeVariant: 'purple',
-        isConfigured: true,
-        statusLabel: "Reziliencia tesztelő üzemkész",
-        statusVariant: 'teal'
+        id: 'health',
+        accentColor: 'teal',
+        label: "Egészségellenőrzés & Szondák",
+        description: "Startup, Liveness és Readiness szondák monitorozása, finomhangolása és valós idejű HTTP ping tesztelés.",
+        iconName: <HeartPulse className="w-6 h-6" />,
+        badgeText: "Szondák...",
+        badgeVariant: 'teal',
+        isConfigured: false,
+        statusLabel: "Szonda állapot lekérdezése...",
+        statusVariant: 'orange'
+    },
+    {
+        id: 'traffic',
+        accentColor: 'skyblue',
+        label: "Forgalom & Skálázás",
+        description: "NGINX Ingress kérés-korlátozás (RPS), terhelésalapú horizontális (HPA) és vertikális (VPA) skálázás.",
+        iconName: <Activity className="w-6 h-6" />,
+        badgeText: "Nincs korlát (Inaktív)",
+        badgeVariant: 'orange',
+        isConfigured: false,
+        statusLabel: "Forgalomkorlátozás nincs beállítva",
+        statusVariant: 'orange'
     },
     {
         id: 'security',
         accentColor: 'teal',
-        label: "Biztonság",
-        description: "Nyelvi auditok, runtime frissítések és titkosítás.",
+        label: "Biztonság & Megfelelőség",
+        description: "Trivy CVE konténer vizsgálat, TLS tanúsítványok, jelszórotáció és részletes műveleti audit naplózás.",
         iconName: <Shield className="w-6 h-6" />,
-        badgeText: "Biztonsági modul",
+        badgeText: "Biztonság...",
         badgeVariant: 'orange',
-        isConfigured: true,
-        statusLabel: "Biztonsági monitoring üzemkész",
-        statusVariant: 'teal'
+        isConfigured: false,
+        statusLabel: "Biztonsági állapot lekérdezése...",
+        statusVariant: 'orange'
+    },
+    {
+        id: 'resilience',
+        accentColor: 'purple',
+        label: "Reziliencia & Megfigyelhetőség",
+        description: "Pod-Kill káoszkísérletek (RTO mérés), Apache JMeter terheléstesztek és NGINX hálózati hibainjektálás.",
+        iconName: <Zap className="w-6 h-6" />,
+        badgeText: "Káosz & Telemetria",
+        badgeVariant: 'purple',
+        isConfigured: false,
+        statusLabel: "Reziliencia állapot lekérdezése...",
+        statusVariant: 'orange'
     }
 ];
 
@@ -179,4 +107,3 @@ export const HOVER_ACCENT_STYLES: Record<string, string> = {
     skyblue: "hover:border-cud-skyblue-border hover:shadow-[0_0_20px_var(--cud-skyblue-bg)]",
     purple: "hover:border-cud-purple-border hover:shadow-[0_0_20px_var(--cud-purple-bg)]"
 };
-

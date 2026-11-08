@@ -65,7 +65,13 @@ export const RateLimitCard = ({ currentRps, selectRps, onRpsChange, currentBurst
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {selectRps !== currentRps ? (
+                        {currentRps <= 0 ? (
+                            <Badge
+                                variant="orange"
+                                size="sm"
+                                text={selectRps > 0 ? `Aktiválás: ${selectRps} RPS` : "Nincs korlát beállítva"}
+                            />
+                        ) : selectRps !== currentRps ? (
                             <Badge
                                 variant="orange"
                                 size="sm"

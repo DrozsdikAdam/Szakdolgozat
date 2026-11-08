@@ -1,4 +1,6 @@
+import fs from "node:fs";
 import * as k8s from "@kubernetes/client-node";
+import { getManagedNamespaces } from "../../constants/namespace.constants.js";
 
 export class K8sClientService {
     private static instance: K8sClientService;
@@ -28,7 +30,13 @@ export class K8sClientService {
             }
         }
 
-        if (process.env.K8S_SERVER_HOST) {
+        const isInContainer = Boolean(
+            process.env.KUBERNETES_SERVICE_HOST ||
+            process.env.IS_DOCKER ||
+            fs.existsSync("/.dockerenv")
+        );
+
+        if (isInContainer && process.env.K8S_SERVER_HOST) {
             this.kubeConfig.clusters.forEach((c) => {
                 const mutableCluster = c as { server: string; skipTLSVerify?: boolean };
                 mutableCluster.server = mutableCluster.server
@@ -56,6 +64,6 @@ export class K8sClientService {
     public static resolveNamespaces(namespace?: string): string[] {
         return namespace && namespace !== 'all'
             ? [namespace]
-            : ['platform-infra', 'app-mes'];
+            : getManagedNamespaces();
     }
 }

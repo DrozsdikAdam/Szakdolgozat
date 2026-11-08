@@ -8,19 +8,17 @@ import { Button } from './components/common/Button'
 import { ArrowLeft } from 'lucide-react'
 import { PlatformApi } from './client/api/platform'
 import { K8sApi } from './client/api/k8s'
+import { DatabaseApi } from './client/api/database'
+import { SecurityApi } from './client/api/security'
 import { ClusterOverviewTab } from './view/ClusterOverviewTab'
-import { FlagsTab } from './view/FlagsTab'
-import { AuditTab } from './view/AuditTab'
-import { BackupTab } from './view/BackupTab'
 import { TrafficTab } from './view/TrafficTab'
-import { AutoscalingTab } from './view/AutoscalingTab'
-import { SetupTab } from './view/SetupTab'
-import { ConfigTab } from './view/ConfigTab'
+import { ConfigsTab } from './view/ConfigsTab'
 import { HealthcheckTab } from './view/HealthcheckTab'
 import { DeploymentsTab } from './view/DeploymentsTab'
 import { TelemetryTab } from './view/TelemetryTab'
 import { ResilienceTab } from './view/ResilienceTab'
 import { SecurityTab } from './view/SecurityTab'
+import { DatabaseTab } from './view/DatabaseTab'
 import { LoginTab } from './view/LoginTab'
 import { ProtectedRoute } from './components/auth'
 import { useAuth } from './hooks/useAuth'
@@ -64,7 +62,7 @@ function NotFoundPage() {
         troubleshootingSteps={[
           "Ellenőrizd a böngésző címsorába beírt útvonal helyességét",
           "Kattints a fenti 'Vissza a szolgáltatásokhoz' gombra a kezdőlap eléréséhez",
-          "Közvetlenül elérhető érvényes útvonalak: /telemetry, /cluster, /deployments, /audit, /traffic, /backup, /resilience, /security"
+          "Közvetlenül elérhető érvényes útvonalak: /telemetry, /cluster, /deployments, /audit, /traffic, /backup, /storage, /autoscaling, /vpa, /resilience, /security, /database"
         ]}
       />
     </div>
@@ -80,6 +78,8 @@ function App() {
 
   const platformApi = useMemo(() => new PlatformApi(), [])
   const k8sApi = useMemo(() => new K8sApi(), [])
+  const dbApi = useMemo(() => new DatabaseApi(), [])
+  const securityApi = useMemo(() => new SecurityApi(), [])
 
   const loadPortalData = useCallback(async () => {
     if (!auth.isAuthenticated) {
@@ -87,31 +87,46 @@ function App() {
     }
     setIsRefreshing(true)
     try {
-      const [statusRes, clusterRes] = await Promise.allSettled([
+      const [statusRes, clusterRes, dbRes, rateLimitRes, secRes] = await Promise.allSettled([
         platformApi.getStatus(),
-        k8sApi.getOverview()
+        k8sApi.getOverview(),
+        dbApi.getOverview(),
+        k8sApi.getRateLimit(),
+        securityApi.getOverview()
       ])
 
       const status = statusRes.status === 'fulfilled' ? statusRes.value : null
       const cluster = clusterRes.status === 'fulfilled' ? clusterRes.value : null
-      const isHealthy = statusRes.status === 'fulfilled'
+      const dbOverview = dbRes.status === 'fulfilled' ? dbRes.value : null
+      const rateLimit = rateLimitRes.status === 'fulfilled' ? rateLimitRes.value : null
+      const securityOverview = secRes.status === 'fulfilled' ? secRes.value : null
+      const isHealthy = statusRes.status === 'fulfilled' || clusterRes.status === 'fulfilled'
 
       setIsClusterHealthy(isHealthy)
-      if (status) {
-        setService(computeDynamicServices(status, cluster, isHealthy))
-      } else {
-        setService(DEFAULT_SERVICES)
-      }
+      setService(computeDynamicServices({
+        status,
+        clusterOverview: cluster,
+        dbOverview,
+        rateLimit,
+        securityOverview,
+        isClusterHealthy: isHealthy
+      }))
     } catch {
       setIsClusterHealthy(false)
       setService(DEFAULT_SERVICES)
     } finally {
       setIsRefreshing(false)
     }
-  }, [auth.isAuthenticated, platformApi, k8sApi])
+  }, [auth.isAuthenticated, platformApi, k8sApi, dbApi, securityApi])
 
-  const handleSelectService = (id: ServiceId) => {
-    navigate(`/${id}`)
+  const handleSelectService = (id: ServiceId | string) => {
+    if (id === 'configs' || id === 'features') {
+      navigate('/configs?tab=features')
+    } else if (id.startsWith('/')) {
+      navigate(id)
+    } else {
+      navigate(`/${id}`)
+    }
   }
 
   const handleRefresh = () => {
@@ -148,28 +163,22 @@ function App() {
             <Route element={<ServiceLayout />}>
               <Route path="/cluster" element={<ClusterOverviewTab />} />
               <Route path="/events" element={<ClusterOverviewTab initialView="events" />} />
-              <Route path="/features" element={<FlagsTab onNavigate={handleSelectService} />} />
-              <Route path="/audit" element={<AuditTab />} />
-              <Route path="/backup" element={<BackupTab />} />
+              <Route path="/features" element={<ConfigsTab initialTab="features" onNavigate={handleSelectService} />} />
+              <Route path="/audit" element={<SecurityTab initialTab="audit" />} />
+              <Route path="/backup" element={<DatabaseTab initialTab="backups" />} />
+              <Route path="/storage" element={<DatabaseTab initialTab="storage" />} />
               <Route path="/traffic" element={<TrafficTab />} />
-              <Route path="/autoscaling" element={<AutoscalingTab />} />
-              <Route
-                path="/setup"
-                element={
-                  <SetupTab
-                    onComplete={() => {
-                      handleRefresh()
-                      navigate('/')
-                    }}
-                  />
-                }
-              />
-              <Route path="/configs" element={<ConfigTab />} />
+              <Route path="/autoscaling" element={<TrafficTab initialTab="hpa" />} />
+              <Route path="/vpa" element={<TrafficTab initialTab="vpa" />} />
+              <Route path="/setup" element={<ConfigsTab initialTab="wizard" onNavigate={handleSelectService} />} />
+              <Route path="/configs" element={<ConfigsTab initialTab="features" onNavigate={handleSelectService} />} />
+              <Route path="/config" element={<ConfigsTab initialTab="features" onNavigate={handleSelectService} />} />
               <Route path="/health" element={<HealthcheckTab />} />
               <Route path="/deployments" element={<DeploymentsTab />} />
               <Route path="/telemetry" element={<TelemetryTab />} />
               <Route path="/resilience" element={<ResilienceTab />} />
               <Route path="/security" element={<SecurityTab />} />
+              <Route path="/database" element={<DatabaseTab />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Route>

@@ -6,6 +6,7 @@ import { AuditService } from "./audit.service.js";
 import { PasswordUtil } from "../utils/password.util.js";
 import { SecurityMapper } from "../mappers/security.mapper.js";
 import { BASELINE_VULNERABILITIES, FALLBACK_TLS_CERTIFICATES, FALLBACK_SECRET_COMPLIANCE } from "../constants/security.constants.js";
+import { DEFAULT_APP_NAMESPACE, DEFAULT_PLATFORM_NAMESPACE } from "../constants/namespace.constants.js";
 import type { SecurityOverviewDto } from "../dtos/security.dto.js";
 import type { VulnerabilityItem, TlsCertificateStatus, SecretComplianceItem, SeverityType, DynamicStatus, RotationStatus, LoginRequest, LoginResponse } from "../types/security.types.js";
 
@@ -47,7 +48,6 @@ export class SecurityService {
 
     public getVulnerabilities = async (severity?: SeverityType, component?: string): Promise<VulnerabilityItem[]> => {
         let items = this.loadReportVulnerabilities();
-        if (items.length === 0) items = [...BASELINE_VULNERABILITIES];
 
         if (severity) {
             items = items.filter((item) => item.severity === severity);
@@ -68,14 +68,14 @@ export class SecurityService {
         const localCert = this.fetchLocalTlsCertificate();
         if (localCert) return [localCert];
 
-        return [...FALLBACK_TLS_CERTIFICATES];
+        return [];
     };
 
     private fetchK8sTlsCertificate = async (): Promise<TlsCertificateStatus | null> => {
         try {
             const secretRes = await this.client.coreApi.readNamespacedSecret({
                 name: "mes-tls-secret",
-                namespace: "app-mes"
+                namespace: DEFAULT_APP_NAMESPACE
             });
 
             const certDataB64 = secretRes.data?.["tls.crt"];
@@ -178,8 +178,6 @@ export class SecurityService {
             console.warn("[SecurityService] Hiba a K8s Secrets lekérésekor:", err);
         }
 
-        if (complianceList.length === 0) return [...FALLBACK_SECRET_COMPLIANCE];
-
         return complianceList;
     };
 
@@ -258,7 +256,7 @@ export class SecurityService {
         try {
             const secret = await this.client.coreApi.readNamespacedSecret({
                 name: "paas-portal-auth",
-                namespace: "platform-infra"
+                namespace: DEFAULT_PLATFORM_NAMESPACE
             });
 
             const stringData = secret.stringData || {};
@@ -310,7 +308,7 @@ export class SecurityService {
             try {
                 await this.client.coreApi.readNamespacedSecret({
                     name: "paas-portal-auth",
-                    namespace: "platform-infra"
+                    namespace: DEFAULT_PLATFORM_NAMESPACE
                 });
                 exists = true;
             } catch {
@@ -320,7 +318,7 @@ export class SecurityService {
             const secretBody = {
                 metadata: {
                     name: "paas-portal-auth",
-                    namespace: "platform-infra",
+                    namespace: DEFAULT_PLATFORM_NAMESPACE,
                     labels: {
                         "app.kubernetes.io/name": "paas-portal",
                         "app.kubernetes.io/part-of": "paas-platform"
@@ -337,12 +335,12 @@ export class SecurityService {
             if (exists) {
                 await this.client.coreApi.replaceNamespacedSecret({
                     name: "paas-portal-auth",
-                    namespace: "platform-infra",
+                    namespace: DEFAULT_PLATFORM_NAMESPACE,
                     body: secretBody
                 });
             } else {
                 await this.client.coreApi.createNamespacedSecret({
-                    namespace: "platform-infra",
+                    namespace: DEFAULT_PLATFORM_NAMESPACE,
                     body: secretBody
                 });
             }

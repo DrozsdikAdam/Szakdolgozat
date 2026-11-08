@@ -1,52 +1,11 @@
 import { Database, DatabaseX, Server, ShieldCheck, Terminal } from "lucide-react"
 import type { DatabaseEngine, SetupStepComponentProps } from "../../../types/component/setup/setupDataProps"
-import type { DatabaseMode } from "../../../types/platform"
-import type { PresetItem } from "../../../types/component/common/presetGroupProps"
 import { InfoCallout } from "../../common/InfoCallout"
 import { Button } from "../../common/Button"
 import { PresetGroup } from "../../common/PresetGroup"
 import { Input } from "../../common/Input"
 
-const DB_ENGINE_OPTIONS: PresetItem<DatabaseEngine>[] = [
-    {
-        id: "postgres",
-        label: "PostgreSQL",
-        description: "PostgreSQL 16 Patroni HA klaszter automatikus feladatátvétellel és PgBouncerrel (5432).",
-        badge: "Ajánlott",
-        value: "postgres",
-    },
-    {
-        id: "mssql",
-        label: "Microsoft SQL Server",
-        description: "MS SQL Server 2022 Developer konténer T-SQL támogatással a platform-infra névtérben (1433).",
-        badge: "MS SQL 2022",
-        value: "mssql",
-    },
-    {
-        id: "oracle",
-        label: "Oracle Database",
-        description: "Oracle Database Free 23c Enterprise konténer PL/SQL támogatással a platform-infra névtérben (1521).",
-        badge: "Oracle 23c",
-        value: "oracle",
-    },
-]
-
-const DB_MODE_OPTIONS: PresetItem<DatabaseMode>[] = [
-    {
-        id: "internal",
-        label: "Belső K8s Klaszter",
-        description: "A Kubernetes automatikusan elindítja és felügyeli a kiválasztott adatbázis konténert.",
-        badge: "Managed",
-        value: "internal",
-    },
-    {
-        id: "external",
-        label: "Külső / Felhő Adatbázis",
-        description: "Már meglévő külső adatbázishoz (AWS RDS, Azure SQL, GCP Cloud SQL, Oracle Cloud) kapcsolódik.",
-        badge: "Cloud / On-prem",
-        value: "external",
-    },
-]
+import { DB_ENGINE_OPTIONS, DB_MODE_OPTIONS } from "../../../constants/database"
 
 export const DatabaseStep = ({ data, onChange, disabled }: SetupStepComponentProps) => {
     const currentEngine: DatabaseEngine = data.dbEngine || "postgres"

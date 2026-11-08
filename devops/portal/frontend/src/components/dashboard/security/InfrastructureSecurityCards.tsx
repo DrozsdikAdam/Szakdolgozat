@@ -37,7 +37,7 @@ export const InfrastructureSecurityCards = ({ tlsCertificates, secretCompliance,
                     </span>
                 </div>
 
-                <div className="mt-4 divide-y divide-slate-800/60">
+                <div className="mt-4 divide-y divide-slate-800/60 max-h-90 overflow-y-auto pr-2">
                     {tlsCertificates.length === 0 ? (
                         <p className="text-xs text-slate-500 py-4 text-center">
                             Nincs regisztrált TLS tanúsítvány adat.
@@ -80,8 +80,8 @@ export const InfrastructureSecurityCards = ({ tlsCertificates, secretCompliance,
                 </div>
             </Card>
 
-            <Card hoverEffect={false} className="p-5 border border-slate-800">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <Card hoverEffect={false} className="p-5 border border-slate-800 flex flex-col">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
                     <div className="flex items-center gap-2.5">
                         <div className="p-2 rounded-xl bg-slate-800/80 text-cud-skyblue border border-slate-700/60">
                             <KeyRound className="w-5 h-5" />
@@ -100,7 +100,7 @@ export const InfrastructureSecurityCards = ({ tlsCertificates, secretCompliance,
                     </span>
                 </div>
 
-                <div className="mt-4 divide-y divide-slate-800/60">
+                <div className="mt-4 divide-y divide-slate-800/60 max-h-90 overflow-y-auto pr-2">
                     {secretCompliance.length === 0 ? (
                         <p className="text-xs text-slate-500 py-4 text-center">
                             Nincs regisztrált titok megfelelőségi adat.
@@ -110,13 +110,13 @@ export const InfrastructureSecurityCards = ({ tlsCertificates, secretCompliance,
                             const badge = SECRET_STATUS_BADGES[item.rotationState] || SECRET_STATUS_BADGES.COMPLIANT
 
                             return (
-                                <div key={item.name} className="py-3 flex items-center justify-between gap-3">
+                                <div key={item.name} className="py-3 flex items-center justify-between gap-3 hover:bg-slate-800/30 px-2 rounded-lg transition-colors">
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <p className="text-sm font-semibold text-slate-200 font-mono truncate">
+                                            <p className="text-sm font-semibold text-slate-200 font-mono truncate" title={item.name}>
                                                 {item.name}
                                             </p>
-                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono">
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono shrink-0">
                                                 {item.namespace}
                                             </span>
                                         </div>

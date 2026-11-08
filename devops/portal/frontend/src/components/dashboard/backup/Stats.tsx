@@ -4,7 +4,14 @@ import { StatCard } from "../../common/StatCard"
 
 export const BackupStats = ({ totalCount, latestBackup, syncedCount }: BackupStatsProps) => {
     const syncPercentage = totalCount === 0 ? "0%" : `${Math.round((syncedCount / totalCount) * 100)}%`
-    const latestSize = latestBackup ? `${(latestBackup.size / (1024 * 1024)).toFixed(2)} MB` : "Nincs mentés"
+    
+    const formatBytes = (bytes?: number) => {
+        if (!bytes || bytes <= 0) return "0 B"
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
+    }
+    
+    const latestSize = latestBackup ? formatBytes(latestBackup.size) : "Nincs mentés"
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

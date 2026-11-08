@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: app-storage-init-bucket
+  namespace: platform-infra
+  labels:
+    app: app-storage-init-bucket
+    app.kubernetes.io/name: app-storage-init-bucket
+    app.kubernetes.io/part-of: paas-platform
+spec:
+  ttlSecondsAfterFinished: 120
+  backoffLimit: 5
+  template:
+    metadata:
+      labels:
+        app: app-storage-init-bucket
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init-bucket
+          image: minio/mc:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-storage-secret
+                  key: APP_STORAGE_ROOT_USER
+            - name: ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-storage-secret
+                  key: APP_STORAGE_ROOT_PASSWORD
+            - name: BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-storage-secret
+                  key: APP_STORAGE_BUCKET
+          command:
+            - /bin/sh
+            - -c
+            - |
+              until mc alias set local http://app-storage:9000 "$ROOT_USER" "$ROOT_PASSWORD"; do
+                echo "Várakozás az app-storage MinIO indulására..."
+                sleep 2
+              done
+              mc mb --ignore-existing "local/$BUCKET_NAME"
+              echo "A '$BUCKET_NAME' bucket sikeresen inicializálva!"

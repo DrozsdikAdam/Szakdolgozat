@@ -88,12 +88,12 @@ export const PodTable = ({ pods, loading, searchQuery, onViewLogs }: PodTablePro
                                     <td className="py-3.5 px-4 text-xs text-slate-400">{pod.age}</td>
                                     <td className="py-3.5 px-4">
                                         <span
-                                            className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded ${pod.namespace === "app-mes" || pod.source === "app"
+                                            className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded ${pod.source === "app" || (pod.namespace && !pod.namespace.includes("platform"))
                                                 ? "bg-cud-skyblue-bg text-cud-skyblue border border-cud-skyblue-border"
                                                 : "bg-slate-800/90 text-slate-300 border border-slate-700/80"
                                                 }`}
                                         >
-                                            {pod.namespace || (pod.source === "app" ? "app-mes" : "platform-infra")}
+                                            {pod.namespace || (pod.source === "app" ? "alkalmazás" : "platform")}
                                         </span>
                                     </td>
                                     <td className="py-3.5 px-4 text-right">

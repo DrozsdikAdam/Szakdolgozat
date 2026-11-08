@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import type { GitOpsDriftReport, PipelineRun, RolloutActionRequest } from "../types/pipeline"
 import type { ToastMessage } from "../types/component/common"
 import { PipelineApi } from "../client/api/pipeline"
+import { DeploymentApi } from "../client/api/deployments"
 
-export const usePipelineCenter = () => {
+export const usePipelineCenter = (onRolloutMutated?: () => void) => {
     const [runs, setRuns] = useState<PipelineRun[]>([])
     const [driftReport, setDriftReport] = useState<GitOpsDriftReport | null>(null)
     const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -14,8 +15,15 @@ export const usePipelineCenter = () => {
     const [isTriggering, setIsTriggering] = useState<boolean>(false)
     const [isApproving, setIsApproving] = useState<boolean>(false)
     const [isRolloutActing, setIsRolloutActing] = useState<boolean>(false)
+    const [activeStrategy, setActiveStrategy] = useState<'canary' | 'bluegreen'>('canary')
+    const [canaryWeight, setCanaryWeight] = useState<number>(20)
+    const [blueGreenActive, setBlueGreenActive] = useState<'blue' | 'green'>('blue')
+    const [isRolloutPaused, setIsRolloutPaused] = useState<boolean>(false)
+    const [appNamespace, setAppNamespace] = useState<string>("app-mes")
+    const [appName, setAppName] = useState<string>("mes-backend")
     const [toastMessage, setToastMessage] = useState<ToastMessage | null>(null)
     const api = useMemo(() => new PipelineApi(), []);
+    const deploymentApi = useMemo(() => new DeploymentApi(), []);
 
     const showToast = useCallback((text: string, type: "success" | "error" = "success") => {
         setToastMessage({ text, type });
@@ -26,12 +34,38 @@ export const usePipelineCenter = () => {
         try {
             if (!silent) setIsLoading(true);
             setIsRefreshing(true);
-            const [response, driftResponse] = await Promise.all([
+            const [response, driftResponse, config] = await Promise.all([
                 api.getPipelineRuns(),
-                api.getGitOpsDrift()
+                api.getGitOpsDrift(),
+                api.getPipelineConfig().catch((err: unknown) => {
+                    console.warn("[usePipelineCenter] Nem sikerült lekérni a pipeline konfigurációt:", err);
+                    return null;
+                })
             ]);
             setRuns(response);
             setDriftReport(driftResponse);
+
+            const liveRollout = response.find(r => r.rollout)?.rollout;
+            if (liveRollout) {
+                const strat = liveRollout.strategy.toLowerCase().includes("canary") ? "canary" : "bluegreen";
+                setActiveStrategy(strat);
+                if (liveRollout.canaryWeight !== undefined) {
+                    setCanaryWeight(liveRollout.canaryWeight);
+                }
+                if (liveRollout.blueGreenActive) {
+                    setBlueGreenActive(liveRollout.blueGreenActive);
+                }
+                setIsRolloutPaused(Boolean(liveRollout.isPaused));
+            } else if (config?.defaultStrategy) {
+                setActiveStrategy(config.defaultStrategy);
+            }
+
+            if (config?.appNamespace) {
+                setAppNamespace(config.appNamespace);
+            }
+            if (config?.defaultAppName) {
+                setAppName(config.defaultAppName);
+            }
         } catch (error) {
             showToast("Hiba történt az adatok betöltése közben", "error");
         } finally {
@@ -88,15 +122,20 @@ export const usePipelineCenter = () => {
 
     const handleRolloutAction = async (action: RolloutActionRequest["action"], full: boolean = false): Promise<void> => {
         setIsRolloutActing(true);
+        if (action === "promote" && full) {
+            setCanaryWeight(100);
+        }
+        if (action === "pause") setIsRolloutPaused(true);
+        if (action === "resume") setIsRolloutPaused(false);
+
         try {
             const res = await api.executeRolloutAction({
-                rolloutName: "mes-backend-canary",
-                namespace: "app-mes",
                 action,
                 full
             });
             showToast(res.message || `Rollout művelet (${action}) sikeresen elküldve!`, "success");
             await loadData(true);
+            onRolloutMutated?.();
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Nem sikerült a rollout művelet végrehajtása.";
             showToast(message, "error");
@@ -105,14 +144,58 @@ export const usePipelineCenter = () => {
         }
     };
 
+    const handleSwitchStrategy = async (strategy: 'canary' | 'bluegreen'): Promise<void> => {
+        if (strategy === activeStrategy) return;
+
+        setIsRolloutActing(true);
+        setActiveStrategy(strategy);
+        try {
+            await api.updatePipelineStrategy(strategy);
+            showToast(`Telepítési stratégia sikeresen átállítva: ${strategy === 'bluegreen' ? 'Blue-Green (Kék/Zöld)' : 'Canary (Fokozatos)'}!`, "success");
+            await loadData(true);
+            onRolloutMutated?.();
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Nem sikerült átállítani a stratégiát.";
+            showToast(message, "error");
+        } finally {
+            setIsRolloutActing(false);
+        }
+    };
+
+    const handleStepCanary = async (nextWeight: number): Promise<void> => {
+        setIsRolloutActing(true);
+        setCanaryWeight(nextWeight);
+        try {
+            await deploymentApi.updateStrategy({
+                deploymentName: `${appName}-bluegreen`,
+                namespace: appNamespace,
+                strategy: "Canary",
+                canaryWeight: nextWeight
+            });
+            showToast(`Canary súly sikeresen megnövelve: ${nextWeight}%-ra!`, "success");
+            await loadData(true);
+            onRolloutMutated?.();
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Nem sikerült a Canary súly léptetése.";
+            showToast(message, "error");
+        } finally {
+            setIsRolloutActing(false);
+        }
+    };
+
     useEffect(() => {
         loadData();
+    }, [loadData]);
+
+    useEffect(() => {
+        const hasActiveRun = runs.some(r => r.status === 'in_progress');
+        const intervalMs = hasActiveRun ? 1500 : 8000;
         const intervalId = setInterval(() => {
             loadData(true);
-        }, 10000);
+        }, intervalMs);
 
         return () => clearInterval(intervalId);
-    }, [loadData]);
+    }, [loadData, runs]);
 
     return {
         runs,
@@ -124,12 +207,20 @@ export const usePipelineCenter = () => {
         isTriggering,
         isApproving,
         isRolloutActing,
+        activeStrategy,
+        canaryWeight,
+        blueGreenActive,
+        isRolloutPaused,
+        appNamespace,
+        appName,
         toastMessage,
         loadData,
         handleTriggerPipeline,
         handleOpenApprovalModal,
         handleCloseApprovalModal,
         handleApprovePipeline,
-        handleRolloutAction
+        handleRolloutAction,
+        handleSwitchStrategy,
+        handleStepCanary
     };
 };

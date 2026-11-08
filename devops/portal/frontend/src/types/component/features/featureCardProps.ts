@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import type { FeatureFlagName, InactivationStrategy } from "../../platform"
 
-export type FeatureCategory = 'traffic' | 'database' | 'scaling' | 'operations'
+export type FeatureCategory = 'traffic' | 'database' | 'scaling' | 'operations' | 'storage'
 
 export interface FeatureMetaItem {
     key: FeatureFlagName
@@ -18,6 +18,7 @@ export interface FeatureCardProps {
     isToggling: boolean
     strategy?: InactivationStrategy
     params?: Record<string, any>
+    dbEngine?: string
     onNavigate?: (serviceId: string) => void
-    onToggle: (key: FeatureFlagName, nextState: boolean) => void
+    onToggle: (key: FeatureFlagName, nextState: boolean, customParams?: Record<string, any>) => void
 }

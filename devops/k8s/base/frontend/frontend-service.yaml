@@ -2,11 +2,16 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mes-frontend
+  namespace: app-mes
+  labels:
+    app: mes-frontend
+    app.kubernetes.io/name: mes-frontend
+    app.kubernetes.io/part-of: mes-system
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app: mes-frontend
   ports:
-    - port: 80
-      targetPort: 80
-      name: http
+    - port: 3005
+      targetPort: 8080
+      name: http-3005

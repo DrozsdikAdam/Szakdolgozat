@@ -56,7 +56,7 @@ public class AuditLog {
     @Column(length = 2000)
     private String details;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime timestamp;
 
     @PrePersist

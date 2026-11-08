@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import type { FeatureFlagName } from "../types/platform"
-import { Database, Activity, Network, Archive, Cpu, TrendingUp, AlertTriangle } from "lucide-react"
+import { Database, Activity, Network, Archive, Cpu, TrendingUp, AlertTriangle, HardDrive, Server } from "lucide-react"
 
 export const FeatureConfigs: Record<FeatureFlagName, {
     label: string
@@ -27,10 +27,22 @@ export const FeatureConfigs: Record<FeatureFlagName, {
         description: "Terheléselosztás és routing a replikák és mikroszolgáltatások között.",
         icon: <Network className="w-5 h-5 text-cud-skyblue" />
     },
+    app_storage: {
+        label: "Alkalmazás Objektumtár",
+        category: 'storage',
+        description: "Üzleti alkalmazás (MES) perzisztens fájl-, dokumentum- és blob tárolása (Belső MinIO vagy Külső S3 felhőtár).",
+        icon: <HardDrive className="w-5 h-5 text-cud-teal" />
+    },
+    backup_storage: {
+        label: "Mentési Tárhely",
+        category: 'storage',
+        description: "Adatbázis és kötet biztonsági mentések elkülönített célhelye (Belső MinIO vagy Külső S3 tároló).",
+        icon: <Server className="w-5 h-5 text-cud-orange" />
+    },
     cronjob_backup: {
         label: "Automatikus Mentési CronJob",
         category: 'operations',
-        description: "Ütemezett adatbázis és kötet snapshot mentések automatikus feltöltéssel S3/MinIO tárolóra.",
+        description: "Ütemezett adatbázis és kötet snapshot mentések automatikus feltöltéssel a kijelölt tárolóra.",
         icon: <Archive className="w-5 h-5 text-cud-teal" />
     },
     hpa_scaling: {
@@ -60,27 +72,34 @@ export const CARD_BORDER_STYLE: Record<"true" | "false", string> = {
 }
 
 export const CATEGORY_CONFIG: Record<
-    "traffic" | "database" | "scaling" | "operations",
+    "traffic" | "database" | "scaling" | "operations" | "storage",
     { label: string; variant: "skyblue" | "teal" | "purple" | "orange" }
 > = {
     traffic: { label: "Forgalom", variant: "skyblue" },
     database: { label: "Adatbázis", variant: "teal" },
     scaling: { label: "Skálázás", variant: "purple" },
+    storage: { label: "Tárhely", variant: "teal" },
     operations: { label: "Üzemeltetés", variant: "orange" }
 }
 
-export const NAVIGATION_TARGETS: Partial<Record<FeatureFlagName, { target: string; label: string }>> = {
+export const NAVIGATION_TARGETS: Record<FeatureFlagName, { target: string; label: string }> = {
     rate_limiting: { target: "traffic", label: "Beállítások a Forgalom oldalon" },
-    hpa_scaling: { target: "autoscaling", label: "Finomhangolás a Skálázás oldalon" },
-    vpa_scaling: { target: "autoscaling", label: "Finomhangolás a Skálázás oldalon" },
-    cronjob_backup: { target: "backup", label: "Mentési napló a Mentések oldalon" }
+    pgbouncer: { target: "database", label: "Adatbázis & Connection Pooler" },
+    haproxy: { target: "database", label: "Adatbázis & Terheléselosztó" },
+    app_storage: { target: "storage", label: "Objektumtár áttekintés" },
+    backup_storage: { target: "backup", label: "Mentési célpont & Tárhely" },
+    cronjob_backup: { target: "backup", label: "Mentési archívum & Napló" },
+    hpa_scaling: { target: "autoscaling", label: "Horizontális skálázás (HPA)" },
+    vpa_scaling: { target: "vpa", label: "Erőforráskeretek (VPA)" },
+    maintenance_mode: { target: "traffic", label: "Forgalomszabályozás" }
 }
 
-export const CATEGORY_TABS: { id: "all" | "traffic" | "database" | "scaling" | "operations"; label: string }[] = [
+export const CATEGORY_TABS: { id: "all" | "traffic" | "database" | "scaling" | "storage" | "operations"; label: string }[] = [
     { id: "all", label: "Összes" },
     { id: "traffic", label: "Forgalom" },
     { id: "database", label: "Adatbázis" },
     { id: "scaling", label: "Skálázás" },
+    { id: "storage", label: "Tárhely" },
     { id: "operations", label: "Üzemeltetés" }
 ]
 

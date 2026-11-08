@@ -10,16 +10,10 @@ spec:
     - Ingress
     - Egress
   ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app: mes-frontend
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: ingress-nginx
-      ports:
+    - ports:
         - port: 8080
           protocol: TCP
+
   egress:
     - to:
         - namespaceSelector:
@@ -42,4 +36,15 @@ spec:
         - port: 1433
           protocol: TCP
         - port: 1521
+          protocol: TCP
+        - port: 9000
+          protocol: TCP
+    - ports:
+        - port: 5432
+          protocol: TCP
+        - port: 6543
+          protocol: TCP
+        - port: 6379
+          protocol: TCP
+        - port: 1025
           protocol: TCP
