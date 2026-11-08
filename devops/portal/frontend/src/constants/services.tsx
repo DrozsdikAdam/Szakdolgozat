@@ -3,27 +3,15 @@ import type { ServiceItem } from "../types/component/hub";
 
 export const DEFAULT_SERVICES: ServiceItem[] = [
     {
-        id: 'cluster',
-        accentColor: 'skyblue',
-        label: "Klaszter & Munkamenetek",
-        description: "Kubernetes pod állapotok, élő konténer naplók (log streamer) és klaszter életesemények valós időben.",
-        iconName: <Server className="w-6 h-6" />,
-        badgeText: "Kapcsolódás...",
-        badgeVariant: 'orange',
+        id: 'configs',
+        accentColor: 'purple',
+        label: "Konfigurációk & Funkciókapcsolók",
+        description: "Futásidejű Feature Flag vezérlés, K8s ConfigMaps & Secrets szerkesztő és 6-lépéses Rendszer Varázsló.",
+        iconName: <Sliders className="w-6 h-6" />,
+        badgeText: "0 bekapcsolt switch",
+        badgeVariant: 'purple',
         isConfigured: false,
-        statusLabel: "Klaszter állapot lekérdezése...",
-        statusVariant: 'orange'
-    },
-    {
-        id: 'traffic',
-        accentColor: 'skyblue',
-        label: "Forgalom & Skálázás",
-        description: "NGINX Ingress kérés-korlátozás (RPS), terhelésalapú horizontális (HPA) és vertikális (VPA) skálázás.",
-        iconName: <Activity className="w-6 h-6" />,
-        badgeText: "Nincs korlát (Inaktív)",
-        badgeVariant: 'orange',
-        isConfigured: false,
-        statusLabel: "Forgalomkorlátozás nincs beállítva",
+        statusLabel: "0/7 funkciókapcsoló bekapcsolva",
         statusVariant: 'orange'
     },
     {
@@ -39,30 +27,6 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         statusVariant: 'orange'
     },
     {
-        id: 'security',
-        accentColor: 'teal',
-        label: "Biztonság & Megfelelőség",
-        description: "Trivy CVE konténer vizsgálat, TLS tanúsítványok, jelszórotáció és részletes műveleti audit naplózás.",
-        iconName: <Shield className="w-6 h-6" />,
-        badgeText: "Biztonság...",
-        badgeVariant: 'orange',
-        isConfigured: false,
-        statusLabel: "Biztonsági állapot lekérdezése...",
-        statusVariant: 'orange'
-    },
-    {
-        id: 'configs',
-        accentColor: 'purple',
-        label: "Konfigurációk & Funkciókapcsolók",
-        description: "Futásidejű Feature Flag vezérlés, K8s ConfigMaps & Secrets szerkesztő és 6-lépéses Rendszer Varázsló.",
-        iconName: <Sliders className="w-6 h-6" />,
-        badgeText: "0 bekapcsolt switch",
-        badgeVariant: 'purple',
-        isConfigured: false,
-        statusLabel: "0/7 funkciókapcsoló bekapcsolva",
-        statusVariant: 'orange'
-    },
-    {
         id: 'deployments',
         accentColor: 'orange',
         label: "Telepítések & GitOps",
@@ -75,6 +39,18 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         statusVariant: 'orange'
     },
     {
+        id: 'cluster',
+        accentColor: 'skyblue',
+        label: "Klaszter & Munkamenetek",
+        description: "Kubernetes pod állapotok, élő konténer naplók (log streamer) és klaszter életesemények valós időben.",
+        iconName: <Server className="w-6 h-6" />,
+        badgeText: "Kapcsolódás...",
+        badgeVariant: 'orange',
+        isConfigured: false,
+        statusLabel: "Klaszter állapot lekérdezése...",
+        statusVariant: 'orange'
+    },
+    {
         id: 'health',
         accentColor: 'teal',
         label: "Egészségellenőrzés & Szondák",
@@ -84,6 +60,30 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         badgeVariant: 'teal',
         isConfigured: false,
         statusLabel: "Szonda állapot lekérdezése...",
+        statusVariant: 'orange'
+    },
+    {
+        id: 'traffic',
+        accentColor: 'skyblue',
+        label: "Forgalom & Skálázás",
+        description: "NGINX Ingress kérés-korlátozás (RPS), terhelésalapú horizontális (HPA) és vertikális (VPA) skálázás.",
+        iconName: <Activity className="w-6 h-6" />,
+        badgeText: "Nincs korlát (Inaktív)",
+        badgeVariant: 'orange',
+        isConfigured: false,
+        statusLabel: "Forgalomkorlátozás nincs beállítva",
+        statusVariant: 'orange'
+    },
+    {
+        id: 'security',
+        accentColor: 'teal',
+        label: "Biztonság & Megfelelőség",
+        description: "Trivy CVE konténer vizsgálat, TLS tanúsítványok, jelszórotáció és részletes műveleti audit naplózás.",
+        iconName: <Shield className="w-6 h-6" />,
+        badgeText: "Biztonság...",
+        badgeVariant: 'orange',
+        isConfigured: false,
+        statusLabel: "Biztonsági állapot lekérdezése...",
         statusVariant: 'orange'
     },
     {
