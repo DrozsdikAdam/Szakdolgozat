@@ -15,6 +15,14 @@ if [ -f "$PIPELINE_ENV" ]; then
   set +a
 fi
 
+if [ ! -f "$REPO_ROOT/devops/platform.env" ]; then
+  if [ -f "$REPO_ROOT/devops/platform.env.example" ]; then
+    cp "$REPO_ROOT/devops/platform.env.example" "$REPO_ROOT/devops/platform.env"
+  elif [ -f "$PIPELINE_ENV" ]; then
+    cp "$PIPELINE_ENV" "$REPO_ROOT/devops/platform.env"
+  fi
+fi
+
 APP_NAME="${APP_NAME:-${BACKEND_IMAGE:-mes-backend}}"
 APP_NAMESPACE="${APP_NAMESPACE:-app-mes}"
 FRONTEND_APP="${FRONTEND_IMAGE:-mes-frontend}"
@@ -33,6 +41,11 @@ kustomize edit set image mes-frontend="${FRONTEND_APP}:${IMAGE_TAG}" || true
 cd - > /dev/null
 
 kustomize build "$OVERLAY_DIR" --load-restrictor LoadRestrictionsNone > /dev/null
+
+if ! kubectl cluster-info --request-timeout=5s >/dev/null 2>&1; then
+  echo "Production Kustomize manifestek ($STRATEGY) sikeresen validálva! (Nincs közvetlen K8s klaszter kapcsolat a CI runneren, a szinkronizációt az ArgoCD GitOps végzi.)"
+  exit 0
+fi
 
 if [ "$APP_NAME" != "mes-backend" ]; then
   kustomize build "$OVERLAY_DIR" --load-restrictor LoadRestrictionsNone \

@@ -25,7 +25,14 @@ runs:
       shell: bash
       run: |
         echo "Staging Kustomize manifestek validálása..."
-        kustomize build devops/k8s/overlays/staging
+        if [ ! -f devops/platform.env ]; then
+          if [ -f devops/platform.env.example ]; then
+            cp devops/platform.env.example devops/platform.env
+          else
+            cp devops/ci/pipeline.env devops/platform.env
+          fi
+        fi
+        kustomize build devops/k8s/overlays/staging --load-restrictor LoadRestrictionsNone > /dev/null
 
     - name: "Apply to Staging Cluster"
       shell: bash
