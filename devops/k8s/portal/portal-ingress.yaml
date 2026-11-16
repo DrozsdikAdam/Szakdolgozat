@@ -8,11 +8,7 @@ metadata:
     app.kubernetes.io/part-of: paas-platform
   annotations:
     cert-manager.io/cluster-issuer: "selfsigned-issuer"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/whitelist-source-range: "127.0.0.1/32, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16"
-    nginx.ingress.kubernetes.io/auth-type: "basic"
-    nginx.ingress.kubernetes.io/auth-secret: "paas-portal-auth"
-    nginx.ingress.kubernetes.io/auth-realm: "PaaS Platform Admin Portal"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
 
 spec:
   ingressClassName: nginx
@@ -28,6 +24,6 @@ spec:
             path: "/"
             backend:
               service:
-                name: paas-portal
+                name: portal-frontend
                 port:
-                  number: 3000
+                  number: 80
