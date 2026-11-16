@@ -49,7 +49,7 @@ rules:
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
   - apiGroups: ["argoproj.io"]
-    resources: ["rollouts", "rollouts/status", "applications"]
+    resources: ["rollouts", "rollouts/status", "rollouts/scale", "applications"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
   - apiGroups: ["networking.k8s.io"]

@@ -52,7 +52,7 @@ spec:
                   mountPath: /scripts
           containers:
             - name: minio-upload
-              image: minio/mc:latest
+              image: bitnamilegacy/minio-client:latest
               securityContext:
                 runAsUser: 0
               command: ["/bin/sh", "/scripts/upload-s3.sh"]

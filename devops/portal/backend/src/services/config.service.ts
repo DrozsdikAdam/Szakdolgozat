@@ -261,7 +261,7 @@ export class ConfigService {
                         minAllowedMemory: '128Mi',
                         maxAllowedMemory: '2Gi',
                         updateMode: 'Off'
-                    });
+                    }).catch(() => { });
 
                     await this.k8sService.updateHpa({
                         minReplicas: Number(mergedParams.minReplicas ?? 2),
@@ -273,16 +273,30 @@ export class ConfigService {
                 }
             } else if (request.name === 'vpa_scaling') {
                 if (request.enabled) {
-                    await FeatureFlag.update({ enabled: false }, { where: { name: 'hpa_scaling' } });
-                    await this.k8sService.scaleDeployment(DEFAULT_APP_NAME, DEFAULT_APP_NAMESPACE, 1);
+                    try {
+                        await this.k8sService.updateVpa({
+                            minAllowedCpu: String(mergedParams.minAllowedCpu ?? '100m'),
+                            maxAllowedCpu: String(mergedParams.maxAllowedCpu ?? '1000m'),
+                            minAllowedMemory: String(mergedParams.minAllowedMemory ?? '128Mi'),
+                            maxAllowedMemory: String(mergedParams.maxAllowedMemory ?? '2Gi'),
+                            updateMode: 'Auto'
+                        });
+                        await FeatureFlag.update({ enabled: false }, { where: { name: 'hpa_scaling' } });
+                        await this.k8sService.scaleDeployment(DEFAULT_APP_NAME, DEFAULT_APP_NAMESPACE, 1);
+                    } catch (vpaErr: any) {
+                        flag.enabled = false;
+                        await flag.save().catch(() => { });
+                        throw vpaErr;
+                    }
+                } else {
+                    await this.k8sService.updateVpa({
+                        minAllowedCpu: String(mergedParams.minAllowedCpu ?? '100m'),
+                        maxAllowedCpu: String(mergedParams.maxAllowedCpu ?? '1000m'),
+                        minAllowedMemory: String(mergedParams.minAllowedMemory ?? '128Mi'),
+                        maxAllowedMemory: String(mergedParams.maxAllowedMemory ?? '2Gi'),
+                        updateMode: 'Off'
+                    }).catch(() => { });
                 }
-                await this.k8sService.updateVpa({
-                    minAllowedCpu: String(mergedParams.minAllowedCpu ?? '100m'),
-                    maxAllowedCpu: String(mergedParams.maxAllowedCpu ?? '1000m'),
-                    minAllowedMemory: String(mergedParams.minAllowedMemory ?? '128Mi'),
-                    maxAllowedMemory: String(mergedParams.maxAllowedMemory ?? '2Gi'),
-                    updateMode: request.enabled ? 'Auto' : 'Off'
-                });
             } else if (request.name === 'maintenance_mode') {
                 await this.k8sService.setMaintenanceMode(request.enabled);
                 if (strategy === 'scale_to_zero') {

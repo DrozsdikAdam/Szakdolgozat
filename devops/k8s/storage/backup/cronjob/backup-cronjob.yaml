@@ -25,7 +25,7 @@ spec:
           restartPolicy: OnFailure
           initContainers:
             - name: postgres-dump
-              image: bitnami/postgresql:latest
+              image: postgres:16
               command: ["/bin/sh", "/scripts/backup-postgres.sh"]
               env:
                 - name: DB_ENGINE
@@ -62,7 +62,7 @@ spec:
                   mountPath: /scripts
           containers:
             - name: minio-upload
-              image: minio/mc:latest
+              image: bitnamilegacy/minio-client:latest
               securityContext:
                 runAsUser: 0
               command: ["/bin/sh", "/scripts/upload-s3.sh"]

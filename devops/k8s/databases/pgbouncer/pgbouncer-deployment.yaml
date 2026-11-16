@@ -24,11 +24,11 @@ spec:
             - name: DB_PORT
               value: "5432"
             - name: DB_USER
-              value: "mesuser"
+              value: "postgres"
             - name: DB_PASSWORD
-              value: "mespassword"
+              value: "VnUH22Refo"
             - name: DB_NAME
-              value: "mesdb"
+              value: "mes_db"
             - name: POOL_MODE
               value: "transaction"
             - name: MAX_CLIENT_CONN

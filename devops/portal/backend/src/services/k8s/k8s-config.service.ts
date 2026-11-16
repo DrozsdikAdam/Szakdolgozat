@@ -1,6 +1,7 @@
 import * as k8s from "@kubernetes/client-node";
 import { K8sClientService } from "./k8s-client.service.js";
 import { K8sMapper } from "../../mappers/k8s.mapper.js";
+import { ARGO_ROLLOUT_CRD, K8S_CONTENT_TYPES } from "../../constants/k8s.constants.js";
 import type {
     ConfigMapDto,
     SecretDto,
@@ -21,28 +22,30 @@ export class K8sConfigService {
     getConfigMaps = async (namespace?: string): Promise<ConfigMapDto[]> => {
         try {
             const targetNamespaces = K8sClientService.resolveNamespaces(namespace);
-            const configMaps: ConfigMapDto[] = [];
-
-            for (const ns of targetNamespaces) {
+            const perNs = await Promise.all(targetNamespaces.map(async (ns): Promise<ConfigMapDto[]> => {
                 try {
-                    const configMapList = await this.client.coreApi.listNamespacedConfigMap({ namespace: ns });
-                    for (const item of configMapList.items || []) {
+                    const [configMapList, workloads] = await Promise.all([
+                        this.client.coreApi.listNamespacedConfigMap({ namespace: ns }),
+                        this.fetchWorkloadsForBinding(ns)
+                    ]);
+                    return (configMapList.items || []).map((item) => {
                         const cmName = item.metadata?.name || '';
-                        const bound = await this.getBoundWorkloads(ns, cmName, false);
-                        configMaps.push({
+                        return {
                             name: cmName,
                             namespace: item.metadata?.namespace || ns,
                             data: (item.data as Record<string, string>) || {},
                             keyCount: Object.keys(item.data || {}).length,
                             createdAt: (item.metadata?.creationTimestamp || new Date()).toString(),
-                            boundWorkloads: bound
-                        });
-                    }
+                            boundWorkloads: this.extractBoundWorkloads(workloads, cmName, false)
+                        };
+                    });
                 } catch (nsErr) {
                     console.warn(`[K8sConfigService] Hiba a configMapek lekérésekor a '${ns}' névtérből:`, (nsErr as any)?.message || nsErr);
+                    return [];
                 }
-            }
+            }));
 
+            const configMaps = perNs.flat();
             configMaps.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             return configMaps;
         } catch (error) {
@@ -54,20 +57,19 @@ export class K8sConfigService {
     getSecrets = async (namespace?: string): Promise<SecretDto[]> => {
         try {
             const targetNamespaces = K8sClientService.resolveNamespaces(namespace);
-            const secrets: SecretDto[] = [];
-
-            for (const ns of targetNamespaces) {
+            const perNs = await Promise.all(targetNamespaces.map(async (ns): Promise<SecretDto[]> => {
                 try {
-                    const secretList = await this.client.coreApi.listNamespacedSecret({ namespace: ns });
-                    for (const item of secretList.items || []) {
+                    const [secretList, workloads] = await Promise.all([
+                        this.client.coreApi.listNamespacedSecret({ namespace: ns }),
+                        this.fetchWorkloadsForBinding(ns)
+                    ]);
+                    return (secretList.items || []).map((item) => {
                         const secName = item.metadata?.name || '';
                         const rawData = item.data || {};
                         const keys = Object.keys(rawData);
                         const maskedData = this.mapper.maskSecretData(rawData);
 
-                        const bound = await this.getBoundWorkloads(ns, secName, true);
-
-                        secrets.push({
+                        return {
                             name: secName,
                             namespace: item.metadata?.namespace || ns,
                             secretType: item.type || 'Opaque',
@@ -76,14 +78,16 @@ export class K8sConfigService {
                             keyCount: keys.length,
                             isMasked: true,
                             createdAt: (item.metadata?.creationTimestamp || new Date()).toString(),
-                            boundWorkloads: bound
-                        });
-                    }
+                            boundWorkloads: this.extractBoundWorkloads(workloads, secName, true)
+                        };
+                    });
                 } catch (nsErr) {
                     console.warn(`[K8sConfigService] Hiba a titkok lekérésekor a '${ns}' névtérből:`, (nsErr as any)?.message || nsErr);
+                    return [];
                 }
-            }
+            }));
 
+            const secrets = perNs.flat();
             secrets.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             return secrets;
         } catch (error) {
@@ -270,11 +274,25 @@ export class K8sConfigService {
                 }
             } catch (err) {
                 try {
-                    const { exec } = await import('child_process');
-                    const { promisify } = await import('util');
-                    const execAsync = promisify(exec);
-                    const k8sFlag = process.env.K8S_SERVER_HOST ? `--server=https://${process.env.K8S_SERVER_HOST}:61682 --insecure-skip-tls-verify=true` : '';
-                    await execAsync(`kubectl ${k8sFlag} patch rollout ${name} -n ${namespace} --type=merge -p '{"spec":{"template":{"metadata":{"annotations":{"kubectl.kubernetes.io/restartedAt":"${restartedAt}"}}}}}'`);
+                    const customApi = this.client.customObjectsApi as any;
+                    await customApi.patchNamespacedCustomObject({
+                        group: ARGO_ROLLOUT_CRD.GROUP,
+                        version: ARGO_ROLLOUT_CRD.VERSION,
+                        namespace,
+                        plural: ARGO_ROLLOUT_CRD.PLURAL,
+                        name,
+                        body: {
+                            spec: {
+                                template: {
+                                    metadata: {
+                                        annotations: {
+                                            'kubectl.kubernetes.io/restartedAt': restartedAt
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }, { headers: { 'content-type': K8S_CONTENT_TYPES.MERGE_PATCH } });
                     successNames.push(name);
                 } catch {
                     console.warn(`[K8sConfigService] Nem sikerült újraindítani a '${name}' workloadot (deployment vagy rollout):`, (err as any)?.message || err);
@@ -290,36 +308,59 @@ export class K8sConfigService {
         };
     };
 
-    getBoundWorkloads = async (namespace: string, configName: string, isSecret: boolean): Promise<string[]> => {
-        try {
-            const deploys = await this.client.appsApi.listNamespacedDeployment({ namespace });
-            const bound: string[] = [];
-            for (const dep of deploys.items || []) {
-                const depName = dep.metadata?.name || '';
-                const containers = dep.spec?.template?.spec?.containers || [];
-                let isUsed = false;
+    private fetchWorkloadsForBinding = async (namespace: string): Promise<any[]> => {
+        const customApi = this.client.customObjectsApi as any;
+        const [deploysRes, rolloutsRes] = await Promise.allSettled([
+            this.client.appsApi.listNamespacedDeployment({ namespace }),
+            customApi.listNamespacedCustomObject({
+                group: ARGO_ROLLOUT_CRD.GROUP,
+                version: ARGO_ROLLOUT_CRD.VERSION,
+                namespace,
+                plural: ARGO_ROLLOUT_CRD.PLURAL
+            })
+        ]);
 
-                for (const c of containers) {
-                    if (isSecret) {
-                        if (c.envFrom?.some(ef => ef.secretRef?.name === configName)) isUsed = true;
-                        if (c.env?.some(e => e.valueFrom?.secretKeyRef?.name === configName)) isUsed = true;
-                    } else {
-                        if (c.envFrom?.some(ef => ef.configMapRef?.name === configName)) isUsed = true;
-                        if (c.env?.some(e => e.valueFrom?.configMapKeyRef?.name === configName)) isUsed = true;
-                    }
-                }
+        const deployments = deploysRes.status === 'fulfilled' ? (deploysRes.value.items || []) : [];
+        const rollouts = rolloutsRes.status === 'fulfilled'
+            ? (rolloutsRes.value?.items || rolloutsRes.value?.body?.items || [])
+            : [];
+        return [...deployments, ...rollouts];
+    };
 
-                const volumes = dep.spec?.template?.spec?.volumes || [];
-                for (const v of volumes) {
-                    if (isSecret && v.secret?.secretName === configName) isUsed = true;
-                    if (!isSecret && v.configMap?.name === configName) isUsed = true;
-                }
+    private extractBoundWorkloads = (workloads: any[], configName: string, isSecret: boolean): string[] => {
+        const bound: string[] = [];
+        for (const dep of workloads) {
+            const depName = dep.metadata?.name || '';
+            const containers = dep.spec?.template?.spec?.containers || [];
+            let isUsed = false;
 
-                if (isUsed && !bound.includes(depName)) {
-                    bound.push(depName);
+            for (const c of containers) {
+                if (isSecret) {
+                    if (c.envFrom?.some((ef: any) => ef.secretRef?.name === configName)) isUsed = true;
+                    if (c.env?.some((e: any) => e.valueFrom?.secretKeyRef?.name === configName)) isUsed = true;
+                } else {
+                    if (c.envFrom?.some((ef: any) => ef.configMapRef?.name === configName)) isUsed = true;
+                    if (c.env?.some((e: any) => e.valueFrom?.configMapKeyRef?.name === configName)) isUsed = true;
                 }
             }
-            return bound;
+
+            const volumes = dep.spec?.template?.spec?.volumes || [];
+            for (const v of volumes) {
+                if (isSecret && v.secret?.secretName === configName) isUsed = true;
+                if (!isSecret && v.configMap?.name === configName) isUsed = true;
+            }
+
+            if (isUsed && !bound.includes(depName)) {
+                bound.push(depName);
+            }
+        }
+        return bound;
+    };
+
+    getBoundWorkloads = async (namespace: string, configName: string, isSecret: boolean): Promise<string[]> => {
+        try {
+            const workloads = await this.fetchWorkloadsForBinding(namespace);
+            return this.extractBoundWorkloads(workloads, configName, isSecret);
         } catch {
             return [];
         }

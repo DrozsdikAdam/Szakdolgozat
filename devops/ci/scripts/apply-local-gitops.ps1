@@ -112,14 +112,20 @@ Write-Host "`n[4/4] GitOps manifestek alkalmazasa ($activeEnv)..." -ForegroundCo
 $gitopsDir = Join-Path $PSScriptRoot "..\..\k8s\gitops"
 $dryRunFlag = if ($DryRun) { "--dry-run=client" } else { "" }
 
-# Stratégiák (Canary / BlueGreen)
-$rolloutFiles = @("rollout-canary.yaml", "rollout-bluegreen.yaml")
-foreach ($rf in $rolloutFiles) {
-    $rPath = Join-Path $gitopsDir $rf
-    if (Test-Path $rPath) {
-        Write-Host "Telepitesi strategia alkalmazasa: $rf..." -ForegroundColor Cyan
-        kubectl apply -f $rPath $dryRunFlag
-    }
+# Stratégia (csak az aktiv Canary / BlueGreen Rollout fusson)
+$defaultStrategy = if ($config["DEFAULT_STRATEGY"]) { $config["DEFAULT_STRATEGY"].ToLower() } else { "blue-green" }
+$activeRolloutFile = if ($defaultStrategy -match "blue") { "rollout-bluegreen.yaml" } else { "rollout-canary.yaml" }
+$inactiveRolloutName = if ($defaultStrategy -match "blue") { "mes-backend-canary" } else { "mes-backend-bluegreen" }
+
+if (-not $DryRun) {
+    kubectl delete rollout $inactiveRolloutName -n $appNamespace --ignore-not-found | Out-Null
+    kubectl delete deployment mes-backend -n $appNamespace --ignore-not-found | Out-Null
+}
+
+$rPath = Join-Path $gitopsDir $activeRolloutFile
+if (Test-Path $rPath) {
+    Write-Host "Telepitesi strategia alkalmazasa: $activeRolloutFile..." -ForegroundColor Cyan
+    if ($DryRun) { kubectl apply -f $rPath --dry-run=client } else { kubectl apply -f $rPath }
 }
 
 # ArgoCD alkalmazás definíciók
@@ -127,7 +133,7 @@ $appFile = if ($activeEnv -eq $prodEnv) { "argocd-production.yaml" } else { "arg
 $appPath = Join-Path $gitopsDir $appFile
 if (Test-Path $appPath) {
     Write-Host "ArgoCD Application alkalmazasa: $appFile..." -ForegroundColor Cyan
-    kubectl apply -f $appPath $dryRunFlag
+    if ($DryRun) { kubectl apply -f $appPath --dry-run=client } else { kubectl apply -f $appPath }
 }
 
 Write-Host "`n==========================================================" -ForegroundColor Green

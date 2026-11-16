@@ -14,6 +14,8 @@ import type {
 export class K8sPodService {
     private client: K8sClientService;
     private mapper: K8sMapper;
+    private static overviewCache: { data: ClusterOverviewDto; expiresAt: number } | null = null;
+    private static overviewInFlight: Promise<ClusterOverviewDto> | null = null;
 
     constructor() {
         this.client = K8sClientService.getInstance();
@@ -21,26 +23,45 @@ export class K8sPodService {
     }
 
     getClusterOverView = async (): Promise<ClusterOverviewDto> => {
-        try {
-            const platformPods = await this.client.coreApi.listNamespacedPod({ namespace: DEFAULT_PLATFORM_NAMESPACE });
-            const appPods = await this.client.coreApi.listNamespacedPod({ namespace: DEFAULT_APP_NAMESPACE });
-
-            const platPodInfo = this.mapper.toPodInfos(platformPods.items ?? []);
-            const appPodInfo = this.mapper.toPodInfos(appPods.items ?? []);
-
-            return {
-                platformPods: platPodInfo,
-                appPods: appPodInfo,
-                timestamp: new Date().toISOString()
-            };
-        } catch (error) {
-            console.warn("[K8sPodService] Nem sikerült elérni a valós K8s API-t (üres lista visszaadása):", (error as any)?.message || error);
-            return {
-                platformPods: [],
-                appPods: [],
-                timestamp: new Date().toISOString()
-            };
+        const now = Date.now();
+        if (K8sPodService.overviewCache && now < K8sPodService.overviewCache.expiresAt) {
+            return K8sPodService.overviewCache.data;
         }
+        if (K8sPodService.overviewInFlight) {
+            return K8sPodService.overviewInFlight;
+        }
+
+        const promise = (async (): Promise<ClusterOverviewDto> => {
+            try {
+                const [platformPods, appPods] = await Promise.all([
+                    this.client.coreApi.listNamespacedPod({ namespace: DEFAULT_PLATFORM_NAMESPACE }),
+                    this.client.coreApi.listNamespacedPod({ namespace: DEFAULT_APP_NAMESPACE })
+                ]);
+
+                const platPodInfo = this.mapper.toPodInfos(platformPods.items ?? []);
+                const appPodInfo = this.mapper.toPodInfos(appPods.items ?? []);
+
+                const result: ClusterOverviewDto = {
+                    platformPods: platPodInfo,
+                    appPods: appPodInfo,
+                    timestamp: new Date().toISOString()
+                };
+                K8sPodService.overviewCache = { data: result, expiresAt: Date.now() + 2000 };
+                return result;
+            } catch (error) {
+                console.warn("[K8sPodService] Nem sikerült elérni a valós K8s API-t (üres lista visszaadása):", (error as any)?.message || error);
+                return {
+                    platformPods: [],
+                    appPods: [],
+                    timestamp: new Date().toISOString()
+                };
+            } finally {
+                K8sPodService.overviewInFlight = null;
+            }
+        })();
+
+        K8sPodService.overviewInFlight = promise;
+        return promise;
     };
 
     getPodLogs = async (namespace: string, podName: string, tailLines = 150, container?: string): Promise<PodLogsResponseDto> => {
@@ -97,9 +118,8 @@ export class K8sPodService {
     getClusterEvents = async (namespace?: string, podName?: string): Promise<K8sEventDto[]> => {
         try {
             const targetNamespaces = K8sClientService.resolveNamespaces(namespace);
-            const allEvents: K8sEventDto[] = [];
-
-            for (const ns of targetNamespaces) {
+            const perNs = await Promise.all(targetNamespaces.map(async (ns): Promise<K8sEventDto[]> => {
+                const list: K8sEventDto[] = [];
                 try {
                     const eventList = await this.client.coreApi.listNamespacedEvent({ namespace: ns });
                     for (const item of eventList.items || []) {
@@ -107,7 +127,7 @@ export class K8sPodService {
                             continue;
                         }
 
-                        allEvents.push({
+                        list.push({
                             id: item.metadata?.uid || `${item.metadata?.name}-${Date.now()}`,
                             type: item.type === "Warning" ? "Warning" : "Normal",
                             reason: item.reason || "Ismeretlen",
@@ -124,8 +144,10 @@ export class K8sPodService {
                 } catch (nsErr) {
                     console.warn(`[K8sPodService] Hiba az események lekérésekor a '${ns}' névtérből:`, (nsErr as any)?.message || nsErr);
                 }
-            }
+                return list;
+            }));
 
+            const allEvents = perNs.flat();
             allEvents.sort((a, b) => {
                 const dateA = new Date(a.lastTimestamp).getTime();
                 const dateB = new Date(b.lastTimestamp).getTime();

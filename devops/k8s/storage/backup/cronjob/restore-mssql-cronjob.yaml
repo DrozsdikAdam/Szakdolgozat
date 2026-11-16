@@ -22,7 +22,7 @@ spec:
           restartPolicy: OnFailure
           initContainers:
             - name: minio-download
-              image: minio/mc:latest
+              image: bitnamilegacy/minio-client:latest
               command: ["/bin/sh", "/scripts/download-s3.sh"]
               env:
                 - name: TARGET_BACKUP

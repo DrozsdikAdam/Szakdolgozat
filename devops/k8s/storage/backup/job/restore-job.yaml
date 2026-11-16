@@ -13,7 +13,7 @@ spec:
     spec:
       initContainers:
         - name: fetch-backup
-          image: minio/mc:latest
+          image: bitnamilegacy/minio-client:latest
           env:
             - name: TARGET_BACKUP
               value: "latest"
@@ -57,7 +57,7 @@ spec:
               fi;
       containers:
         - name: postgres-restore
-          image: bitnami/postgresql:latest
+          image: postgres:16
           env:
             - name: DB_HOST
               valueFrom:

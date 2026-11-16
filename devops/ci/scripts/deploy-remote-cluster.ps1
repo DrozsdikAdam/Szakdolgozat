@@ -137,14 +137,25 @@ if (-not $SkipDatabases) {
     if ($hasHelm -and (Test-Path $pgValues)) {
         Write-Host "PostgreSQL HA klaszter (Bitnami) ellenorzese/telepitese Helm segitsegevel..." -ForegroundColor Cyan
         if (-not $DryRun) {
-            helm repo add bitnami https://charts.bitnami.com/bitnami --force-update 2>&1 | Out-Null
-            $helmKubeArgs = if ($KubeConfig) { @("--kubeconfig", $KubeConfig) } else { @() }
-            helm upgrade --install postgres bitnami/postgresql-ha -n platform-infra -f $pgValues $helmKubeArgs 2>&1 | Out-Null
+            $helmKubeArgs = @()
+            if ($KubeConfig) { $helmKubeArgs += @("--kubeconfig", $KubeConfig) }
+            if ($Context) { $helmKubeArgs += @("--kube-context", $Context) }
+            $helmVer = (& helm version --short 2>$null)
+            $helmForceArgs = if ($helmVer -match '^v?4\.') { @("--force-conflicts") } else { @() }
+            helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql-ha --version 16.3.2 -n platform-infra -f $pgValues @helmForceArgs @helmKubeArgs
+            if ($LASTEXITCODE -ne 0) { throw "Hiba tortent a PostgreSQL HA Helm telepitese soran!" }
             Write-Host "PostgreSQL HA Klaszter konfiguracio sikeresen atadva a Helmnek!" -ForegroundColor Green
         }
         else {
             Write-Host "[DRY-RUN] PostgreSQL HA Helm chart frissites szimulalva." -ForegroundColor Gray
         }
+    }
+
+    # PostgreSQL Primary Service & Secret (Kustomize - a postgres StatefulSet replicas: 0 marad)
+    $postgresDir = Join-Path $dbDir "postgres"
+    if (Test-Path (Join-Path $postgresDir "kustomization.yaml")) {
+        Invoke-KubeKustomize -Directory $postgresDir | Out-Null
+        Write-Host "PostgreSQL Primary Service es Secret ervenyesitve!" -ForegroundColor Green
     }
 
     # PgBouncer (Connection Pooling & Read/Write Splitting)
@@ -170,7 +181,11 @@ if (-not $SkipDatabases) {
         Write-Host "Tobb-adatbazisos (MSSQL / Oracle) kontenerek telepitese..." -ForegroundColor Cyan
         foreach ($dbType in @("mssql", "oracle")) {
             $tDir = Join-Path $dbDir $dbType
-            if (Test-Path $tDir) {
+            if (Test-Path (Join-Path $tDir "kustomization.yaml")) {
+                Invoke-KubeKustomize -Directory $tDir | Out-Null
+                Write-Host "${dbType} adatbazis komponensek (Kustomize + Secret) ervenyesitve!" -ForegroundColor Green
+            }
+            elseif (Test-Path $tDir) {
                 foreach ($f in (Get-ChildItem -Path $tDir -Filter *.yaml)) {
                     Invoke-Kube @("apply", "-f", $f.FullName) | Out-Null
                 }
@@ -223,13 +238,18 @@ else {
 Write-Host "`n[6/8] GitOps strategiak es ArgoCD applikaciok alkalmazasa..." -ForegroundColor Yellow
 $gitopsDir = Join-Path $PSScriptRoot "..\..\k8s\gitops"
 
-# Canary és Blue/Green stratégiák
-foreach ($rf in @("rollout-canary.yaml", "rollout-bluegreen.yaml")) {
-    $rPath = Join-Path $gitopsDir $rf
-    if (Test-Path $rPath) {
-        Invoke-Kube @("apply", "-f", $rPath) | Out-Null
-        Write-Host "Telepitesi strategia ervenyesitve: $rf" -ForegroundColor Green
-    }
+# Aktiv GitOps Rollout strategia kivalasztasa (egyszerre csak egy birtokolhatja a mes-backend Service-t)
+$defaultStrategy = if ($config["DEFAULT_STRATEGY"]) { $config["DEFAULT_STRATEGY"].ToLower() } else { "blue-green" }
+$activeRolloutFile = if ($defaultStrategy -match "blue") { "rollout-bluegreen.yaml" } else { "rollout-canary.yaml" }
+$inactiveRolloutName = if ($defaultStrategy -match "blue") { "mes-backend-canary" } else { "mes-backend-bluegreen" }
+
+if (-not $DryRun) {
+    Invoke-Kube @("delete", "rollout", $inactiveRolloutName, "-n", $appNamespace, "--ignore-not-found") | Out-Null
+}
+$rPath = Join-Path $gitopsDir $activeRolloutFile
+if (Test-Path $rPath) {
+    Invoke-Kube @("apply", "-f", $rPath) | Out-Null
+    Write-Host "Aktiv telepitesi strategia ervenyesitve: $activeRolloutFile ($inactiveRolloutName eltavolitva)" -ForegroundColor Green
 }
 
 # ArgoCD Application / ApplicationSet
@@ -289,11 +309,11 @@ if (Test-Path (Join-Path $certManagerDir "kustomization.yaml")) {
 # Reziliencia & Terhelesiteszt RBAC es JMeter forgatokonyvtar
 $resilienceScript = Join-Path $PSScriptRoot "apply-resilience.ps1"
 if (Test-Path $resilienceScript) {
-    $resilienceArgs = @()
-    if ($DryRun) { $resilienceArgs += "-DryRun" }
-    if ($KubeConfig) { $resilienceArgs += @("-KubeConfig", $KubeConfig) }
-    if ($Context) { $resilienceArgs += @("-Context", $Context) }
-    & powershell -ExecutionPolicy Bypass -File $resilienceScript @resilienceArgs
+    $resilienceParams = @{}
+    if ($DryRun) { $resilienceParams["DryRun"] = $true }
+    if ($KubeConfig) { $resilienceParams["KubeConfig"] = $KubeConfig }
+    if ($Context) { $resilienceParams["Context"] = $Context }
+    & $resilienceScript @resilienceParams
 }
 
 # MinIO S3 Backup és Alkalmazás Tárhely (Kustomize)
@@ -320,7 +340,14 @@ else {
 $baseDir = Join-Path $PSScriptRoot "..\..\k8s\base"
 if (Test-Path (Join-Path $baseDir "kustomization.yaml")) {
     Invoke-KubeKustomize -Directory $baseDir -Namespace $appNamespace | Out-Null
-    Write-Host "Alkalmazas Kustomize reteg (backend-secret, deploymentek, ingress) ervenyesitve a '$appNamespace' nevterben!" -ForegroundColor Green
+    $activeHpaTarget = if ($defaultStrategy -match "blue") { "mes-backend-bluegreen" } else { "mes-backend-canary" }
+    if (-not $DryRun) {
+        Invoke-Kube @("delete", "deployment", "mes-backend", "-n", $appNamespace, "--ignore-not-found") | Out-Null
+        if ($activeHpaTarget -ne "mes-backend-bluegreen") {
+            Invoke-Kube @("patch", "hpa", "mes-backend-hpa", "-n", $appNamespace, "--type=merge", "-p", "{`"spec`":{`"scaleTargetRef`":{`"apiVersion`":`"argoproj.io/v1alpha1`",`"kind`":`"Rollout`",`"name`":`"$activeHpaTarget`"}}}") | Out-Null
+        }
+    }
+    Write-Host "Alkalmazas Kustomize reteg (backend-secret, frontend, ingress; aktiv backend Rollout mellett duplikalt Deployment torolve) ervenyesitve a '$appNamespace' nevterben!" -ForegroundColor Green
 }
 
 # 8. Megfigyelhetőség (Prometheus & Grafana)
