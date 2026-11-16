@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal-backend
+  namespace: platform-infra
+  labels:
+    app: portal-backend
+    app.kubernetes.io/name: portal-backend
+    app.kubernetes.io/part-of: paas-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: portal-backend
+  template:
+    metadata:
+      labels:
+        app: portal-backend
+        app.kubernetes.io/name: portal-backend
+        app.kubernetes.io/part-of: paas-platform
+    spec:
+      serviceAccountName: paas-portal-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: portal-backend
+          image: portal-backend:v1
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 3000
+              name: http
+          envFrom:
+            - secretRef:
+                name: portal-db-secret
+          env:
+            - name: K8S_SERVER_HOST
+              value: ""
+            - name: PROMETHEUS_URL
+              value: "http://prometheus.platform-monitoring.svc.cluster.local:9090"
+            - name: GRAFANA_URL
+              value: "http://grafana.platform-monitoring.svc.cluster.local:3000"
+            - name: GRAFANA_PUBLIC_URL
+              value: "http://grafana.localhost"
+            - name: RESILIENCE_PROXY_URL
+              value: "http://paas-resilience-proxy.platform-infra.svc.cluster.local:8080"
+            - name: INTERNAL_MINIO_ENDPOINT
+              value: "http://minio.platform-infra.svc.cluster.local:9000"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: portal-data
+              mountPath: /app/data
+      volumes:
+        - name: portal-data
+          persistentVolumeClaim:
+            claimName: paas-portal-pvc
