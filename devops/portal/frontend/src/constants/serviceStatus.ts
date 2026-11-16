@@ -21,7 +21,7 @@ const resolveFeaturesStatus = (service: ServiceItem, status?: PlatformStatusResp
     const activeFlags: Partial<Record<FeatureFlagName, boolean>> = status?.activeFeatures ?? {};
     const flagKeys = Object.keys(activeFlags) as FeatureFlagName[];
     const activeCount = flagKeys.filter(k => Boolean(activeFlags[k])).length;
-    const totalFlags = flagKeys.length || 7;
+    const totalFlags = flagKeys.length || 9;
     const isMaintenance = Boolean(activeFlags.maintenance_mode);
 
     return {
@@ -88,7 +88,7 @@ const resolveConfigsStatus = (service: ServiceItem, status?: PlatformStatusRespo
 
     const activeFlags: Partial<Record<FeatureFlagName, boolean>> = status?.activeFeatures ?? {};
     const activeCount = Object.values(activeFlags).filter(Boolean).length;
-    const totalCount = Object.keys(activeFlags).length || 7;
+    const totalCount = Object.keys(activeFlags).length || 9;
 
     return {
         ...service,

@@ -11,7 +11,7 @@ export const DEFAULT_SERVICES: ServiceItem[] = [
         badgeText: "0 bekapcsolt switch",
         badgeVariant: 'purple',
         isConfigured: false,
-        statusLabel: "0/7 funkciókapcsoló bekapcsolva",
+        statusLabel: "0/9 funkciókapcsoló bekapcsolva",
         statusVariant: 'orange'
     },
     {
