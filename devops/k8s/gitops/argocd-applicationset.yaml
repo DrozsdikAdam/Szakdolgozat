@@ -29,12 +29,12 @@ spec:
     spec:
       project: default
       source:
-        repoURL: "${GIT_REPO_URL:-https://github.com/DrozsdikAdam/Szakdolgozat.git}"
+        repoURL: https://github.com/DrozsdikAdam/Szakdolgozat.git
         targetRevision: "{{branch}}"
         path: "devops/k8s/overlays/{{env}}"
       destination:
         server: https://kubernetes.default.svc
-        namespace: "${APP_NAMESPACE:-app-mes}"
+        namespace: app-mes
       syncPolicy:
         syncOptions:
           - CreateNamespace=true

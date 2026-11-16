@@ -12,12 +12,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: "${GIT_REPO_URL:-https://github.com/DrozsdikAdam/Szakdolgozat.git}"
-    targetRevision: "${PRODUCTION_BRANCH:-main}"
+    repoURL: https://github.com/DrozsdikAdam/Szakdolgozat.git
+    targetRevision: main
     path: devops/k8s/overlays/production
   destination:
     server: https://kubernetes.default.svc
-    namespace: "${APP_NAMESPACE:-app-mes}"
+    namespace: app-mes
   syncPolicy:
     syncOptions:
       - CreateNamespace=true

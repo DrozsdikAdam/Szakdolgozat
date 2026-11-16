@@ -62,6 +62,27 @@ function Invoke-Kube {
     return $LASTEXITCODE
 }
 
+function Invoke-KubeKustomize {
+    param(
+        [string]$Directory,
+        [string]$Namespace
+    )
+    $applyArgs = @("apply", "-f", "-")
+    if ($Namespace) {
+        $applyArgs += @("-n", $Namespace)
+    }
+    $rendered = & kubectl kustomize $Directory --load-restrictor LoadRestrictionsNone
+    if ($LASTEXITCODE -ne 0) {
+        return $LASTEXITCODE
+    }
+    $allArgs = $kubeArgs + $applyArgs
+    if ($DryRun) {
+        $allArgs += "--dry-run=client"
+    }
+    $rendered | & kubectl $allArgs
+    return $LASTEXITCODE
+}
+
 # 1. Kubernetes Fürt Kapcsolat Ellenőrzése
 Write-Host "`n[1/8] Kubernetes furt kapcsolat ellenorzese..." -ForegroundColor Yellow
 $prevEAP = $ErrorActionPreference
@@ -248,9 +269,8 @@ Write-Host "`n[7/8] PaaS Portal RBAC es S3 Backup infrastruktura..." -Foreground
 # Portál K8s infrastruktúra (RBAC, PVC, Ingress, NetworkPolicy, Secret)
 $portalDir = Join-Path $PSScriptRoot "..\..\k8s\portal"
 if (Test-Path (Join-Path $portalDir "kustomization.yaml")) {
-    $dryFlag = if ($DryRun) { "--dry-run=client" } else { "" }
-    kubectl kustomize $portalDir --load-restrictor LoadRestrictionsNone | kubectl apply -f - $dryFlag
-    Write-Host "PaaS Portal K8s reteg (RBAC, PVC, Ingress, NetworkPolicy, Secret) ervenyesitve!" -ForegroundColor Green
+    Invoke-KubeKustomize -Directory $portalDir | Out-Null
+    Write-Host "PaaS Portal K8s reteg (RBAC, PVC, Ingress, NetworkPolicy, Secret, Portal) ervenyesitve!" -ForegroundColor Green
 }
 
 # Cert-Manager és Automatikus TLS Issuer-ek
@@ -280,15 +300,14 @@ if (Test-Path $resilienceScript) {
 if (-not $SkipStorage) {
     $backupDir = Join-Path $PSScriptRoot "..\..\k8s\storage\backup"
     $appStorageDir = Join-Path $PSScriptRoot "..\..\k8s\storage\app"
-    $dryFlag = if ($DryRun) { "--dry-run=client" } else { "" }
 
     if (Test-Path (Join-Path $backupDir "kustomization.yaml")) {
-        kubectl kustomize $backupDir --load-restrictor LoadRestrictionsNone | kubectl apply -f - $dryFlag
+        Invoke-KubeKustomize -Directory $backupDir | Out-Null
         Write-Host "S3 Backup Kustomize reteg (backup-secret, backup-config, MinIO, CronJob-ok) ervenyesitve!" -ForegroundColor Green
     }
 
     if (Test-Path (Join-Path $appStorageDir "kustomization.yaml")) {
-        kubectl kustomize $appStorageDir --load-restrictor LoadRestrictionsNone | kubectl apply -f - $dryFlag
+        Invoke-KubeKustomize -Directory $appStorageDir | Out-Null
         Write-Host "Alkalmazas S3 Tarhely Kustomize reteg (app-storage-secret, app-storage StatefulSet/PVC/Service) ervenyesitve!" -ForegroundColor Green
     }
 }
@@ -300,8 +319,7 @@ else {
 # 7.5 Alkalmazás Kustomize réteg (backend-secret, workloadok, ingress)
 $baseDir = Join-Path $PSScriptRoot "..\..\k8s\base"
 if (Test-Path (Join-Path $baseDir "kustomization.yaml")) {
-    $dryFlag = if ($DryRun) { "--dry-run=client" } else { "" }
-    kubectl kustomize $baseDir --load-restrictor LoadRestrictionsNone | kubectl apply -n $appNamespace -f - $dryFlag
+    Invoke-KubeKustomize -Directory $baseDir -Namespace $appNamespace | Out-Null
     Write-Host "Alkalmazas Kustomize reteg (backend-secret, deploymentek, ingress) ervenyesitve a '$appNamespace' nevterben!" -ForegroundColor Green
 }
 
@@ -329,5 +347,5 @@ else {
 Write-Host "==========================================================" -ForegroundColor Green
 
 Write-Host "`nAktiv platform komponensek a furtben:" -ForegroundColor Cyan
-& kubectl $kubeArgs get deployments, statefulsets -n platform-infra
+& kubectl $kubeArgs get deployments,statefulsets -n platform-infra
 & kubectl $kubeArgs get deployments -n argo-rollouts

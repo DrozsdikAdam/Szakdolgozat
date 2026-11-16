@@ -8,10 +8,10 @@ metadata:
     app.kubernetes.io/name: mes-frontend
     app.kubernetes.io/part-of: mes-system
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: mes-frontend
   ports:
-    - port: 3005
+    - port: 80
       targetPort: 8080
-      name: http-3005
+      name: http
