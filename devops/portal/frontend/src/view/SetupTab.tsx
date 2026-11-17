@@ -1,7 +1,9 @@
-import { useState } from "react";
-import type { SetupFormData } from "../types/component/setup/setupDataProps";
+import { useEffect, useRef, useState } from "react";
+import type { InstanceSize, SetupFormData } from "../types/component/setup/setupDataProps";
 import type { FeatureFlagName, SetupWizardPayload } from "../types/platform";
 import { PlatformApi } from "../client/api/platform";
+import { K8sApi } from "../client/api/k8s";
+import { DeploymentApi } from "../client/api/deployments";
 import { WizardNav } from "../components/setup/WizardNav";
 import { GitStep } from "../components/setup/step/Git";
 import { DatabaseStep } from "../components/setup/step/Database";
@@ -20,7 +22,7 @@ interface SetupTabProps {
 const INITIAL_FORM_DATA: SetupFormData = {
     gitEnabled: true,
     gitProvider: "GITHUB",
-    repoUrl: "https://github.com/mes-corp/mes-app",
+    repoUrl: "https://github.com/DrozsdikAdam/Szakdolgozat.git",
     branch: "main",
     deploymentStrategy: "RollingUpdate",
     webhookSecret: "",
@@ -59,8 +61,84 @@ export const SetupTab = ({ onComplete }: SetupTabProps) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isSuccess, setIsSuccess] = useState<boolean>(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const hasUserEditedRef = useRef<boolean>(false);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const hydrateFromCluster = async () => {
+            const [statusRes, hpaRes, rateLimitRes, deployRes] = await Promise.allSettled([
+                new PlatformApi().getStatus(),
+                new K8sApi().getHpa(),
+                new K8sApi().getRateLimit(),
+                new DeploymentApi().getDeployments("app-mes")
+            ]);
+
+            if (!isMounted || hasUserEditedRef.current) return;
+
+            setFormData((prev) => {
+                const next = { ...prev };
+
+                if (statusRes.status === "fulfilled" && statusRes.value) {
+                    const st = statusRes.value;
+                    if (st.gitProvider) next.gitProvider = st.gitProvider;
+                    if (st.repoUrl && st.repoUrl !== "https://github.com/mes-corp/mes-app") {
+                        next.repoUrl = st.repoUrl;
+                    }
+                    if (st.dbEngine) next.dbEngine = st.dbEngine;
+                    if (st.dbMode) next.dbMode = st.dbMode;
+                    if (st.s3Provider) next.s3Provider = st.s3Provider;
+                    if (st.inactivationStrategy) next.inactivationStrategy = st.inactivationStrategy;
+                    const instanceSize = (st as { instanceSize?: InstanceSize }).instanceSize;
+                    if (instanceSize) next.instanceSize = instanceSize;
+
+                    if (st.activeFeatures) {
+                        next.trafficEnabled = Boolean(st.activeFeatures.rate_limiting);
+                        next.storageEnabled = Boolean(st.activeFeatures.cronjob_backup || st.activeFeatures.backup_storage || st.activeFeatures.app_storage);
+                        const hpaActive = Boolean(st.activeFeatures.hpa_scaling);
+                        const vpaActive = Boolean(st.activeFeatures.vpa_scaling);
+                        if (hpaActive || vpaActive) {
+                            next.autoscalingEnabled = true;
+                            next.autoscalingStrategy = vpaActive && !hpaActive ? "vpa" : "hpa";
+                        }
+                    }
+
+                    const backupParams = st.featureParams?.backup_storage;
+                    if (backupParams?.bucket) next.s3Bucket = String(backupParams.bucket);
+                }
+
+                if (hpaRes.status === "fulfilled" && hpaRes.value && hpaRes.value.maxReplicas > 0) {
+                    next.minReplicas = hpaRes.value.minReplicas;
+                    next.maxReplicas = hpaRes.value.maxReplicas;
+                    next.targetCpu = hpaRes.value.targetCpuUtil;
+                }
+
+                if (rateLimitRes.status === "fulfilled" && rateLimitRes.value && rateLimitRes.value.rps > 0) {
+                    next.rateLimitRps = rateLimitRes.value.rps;
+                    next.burstMultiplier = rateLimitRes.value.burst || prev.burstMultiplier;
+                }
+
+                if (deployRes.status === "fulfilled" && deployRes.value) {
+                    if (deployRes.value.gitRepo?.repoUrl) next.repoUrl = deployRes.value.gitRepo.repoUrl;
+                    if (deployRes.value.gitRepo?.branch) next.branch = deployRes.value.gitRepo.branch;
+                    const backendWorkload = deployRes.value.workloads?.find((w) => w.name.includes("backend"));
+                    if (backendWorkload?.strategy) {
+                        next.deploymentStrategy = backendWorkload.strategy;
+                    }
+                }
+
+                return next;
+            });
+        };
+
+        hydrateFromCluster().catch(() => { });
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const handleFormChange = <K extends keyof SetupFormData>(field: K, value: SetupFormData[K]) => {
+        hasUserEditedRef.current = true;
         setFormData((prev) => ({
             ...prev,
             [field]: value,

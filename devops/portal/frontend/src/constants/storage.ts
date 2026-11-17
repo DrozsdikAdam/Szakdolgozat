@@ -11,6 +11,7 @@ export const STORAGE_LIMITS = {
 
 export const DEFAULT_STORAGE_ENDPOINTS = {
     INTERNAL: "http://app-storage.platform-infra.svc.cluster.local:9000",
+    BACKUP_INTERNAL: "http://minio.platform-infra.svc.cluster.local:9000",
     EXTERNAL_S3: "https://s3.eu-central-1.amazonaws.com"
 } as const;
 

@@ -142,6 +142,10 @@ export class K8sService {
         return this.instanceService.setCronJobSuspended(name, namespace, suspended);
     };
 
+    syncBackupCronJobsForEngine = async (activeEngine: DatabaseEngine, explicitEnabled?: boolean, namespace = DEFAULT_PLATFORM_NAMESPACE) => {
+        return this.instanceService.syncBackupCronJobsForEngine(activeEngine, explicitEnabled, namespace);
+    };
+
     getPodLogs = async (
         namespace: string,
         podName: string,

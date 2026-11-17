@@ -253,7 +253,7 @@ const resolveSecurityStatus = (
 
 const resolveResilienceStatus = (service: ServiceItem, isClusterHealthy: boolean): ServiceItem => ({
     ...service,
-    badgeText: isClusterHealthy ? "Káosz & JMeter" : "Klaszter Offline",
+    badgeText: isClusterHealthy ? "Káosz & Telemetria" : "Klaszter Offline",
     badgeVariant: isClusterHealthy ? 'purple' : 'vermillon',
     isConfigured: isClusterHealthy,
     statusLabel: isClusterHealthy ? "Reziliencia tesztelő üzemkész" : "Klaszter nem érhető el",
@@ -270,10 +270,10 @@ const resolveDatabaseStatus = (
     const engineLabel = rawEngine === 'postgres'
         ? 'PostgreSQL HA'
         : rawEngine === 'mssql'
-        ? 'MSSQL 2022'
-        : rawEngine === 'oracle'
-        ? 'Oracle 23c'
-        : rawEngine.toUpperCase();
+            ? 'MSSQL 2022'
+            : rawEngine === 'oracle'
+                ? 'Oracle 23c'
+                : rawEngine.toUpperCase();
 
     const replicas = dbOverview?.replicas ?? (rawEngine === 'postgres' ? 1 : 0);
     const isOnline = isClusterHealthy && (dbOverview ? dbOverview.status === 'ONLINE' : replicas > 0);
@@ -283,8 +283,8 @@ const resolveDatabaseStatus = (
     let statusLabel = isOnline
         ? `${engineLabel} platform üzemkész (${replicas} pod)`
         : replicas === 0
-        ? `${engineLabel} leállítva (0 replika)`
-        : "Adatbázis nem elérhető";
+            ? `${engineLabel} leállítva (0 replika)`
+            : "Adatbázis nem elérhető";
 
     if (!isClusterHealthy) {
         badgeText = `${engineLabel} Offline`;

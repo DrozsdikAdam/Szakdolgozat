@@ -1,4 +1,5 @@
-import { RefreshCw, Zap, Radio } from "lucide-react"
+import { BarChart3, RefreshCw, Zap, Radio } from "lucide-react"
+import { Link } from "react-router-dom"
 import type { ResilienceHeaderProps } from "../../../types/component/resilience"
 import type { ProxyStatus } from "../../../types/resilience"
 import { Button } from "../../common/Button"
@@ -63,6 +64,14 @@ export const ResilienceHeader = ({ proxyStatus, onRefresh, isRefreshing = false 
 
             <div className="flex items-center gap-3 flex-wrap">
                 {renderProxyBadge(proxyStatus)}
+
+                <Link
+                    to="/telemetry"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 transition-colors"
+                >
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    <span>Élő Telemetria & Grafana</span>
+                </Link>
 
                 <Button
                     variant="secondary"

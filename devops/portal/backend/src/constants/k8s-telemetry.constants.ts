@@ -40,3 +40,10 @@ export const TIME_RANGE_MULTIPLIERS: Record<TelemetryTimeRange, { multiplier: nu
     '6h': { multiplier: 1.15, dataPoints: 60 },
     '24h': { multiplier: 1.25, dataPoints: 120 },
 }
+
+export const TIME_RANGE_PROMQL_WINDOWS: Record<TelemetryTimeRange, string> = {
+    '15m': '2m',
+    '1h': '5m',
+    '6h': '15m',
+    '24h': '1h',
+}

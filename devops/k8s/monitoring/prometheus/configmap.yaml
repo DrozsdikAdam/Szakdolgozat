@@ -45,3 +45,6 @@ data:
             regex: ([^:]+)(?::\d+)?;(\d+)
             replacement: $1:$2
             target_label: __address__
+      - job_name: 'ingress-nginx'
+        static_configs:
+          - targets: ['ingress-nginx-controller-metrics.ingress-nginx.svc.cluster.local:10254']

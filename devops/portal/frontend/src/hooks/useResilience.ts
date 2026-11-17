@@ -83,8 +83,12 @@ export const useResilience = () => {
     const handleOpenLogs = async (jobName: string) => {
         try {
             setIsLoadingLogs(true)
+            const existing = overview?.recentLoadTests.find(t => t.jobName === jobName)
             const res = await api.getLoadTestDetails(jobName)
-            setSelectedJob(res)
+            const merged = res.status === 'UNKNOWN' && existing && (existing.status === 'COMPLETED' || existing.status === 'FAILED')
+                ? { ...res, status: existing.status }
+                : res
+            setSelectedJob(merged)
         } catch {
             setToastMessage({ type: 'error', text: "Nem sikerült betölteni a terhelésteszt részleteit." })
         } finally {

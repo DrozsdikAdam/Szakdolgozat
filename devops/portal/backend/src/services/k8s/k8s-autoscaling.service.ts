@@ -124,6 +124,7 @@ export class K8sAutoscalingService {
                         maxReplicas: request.maxReplicas,
                         targetCpuUtil: request.targetCpuUtil
                     };
+                    flag.changed('params', true);
                     await flag.save();
                 }
             }).catch(() => { });

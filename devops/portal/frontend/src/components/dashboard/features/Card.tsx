@@ -96,9 +96,13 @@ export const FeatureCard = ({
         statusInfo = { text: "Inaktív", variant: "neutral", pulse: false };
     }
 
+    const internalDefaultEndpoint = feature.key === "backup_storage"
+        ? DEFAULT_STORAGE_ENDPOINTS.BACKUP_INTERNAL
+        : DEFAULT_STORAGE_ENDPOINTS.INTERNAL
+
     const handleStorageModeSwitch = (newMode: "internal" | "external") => {
         const defaultEndpoint = newMode === "internal"
-            ? DEFAULT_STORAGE_ENDPOINTS.INTERNAL
+            ? internalDefaultEndpoint
             : (externalEndpoint || DEFAULT_STORAGE_ENDPOINTS.EXTERNAL_S3)
 
         const updatedParams = {
@@ -198,7 +202,7 @@ export const FeatureCard = ({
                         {storageMode === "internal" ? (
                             <div className="text-[11px] text-slate-400 flex items-center justify-between bg-slate-950/60 px-2.5 py-1.5 rounded-md border border-slate-800/80">
                                 <span className="font-mono text-slate-300 truncate max-w-50 sm:max-w-65">
-                                    {DEFAULT_STORAGE_ENDPOINTS.INTERNAL}
+                                    {params.endpoint || internalDefaultEndpoint}
                                 </span>
                                 <span className="font-mono text-cud-teal text-[10px] uppercase font-bold shrink-0">
                                     Vödör: {params.bucket || defaultBucket}

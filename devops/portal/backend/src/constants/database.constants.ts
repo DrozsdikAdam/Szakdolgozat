@@ -7,6 +7,12 @@ export const DEFAULT_DB_PORTS: Record<DatabaseEngine, number> = {
     oracle: 1521
 };
 
+export const ENGINE_BACKUP_CRONJOBS: Record<DatabaseEngine, string> = {
+    postgres: 'db-backup',
+    mssql: 'db-backup-mssql',
+    oracle: 'db-backup-oracle'
+};
+
 export const DEFAULT_INTERNAL_HOSTS: Record<DatabaseEngine, string> = {
     postgres: 'postgres-postgresql-primary.platform-infra.svc.cluster.local',
     mssql: 'mssql.platform-infra.svc.cluster.local',

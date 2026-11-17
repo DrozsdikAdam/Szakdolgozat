@@ -9,6 +9,7 @@ metadata:
     app.kubernetes.io/part-of: paas-platform
 spec:
   schedule: "0 2 * * *"  # Minden nap éjjel 2:00-kor fut le
+  suspend: true  # Csak aktív MSSQL motor esetén engedélyezi a backend
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3

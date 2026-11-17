@@ -49,9 +49,8 @@ export class PipelineMapper {
     }
 
     static toDriftReport(appBody: any, defaultNamespace: string, defaultBranch: string): GitOpsDriftReport {
-        const syncStatus = appBody?.status?.sync?.status || "Unknown";
-        const isSynced = syncStatus === "Synced";
-        let rawTarget = appBody?.status?.sync?.revision || appBody?.spec?.source?.targetRevision || defaultBranch;
+        const rawSyncStatus = appBody?.status?.sync?.status || "Unknown";
+        let rawTarget = appBody?.spec?.source?.targetRevision || appBody?.status?.sync?.revision || defaultBranch;
 
         if (typeof rawTarget === "string" && rawTarget.includes("${")) {
             const match = rawTarget.match(/:-(.+)\}$/);
@@ -60,7 +59,7 @@ export class PipelineMapper {
 
         const displayRevision = typeof rawTarget === "string"
             ? (/^[0-9a-f]{40}$/i.test(rawTarget) ? rawTarget.substring(0, 7) : rawTarget)
-            : "HEAD";
+            : defaultBranch;
 
         const rawResources = appBody?.status?.resources || [];
         const outOfSyncResources = rawResources
@@ -72,9 +71,14 @@ export class PipelineMapper {
                 status: r.status || "OutOfSync"
             }));
 
+        const syncStatus: GitOpsDriftReport['syncStatus'] =
+            rawSyncStatus === "Synced"
+                ? "Synced"
+                : (rawSyncStatus === "OutOfSync" || outOfSyncResources.length > 0 ? "OutOfSync" : "Unknown");
+
         return {
-            isSynced,
-            syncStatus: isSynced ? "Synced" : "OutOfSync",
+            isSynced: syncStatus === "Synced" || (syncStatus === "Unknown" && outOfSyncResources.length === 0),
+            syncStatus,
             targetRevision: displayRevision,
             outOfSyncResources
         };

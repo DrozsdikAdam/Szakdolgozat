@@ -39,19 +39,20 @@ else
   rm -f "${STAGING_DIR}/${BACKUP_DMP}"
 fi
 
+FILE_SIZE=0
 if [ -f "${STAGING_DIR}/${BACKUP_GZ}" ]; then
-  cp "${STAGING_DIR}/${BACKUP_GZ}" "${STAGING_DIR}/latest.sql.gz"
-  echo "${BACKUP_GZ}" > "${STAGING_DIR}/current_backup_filename.txt"
-  FILE_SIZE=$(stat -c%s "${STAGING_DIR}/${BACKUP_GZ}")
-  echo "Dump completed successfully (${FILE_SIZE} bytes)."
-else
-  echo "[Oracle Backup] Notice: Could not produce dump file, creating marker."
-  echo "ORACLE_BACKUP_${TIMESTAMP}" | gzip > "${STAGING_DIR}/${BACKUP_GZ}"
-  cp "${STAGING_DIR}/${BACKUP_GZ}" "${STAGING_DIR}/latest.sql.gz"
-  echo "${BACKUP_GZ}" > "${STAGING_DIR}/current_backup_filename.txt"
-  FILE_SIZE=$(stat -c%s "${STAGING_DIR}/${BACKUP_GZ}")
-  echo "Dump completed successfully (${FILE_SIZE} bytes)."
+  FILE_SIZE=$(stat -c%s "${STAGING_DIR}/${BACKUP_GZ}" 2>/dev/null || echo "0")
 fi
+
+if [ ! -f "${STAGING_DIR}/${BACKUP_GZ}" ] || [ "$FILE_SIZE" -le 100 ]; then
+  echo "ERROR: Oracle backup dump failed or generated empty archive (${FILE_SIZE} bytes)!"
+  rm -f "${STAGING_DIR}/${BACKUP_GZ}" "${STAGING_DIR}/${BACKUP_DMP}" "${STAGING_DIR}/${BACKUP_BASE}.sql"
+  exit 1
+fi
+
+cp "${STAGING_DIR}/${BACKUP_GZ}" "${STAGING_DIR}/latest.sql.gz"
+echo "${BACKUP_GZ}" > "${STAGING_DIR}/current_backup_filename.txt"
+echo "Dump completed successfully (${FILE_SIZE} bytes)."
 
 echo "Cleaning up older backups from ${STAGING_DIR}..."
 find "${STAGING_DIR}" -maxdepth 1 -type f -name "*.sql.gz" ! -name "${BACKUP_GZ}" ! -name "latest.sql.gz" -delete 2>/dev/null || true

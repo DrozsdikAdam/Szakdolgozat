@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: portal-frontend
-          image: portal-frontend:v1
+          image: portal-frontend:v4
           imagePullPolicy: IfNotPresent
           resources:
             requests:

@@ -7,7 +7,7 @@ import { SyncAdapterFactory } from "./sync/sync-adapter.factory.js";
 import { DatabaseMapper } from "../mappers/database.mapper.js";
 import { SystemConfig } from "../models/SystemConfig.js";
 import { K8sClientService } from "./k8s/k8s-client.service.js";
-import { DATABASE_DEFAULTS, MIGRATION_CONSTANTS, DEFAULT_INTERNAL_CREDENTIALS, DEFAULT_INTERNAL_HOSTS, DEFAULT_DB_PORTS } from "../constants/database.constants.js";
+import { DATABASE_DEFAULTS, ENGINE_BACKUP_CRONJOBS, MIGRATION_CONSTANTS, DEFAULT_INTERNAL_CREDENTIALS, DEFAULT_INTERNAL_HOSTS, DEFAULT_DB_PORTS } from "../constants/database.constants.js";
 import type {
     StartMigrationDto,
     MigrationJobStatusDto,
@@ -222,7 +222,8 @@ export class DatabaseMigrationService {
             tablesMigrated: 0,
             rowsCopied: 0
         });
-        await this.k8sService.triggerBackupJob(DATABASE_DEFAULTS.INFRA_NAMESPACE, 'db-backup').catch(() => { });
+        const sourceBackupCronJob = ENGINE_BACKUP_CRONJOBS[dto.sourceEngine] || 'db-backup';
+        await this.k8sService.triggerBackupJob(DATABASE_DEFAULTS.INFRA_NAMESPACE, sourceBackupCronJob).catch(() => { });
 
         await this.step(jobId, 'SCHEMA_INIT', MIGRATION_CONSTANTS.SCHEMA_PROGRESS, `Cél adatbázis (${dto.targetEngine.toUpperCase()}) provisioning és készenlét ellenőrzése...`, 1000);
         if (dto.targetConfig.mode === 'internal') {
