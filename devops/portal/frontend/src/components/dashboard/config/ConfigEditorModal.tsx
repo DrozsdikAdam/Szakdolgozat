@@ -6,6 +6,7 @@ import { Modal } from "../../common/Modal";
 import { Button } from "../../common/Button";
 import { Select } from "../../common/Select";
 import { useNamespaces } from "../../../hooks/useNamespaces";
+import { generateRowId } from "../../../utils/uuid";
 
 interface KeyValueRow {
     id: string;
@@ -44,19 +45,19 @@ export const ConfigEditorModal = ({
             }
 
             const initialRows: KeyValueRow[] = Object.entries(initialData.data || {}).map(([k, v]) => ({
-                id: crypto.randomUUID(),
+                id: generateRowId(),
                 key: k,
                 value: v === "••••••••" ? "" : v,
                 isVisible: !isSecret,
             }));
 
-            setRows(initialRows.length > 0 ? initialRows : [{ id: crypto.randomUUID(), key: "", value: "", isVisible: !isSecret }]);
+            setRows(initialRows.length > 0 ? initialRows : [{ id: generateRowId(), key: "", value: "", isVisible: !isSecret }]);
         } else {
             setName("");
             setNamespace(currentNamespace && currentNamespace !== "all" ? currentNamespace : defaultPlatformNamespace);
             setSecretType("Opaque");
             setRows([
-                { id: crypto.randomUUID(), key: "", value: "", isVisible: !isSecret },
+                { id: generateRowId(), key: "", value: "", isVisible: !isSecret },
             ]);
         }
     }, [isOpen, initialData, isSecret, currentNamespace]);
@@ -64,7 +65,7 @@ export const ConfigEditorModal = ({
     const handleAddRow = () => {
         setRows((prev) => [
             ...prev,
-            { id: crypto.randomUUID(), key: "", value: "", isVisible: !isSecret },
+            { id: generateRowId(), key: "", value: "", isVisible: !isSecret },
         ]);
     };
 

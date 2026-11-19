@@ -21,7 +21,7 @@ export const createJMeterJobManifest = ({
         }
     },
     spec: {
-        ttlSecondsAfterFinished: 300,
+        ttlSecondsAfterFinished: 1800,
         backoffLimit: 0,
         activeDeadlineSeconds: 600,
         template: {

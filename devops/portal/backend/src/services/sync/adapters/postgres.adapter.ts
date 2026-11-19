@@ -54,6 +54,15 @@ export class PostgresSyncAdapter extends BaseSyncAdapter {
         return fallback;
     }
 
+    public async ping(config: EngineConnectionConfig): Promise<void> {
+        const client = await this.getClient(config);
+        try {
+            await client.query('SELECT 1');
+        } finally {
+            await client.end().catch(() => { });
+        }
+    }
+
     public async discoverForeignKeys(config: EngineConnectionConfig): Promise<TableForeignKeyDependency[]> {
         const client = await this.getClient(config);
         try {
@@ -125,7 +134,7 @@ export class PostgresSyncAdapter extends BaseSyncAdapter {
         if (dt.includes('int') || dt.includes('serial')) return 'BIGINT';
         if (dt.includes('bool') || dt.includes('bit')) return 'BOOLEAN';
         if (dt.includes('date') || dt.includes('time')) return 'TIMESTAMP';
-        if (dt.includes('decimal') || dt.includes('numeric') || dt.includes('float') || dt.includes('real')) return 'NUMERIC(19,4)';
+        if (dt.includes('decimal') || dt.includes('numeric') || dt.includes('float') || dt.includes('real') || dt.includes('double') || dt.includes('precision')) return 'NUMERIC(19,4)';
         if (c.maxLength && c.maxLength > 0 && c.maxLength < 1000) return `VARCHAR(${c.maxLength})`;
         return 'TEXT';
     }

@@ -13,6 +13,9 @@ import type { VulnerabilityItem, TlsCertificateStatus, SecretComplianceItem, Sev
 export class SecurityService {
     private client: K8sClientService;
     private auditService: AuditService;
+    private static overviewCache: { data: SecurityOverviewDto; expiresAt: number } | null = null;
+    private static overviewInFlight: Promise<SecurityOverviewDto> | null = null;
+    private static vulnCache: { data: VulnerabilityItem[]; expiresAt: number } | null = null;
 
     constructor() {
         this.client = K8sClientService.getInstance();
@@ -20,30 +23,49 @@ export class SecurityService {
     }
 
     public getSecurityOverview = async (): Promise<SecurityOverviewDto> => {
-        try {
-            const vulnerabilities = await this.getVulnerabilities();
-            const summary = SecurityMapper.toVulnerabilitySummary(vulnerabilities);
-            const tlsCertificates = await this.getTlsCertificates();
-            const secretCompliance = await this.getSecretCompliance();
-
-            const score = SecurityMapper.calculateSecurityScore(summary, tlsCertificates, secretCompliance);
-            const grade = SecurityMapper.scoreToGrade(score);
-
-            return {
-                overallScore: score,
-                scoreGrade: grade,
-                lastScanDate: new Date().toISOString(),
-                vulnerabilities: {
-                    summary,
-                    items: vulnerabilities
-                },
-                tlsCertificates,
-                secretCompliance
-            };
-        } catch (error) {
-            console.error("[SecurityService] Hiba a biztonsági áttekintés összeállításakor:", error);
-            throw error;
+        const now = Date.now();
+        if (SecurityService.overviewCache && now < SecurityService.overviewCache.expiresAt) {
+            return SecurityService.overviewCache.data;
         }
+        if (SecurityService.overviewInFlight) {
+            return SecurityService.overviewInFlight;
+        }
+
+        const promise = (async (): Promise<SecurityOverviewDto> => {
+            try {
+                const [vulnerabilities, tlsCertificates, secretCompliance] = await Promise.all([
+                    this.getVulnerabilities(),
+                    this.getTlsCertificates(),
+                    this.getSecretCompliance()
+                ]);
+                const summary = SecurityMapper.toVulnerabilitySummary(vulnerabilities);
+
+                const score = SecurityMapper.calculateSecurityScore(summary, tlsCertificates, secretCompliance);
+                const grade = SecurityMapper.scoreToGrade(score);
+
+                const result: SecurityOverviewDto = {
+                    overallScore: score,
+                    scoreGrade: grade,
+                    lastScanDate: new Date().toISOString(),
+                    vulnerabilities: {
+                        summary,
+                        items: vulnerabilities
+                    },
+                    tlsCertificates,
+                    secretCompliance
+                };
+                SecurityService.overviewCache = { data: result, expiresAt: Date.now() + 3000 };
+                return result;
+            } catch (error) {
+                console.error("[SecurityService] Hiba a biztonsági áttekintés összeállításakor:", error);
+                throw error;
+            } finally {
+                SecurityService.overviewInFlight = null;
+            }
+        })();
+
+        SecurityService.overviewInFlight = promise;
+        return promise;
     };
 
     public getVulnerabilities = async (severity?: SeverityType, component?: string): Promise<VulnerabilityItem[]> => {
@@ -144,12 +166,10 @@ export class SecurityService {
     };
 
     public getSecretCompliance = async (): Promise<SecretComplianceItem[]> => {
-        const complianceList: SecretComplianceItem[] = [];
-
         try {
             const namespaces = K8sClientService.resolveNamespaces();
-
-            for (const ns of namespaces) {
+            const perNs = await Promise.all(namespaces.map(async (ns): Promise<SecretComplianceItem[]> => {
+                const list: SecretComplianceItem[] = [];
                 try {
                     const secretList = await this.client.coreApi.listNamespacedSecret({ namespace: ns });
                     for (const item of secretList.items || []) {
@@ -161,7 +181,7 @@ export class SecurityService {
                         const createdAt = item.metadata?.creationTimestamp ? new Date(item.metadata.creationTimestamp) : new Date();
                         const ageDays = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
 
-                        complianceList.push({
+                        list.push({
                             name,
                             namespace: ns,
                             type: item.type || "Opaque",
@@ -173,12 +193,14 @@ export class SecurityService {
                 } catch (nsErr) {
                     console.warn(`[SecurityService] Nem sikerült a secret-ek lekérdezése a(z) '${ns}' névtérből:`, (nsErr as Error)?.message);
                 }
-            }
+                return list;
+            }));
+
+            return perNs.flat();
         } catch (err) {
             console.warn("[SecurityService] Hiba a K8s Secrets lekérésekor:", err);
+            return [];
         }
-
-        return complianceList;
     };
 
     private determineRotationStatus = (ageDays: number): RotationStatus => {
@@ -369,6 +391,9 @@ export class SecurityService {
     };
 
     private loadReportVulnerabilities = (): VulnerabilityItem[] => {
+        if (SecurityService.vulnCache && Date.now() < SecurityService.vulnCache.expiresAt) {
+            return SecurityService.vulnCache.data;
+        }
         try {
             const candidatePaths = [
                 this.resolveWorkspacePath("security-reports"),
@@ -379,10 +404,14 @@ export class SecurityService {
             for (const reportDir of candidatePaths) {
                 if (reportDir && fs.existsSync(reportDir)) {
                     const items = this.loadVulnerabilitiesFromReports(reportDir);
-                    if (items.length > 0) return items;
+                    if (items.length > 0) {
+                        SecurityService.vulnCache = { data: items, expiresAt: Date.now() + 30_000 };
+                        return items;
+                    }
                 }
             }
 
+            SecurityService.vulnCache = { data: [], expiresAt: Date.now() + 30_000 };
             return [];
         } catch (fileErr) {
             console.warn("[SecurityService] Nem sikerült a jelentésfájlok beolvasása:", fileErr);

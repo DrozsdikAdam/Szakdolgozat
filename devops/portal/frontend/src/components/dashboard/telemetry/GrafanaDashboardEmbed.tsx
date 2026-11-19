@@ -17,6 +17,13 @@ export const GrafanaDashboardEmbed = ({ dashboards, activeDashboardId, onSelectD
     const baseDashboard = dashboards.find((d) => d.id === activeDashboardId) || dashboards[0]!;
     const isIngress = baseDashboard.id.startsWith("ingress-traffic");
 
+    let grafanaOrigin = "http://localhost:3001";
+    try {
+        grafanaOrigin = new URL(baseDashboard.embedUrl || baseDashboard.externalUrl).origin;
+    } catch {
+        grafanaOrigin = "http://localhost:3001";
+    }
+
     const activeDashboard = isIngress
         ? {
             ...baseDashboard,
@@ -25,11 +32,11 @@ export const GrafanaDashboardEmbed = ({ dashboards, activeDashboardId, onSelectD
                 ? "Éles üzemű L7 RED telemetria: HTTP kérésszám (RPS), hibakódok (2xx/3xx/4xx/5xx), p99 válaszidők és SSL állapot."
                 : "Fejlesztői L4 hálózati sávszélesség (letöltés / feltöltés KB/s) és csomagszám cAdvisor kernel-szintű mérés alapján.",
             embedUrl: ingressLayer === 'l7'
-                ? "http://localhost:3001/d/nginx-ingress-l7?kiosk=tv"
-                : "http://localhost:3001/d/nginx-ingress-l4?kiosk=tv",
+                ? `${grafanaOrigin}/d/nginx-ingress-l7?kiosk=tv`
+                : `${grafanaOrigin}/d/nginx-ingress-l4?kiosk=tv`,
             externalUrl: ingressLayer === 'l7'
-                ? "http://localhost:3001/d/nginx-ingress-l7"
-                : "http://localhost:3001/d/nginx-ingress-l4"
+                ? `${grafanaOrigin}/d/nginx-ingress-l7`
+                : `${grafanaOrigin}/d/nginx-ingress-l4`
         }
         : baseDashboard;
 

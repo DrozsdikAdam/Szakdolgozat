@@ -11,6 +11,11 @@ resources:
   - portal-ingress.yaml
   - portal-network-policy.yaml
   - portal-rbac.yaml
+  - portal-clusterrolebinding.yaml
+  - backend/backend-deployment.yaml
+  - backend/backend-service.yaml
+  - frontend/frontend-deployment.yaml
+  - frontend/frontend-service.yaml
 
 secretGenerator:
   - name: paas-portal-auth

@@ -63,6 +63,7 @@ export const SecurityTab = ({ initialTab = "vulnerabilities" }: SecurityTabProps
                     onChange={handleTabChange}
                     options={SECURITY_TAB_OPTIONS}
                     layout="pill"
+                    className="shrink-0"
                 />
             </div>
 

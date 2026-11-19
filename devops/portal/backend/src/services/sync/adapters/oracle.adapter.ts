@@ -19,13 +19,22 @@ export class OracleSyncAdapter extends BaseSyncAdapter {
         const { host, port } = this.resolveTcpEndpoint(conf, 1521, 31521);
         const user = conf.username || 'mesuser';
         const pass = conf.password || 'mespassword';
-        const db = conf.database || 'FREEPDB1';
+        const db = conf.database || 'mesdb';
 
         return await oracledb.getConnection({
             user,
             password: pass,
             connectString: `${host}:${port}/${db}`
         });
+    }
+
+    public async ping(config: EngineConnectionConfig): Promise<void> {
+        const conn = await this.getConnection(config);
+        try {
+            await conn.execute('SELECT 1 FROM DUAL');
+        } finally {
+            await conn.close().catch(() => { });
+        }
     }
 
     public async discoverForeignKeys(config: EngineConnectionConfig): Promise<TableForeignKeyDependency[]> {

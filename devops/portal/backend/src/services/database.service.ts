@@ -57,7 +57,7 @@ export class DatabaseService {
         }
     };
 
-    testConnection = async (dto: TestConnectionDto): Promise<TestConnectionResultDto> => {
+    testConnection = async (dto: TestConnectionDto, skipAudit = false): Promise<TestConnectionResultDto> => {
         if (!dto.host || !dto.port) {
             return {
                 success: false,
@@ -78,11 +78,13 @@ export class DatabaseService {
                 const latencyMs = Date.now() - startTime;
                 socket.destroy();
 
-                this.auditService.logAudit(
-                    'DATABASE_TEST_CONNECTION',
-                    `Kapcsolatteszt (${dto.engine} @ ${dto.host}:${dto.port}/${dto.database}): ${message}`,
-                    success ? 'SUCCESS' : 'FAILED'
-                ).catch(() => { });
+                if (!skipAudit) {
+                    this.auditService.logAudit(
+                        'DATABASE_TEST_CONNECTION',
+                        `Kapcsolatteszt (${dto.engine} @ ${dto.host}:${dto.port}/${dto.database}): ${message}`,
+                        success ? 'SUCCESS' : 'FAILED'
+                    ).catch(() => { });
+                }
 
                 resolve({
                     success,
@@ -120,14 +122,18 @@ export class DatabaseService {
                 ? await this.getLiveReplicas(config.engine, config.savedReplicas)
                 : 1;
 
+            const targetHost = !process.env.KUBERNETES_SERVICE_HOST && config.host.includes('svc.cluster.local')
+                ? 'localhost'
+                : config.host;
+
             const pingResult = await this.testConnection({
                 engine: config.engine,
                 mode: config.mode,
-                host: config.host.includes('svc.cluster.local') ? 'localhost' : config.host,
+                host: targetHost,
                 port: config.port === 5432 ? 5432 : config.port,
                 database: config.database,
                 username: config.username
-            }).catch(() => ({ success: false, latencyMs: 0, message: 'Unreachable' }));
+            }, true).catch(() => ({ success: false, latencyMs: 0, message: 'Unreachable' }));
 
             return DatabaseMapper.toOverviewDto({ config, replicas, pingResult });
         } catch (error) {
@@ -172,7 +178,7 @@ export class DatabaseService {
         dto.port = DEFAULT_DB_PORTS[dto.engine];
     };
 
-    private restartWorkloadsIfNeeded = async (restartWorkload?: boolean): Promise<void> => {
+    private restartWorkloadsIfNeeded = async (restartWorkload = true): Promise<void> => {
         if (!restartWorkload) return;
 
         await this.k8sService.restartWorkload(
@@ -185,8 +191,11 @@ export class DatabaseService {
         ).catch(() => { });
     };
 
-    private applyInactivationStrategy = async (targetEngine: DatabaseEngine, mode: DatabaseMode): Promise<void> => {
-        if (mode !== 'internal') return;
+    private applyInactivationStrategy = async (targetEngine: DatabaseEngine, mode: DatabaseMode, restartWorkload = true): Promise<void> => {
+        if (mode !== 'internal') {
+            await this.restartWorkloadsIfNeeded(restartWorkload);
+            return;
+        }
 
         const strategyConfig = await SystemConfig.findOne({ where: { key: 'inactivation_strategy' } });
         const strategy: InactivationStrategy = (strategyConfig?.value as InactivationStrategy) || 'scale_to_zero';
@@ -201,6 +210,9 @@ export class DatabaseService {
         await this.scaleDatabase({ engine: targetEngine, replicas: targetActiveReplicas }).catch(err => {
             console.warn(`[DatabaseService] Nem sikerült elindítani a cél adatbázist (${targetEngine}):`, (err as any)?.message || err);
         });
+
+        await this.syncProxiesForEngine(targetEngine, strategy);
+        await this.restartWorkloadsIfNeeded(restartWorkload);
 
         for (const inactiveEngine of inactiveEngines) {
             await this.scaleDatabase({ engine: inactiveEngine, replicas: targetInactiveReplicas }).catch(err => {
@@ -336,9 +348,14 @@ export class DatabaseService {
                 console.warn('[DatabaseService] backup-secret frissítési figyelmeztetés:', (backupSecretErr as any)?.message || backupSecretErr);
             }
 
-            await this.restartWorkloadsIfNeeded(dto.restartWorkload);
-            await this.applyInactivationStrategy(dto.engine, dto.mode);
-            await this.syncProxiesForEngine(dto.engine);
+            await this.applyInactivationStrategy(dto.engine, dto.mode, dto.restartWorkload !== false);
+            const cronSync = await this.k8sService.syncBackupCronJobsForEngine(dto.engine).catch(() => null);
+            if (cronSync) {
+                await this.auditService.logAudit(
+                    'BACKUP_CRONJOB_SYNC',
+                    `Ütemezett mentési CronJob szinkronizálva (${dto.engine}): aktív=${cronSync.activeCronJob}, állapot=${cronSync.enabled ? 'AKTÍV' : 'FELFÜGGESZTVE'}`
+                ).catch(() => { });
+            }
 
             await this.auditService.logAudit(
                 'DATABASE_CONFIG_UPDATE',

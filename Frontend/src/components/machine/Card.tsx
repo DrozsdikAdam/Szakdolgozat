@@ -1,4 +1,4 @@
-﻿import { Pencil, PowerOff, Trash2 } from "lucide-react"
+import { Pencil, PowerOff, Trash2 } from "lucide-react"
 import type { MachineCardProps } from "../../types/machine/MachineProps"
 import { MachineStatusBadge, MachineTypeBadge } from "../common/Badges"
 import { SelectField } from "../common/form/SelectField"
@@ -9,6 +9,7 @@ import { Can } from "../common/Can"
 export const MachineCard = ({ machine, onEdit, onDelete, workOrders, onStartWorkOrder, onStatusChange, users, onAssignUser, onEmergencyStop }: MachineCardProps) => {
 
     const activeOrder = machine.assignedUserId ? workOrders.find(wo => wo.assignedUserId === machine.assignedUserId && wo.status === "IN_PROGRESS") : null;
+    const isUnavailable = machine.status === "MAINTENANCE" || machine.status === "ERROR" || machine.status === "OFFLINE";
 
     return (
         <div className="flex flex-col rounded-2xl p-5 shadow-xl border border-slate-800 bg-slate-900/60 backdrop-blur-xl hover:border-slate-700/60 transition-all space-y-4">
@@ -93,7 +94,8 @@ export const MachineCard = ({ machine, onEdit, onDelete, workOrders, onStartWork
                         <div className="flex items-center gap-2 mt-2">
                             <SelectField
                                 label="Új rendelés indítása a gépen"
-                                placeholderOption="-- Válasszon rendelést az indításhoz --"
+                                placeholderOption={isUnavailable ? "-- Gép jelenleg nem indítható (karbantartás/hiba) --" : "-- Válasszon rendelést az indításhoz --"}
+                                disabled={isUnavailable}
                                 options={workOrders
                                     .filter(wo => wo.status === "PLANNED" || wo.status === "PREPARED")
                                     .map(wo => ({
@@ -101,7 +103,7 @@ export const MachineCard = ({ machine, onEdit, onDelete, workOrders, onStartWork
                                         label: `${wo.orderNumber} - ${wo.productName} (${wo.targetQuantity} db)`
                                     }))}
                                 onChange={(e) => {
-                                    if (e.target.value) onStartWorkOrder(machine.id, e.target.value, machine.assignedUserId);
+                                    if (!isUnavailable && e.target.value) onStartWorkOrder(machine.id, e.target.value, machine.assignedUserId);
                                 }}
                             />
 

@@ -28,7 +28,7 @@ export const ConnectionConfigCard = ({
                             label="Kiszolgáló Hoszt / K8s FQDN"
                             value={formData.host}
                             onChange={(val) => onFieldChange("host", val)}
-                            placeholder="postgres-master.storage.svc.cluster.local"
+                            placeholder="postgres-postgresql-primary.platform-infra.svc.cluster.local"
                             icon={<Server className="w-4 h-4 text-slate-400" />}
                             accentColor="teal"
                             disabled={disabled || isSaving}
@@ -54,7 +54,7 @@ export const ConnectionConfigCard = ({
                             label="Adatbázis Név"
                             value={formData.database}
                             onChange={(val) => onFieldChange("database", val)}
-                            placeholder="mesdb"
+                            placeholder="mes_db"
                             icon={<Database className="w-4 h-4 text-slate-400" />}
                             accentColor="teal"
                             disabled={disabled || isSaving}
@@ -65,7 +65,7 @@ export const ConnectionConfigCard = ({
                             label="Felhasználónév"
                             value={formData.username}
                             onChange={(val) => onFieldChange("username", val)}
-                            placeholder="mesuser"
+                            placeholder="postgres"
                             icon={<User className="w-4 h-4 text-slate-400" />}
                             accentColor="teal"
                             disabled={disabled || isSaving}

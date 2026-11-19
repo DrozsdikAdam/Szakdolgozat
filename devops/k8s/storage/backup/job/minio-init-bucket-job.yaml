@@ -14,7 +14,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: create-bucket
-          image: minio/mc:latest
+          image: bitnamilegacy/minio-client:latest
           env:
             - name: S3_ENDPOINT
               valueFrom:

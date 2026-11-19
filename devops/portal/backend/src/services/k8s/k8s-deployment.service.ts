@@ -30,48 +30,59 @@ export class K8sDeploymentService {
     getDeploymentsOverview = async (namespace?: string): Promise<DeploymentsOverviewDto> => {
         try {
             const targetNamespaces = K8sClientService.resolveNamespaces(namespace);
-            const workloads: WorkloadDeploymentDto[] = [];
-            const dynamicGitRepo = await this.fetchDynamicGitRepo(namespace);
 
-            for (const ns of targetNamespaces) {
-                try {
-                    const deployList = await this.client.appsApi.listNamespacedDeployment({ namespace: ns });
+            const [dynamicGitRepo, nsResults] = await Promise.all([
+                this.fetchDynamicGitRepo(namespace),
+                Promise.all(targetNamespaces.map(async (ns): Promise<WorkloadDeploymentDto[]> => {
+                    const nsWorkloads: WorkloadDeploymentDto[] = [];
+                    const customApi = this.client.customObjectsApi as any;
 
-                    for (const dep of deployList.items || []) {
-                        const depName = dep.metadata?.name || "";
-                        const container = dep.spec?.template?.spec?.containers?.[0];
-                        if (!container) continue;
-
-                        const meta = this.getOrCreateMetadata(ns, depName, dep);
-                        const dynamicHistory = await this.fetchDynamicHistory(ns, depName, meta.strategy);
-                        if (dynamicHistory.length > 0) {
-                            meta.history = dynamicHistory;
-                        }
-
-                        const desired = dep.spec?.replicas ?? 1;
-                        const current = dep.status?.replicas ?? desired;
-                        const updated = dep.status?.updatedReplicas ?? current;
-                        const available = dep.status?.availableReplicas ?? 0;
-
-                        workloads.push(
-                            this.toWorkloadDto(
-                                depName,
-                                ns,
-                                container.image || `${depName}:latest`,
-                                meta,
-                                { desired, current, updated, available }
-                            )
-                        );
-                    }
-
-                    try {
-                        const rolloutsRes = await (this.client.customObjectsApi as any).listNamespacedCustomObject({
+                    const [deployRes, rolloutsRes, rsRes] = await Promise.allSettled([
+                        this.client.appsApi.listNamespacedDeployment({ namespace: ns }),
+                        customApi.listNamespacedCustomObject({
                             group: "argoproj.io",
                             version: "v1alpha1",
                             namespace: ns,
                             plural: "rollouts"
-                        });
-                        const rolloutsList = rolloutsRes?.items || rolloutsRes?.body?.items || [];
+                        }),
+                        this.client.appsApi.listNamespacedReplicaSet({ namespace: ns })
+                    ]);
+
+                    const allRs = rsRes.status === "fulfilled" ? (rsRes.value?.items || []) : [];
+
+                    if (deployRes.status === "fulfilled") {
+                        for (const dep of deployRes.value.items || []) {
+                            const depName = dep.metadata?.name || "";
+                            const container = dep.spec?.template?.spec?.containers?.[0];
+                            if (!container) continue;
+
+                            const meta = this.getOrCreateMetadata(ns, depName, dep);
+                            const dynamicHistory = this.buildHistoryFromReplicaSets(allRs, depName, meta.strategy);
+                            if (dynamicHistory.length > 0) {
+                                meta.history = dynamicHistory;
+                            }
+
+                            const desired = dep.spec?.replicas ?? 1;
+                            const current = dep.status?.replicas ?? desired;
+                            const updated = dep.status?.updatedReplicas ?? current;
+                            const available = dep.status?.availableReplicas ?? 0;
+
+                            nsWorkloads.push(
+                                this.toWorkloadDto(
+                                    depName,
+                                    ns,
+                                    container.image || `${depName}:latest`,
+                                    meta,
+                                    { desired, current, updated, available }
+                                )
+                            );
+                        }
+                    } else {
+                        console.warn(`[K8sDeploymentService] Nem sikerült lekérni a(z) '${ns}' névtér deploymentjeit:`, (deployRes.reason as any)?.message || deployRes.reason);
+                    }
+
+                    if (rolloutsRes.status === "fulfilled") {
+                        const rolloutsList = rolloutsRes.value?.items || rolloutsRes.value?.body?.items || [];
                         for (const ro of rolloutsList) {
                             const roName = ro.metadata?.name || "";
                             const container = ro.spec?.template?.spec?.containers?.[0];
@@ -108,7 +119,7 @@ export class K8sDeploymentService {
                                 meta.blueGreenActive = ro.metadata.annotations["devops.portal/blue-green-active"] as "blue" | "green";
                             }
 
-                            const dynamicHistory = await this.fetchDynamicHistory(ns, roName, roStrategy);
+                            const dynamicHistory = this.buildHistoryFromReplicaSets(allRs, roName, roStrategy);
                             if (dynamicHistory.length > 0) {
                                 meta.history = dynamicHistory;
                             }
@@ -120,7 +131,7 @@ export class K8sDeploymentService {
                             const updated = ro.status?.updatedReplicas ?? current;
                             const available = ro.status?.availableReplicas ?? 0;
 
-                            workloads.push(
+                            nsWorkloads.push(
                                 this.toWorkloadDto(
                                     roName,
                                     ns,
@@ -130,20 +141,21 @@ export class K8sDeploymentService {
                                 )
                             );
                         }
-                    } catch (roErr: any) {
+                    } else {
+                        const roErr: any = rolloutsRes.reason;
                         const isNotFound = roErr?.response?.statusCode === 404 || roErr?.statusCode === 404;
                         if (!isNotFound) {
                             console.warn(`[K8sDeploymentService] Nem sikerült lekérni a Rolloutokat a(z) '${ns}' névtérből:`, roErr?.message || roErr);
                         }
                     }
-                } catch (nsErr) {
-                    console.warn(`[K8sDeploymentService] Nem sikerült lekérni a(z) '${ns}' névtér deploymentjeit:`, (nsErr as any)?.message || nsErr);
-                }
-            }
+
+                    return nsWorkloads;
+                }))
+            ]);
 
             return {
                 gitRepo: dynamicGitRepo,
-                workloads
+                workloads: nsResults.flat()
             };
         } catch (error) {
             console.error("[K8sDeploymentService] Hiba a deployments lekérésekor:", error);
@@ -160,29 +172,34 @@ export class K8sDeploymentService {
             const argocdNamespaces = [DEFAULT_PLATFORM_NAMESPACE, "platform-infra", "argocd"];
             const uniqueNs = Array.from(new Set(argocdNamespaces));
 
-            for (const ns of uniqueNs) {
-                try {
-                    const listRes = await (this.client.customObjectsApi as any).listNamespacedCustomObject({
-                        group: "argoproj.io",
-                        version: "v1alpha1",
-                        namespace: ns,
-                        plural: "applications"
-                    });
-
-                    const items = listRes?.items || listRes?.body?.items || [];
-                    if (items.length > 0) {
-                        if (targetNamespace && targetNamespace !== "all") {
-                            app = items.find((item: any) => item.spec?.destination?.namespace === targetNamespace) || items[0];
-                        } else {
-                            app = items[0];
+            const nsResponses = await Promise.all(
+                uniqueNs.map(async (ns) => {
+                    try {
+                        const listRes = await (this.client.customObjectsApi as any).listNamespacedCustomObject({
+                            group: "argoproj.io",
+                            version: "v1alpha1",
+                            namespace: ns,
+                            plural: "applications"
+                        });
+                        return listRes?.items || listRes?.body?.items || [];
+                    } catch (argocdErr: any) {
+                        const isNotFound = argocdErr?.response?.statusCode === 404 || argocdErr?.statusCode === 404;
+                        if (!isNotFound) {
+                            console.warn(`[K8sDeploymentService] Hiba az ArgoCD alkalmazások lekérésekor a(z) '${ns}' névtérből:`, argocdErr?.message || argocdErr);
                         }
-                        break;
+                        return [];
                     }
-                } catch (argocdErr: any) {
-                    const isNotFound = argocdErr?.response?.statusCode === 404 || argocdErr?.statusCode === 404;
-                    if (!isNotFound) {
-                        console.warn(`[K8sDeploymentService] Hiba az ArgoCD alkalmazások lekérésekor a(z) '${ns}' névtérből:`, argocdErr?.message || argocdErr);
+                })
+            );
+
+            for (const items of nsResponses) {
+                if (items.length > 0) {
+                    if (targetNamespace && targetNamespace !== "all") {
+                        app = items.find((item: any) => item.spec?.destination?.namespace === targetNamespace) || items[0];
+                    } else {
+                        app = items[0];
                     }
+                    break;
                 }
             }
 
@@ -249,62 +266,69 @@ export class K8sDeploymentService {
         try {
             const rsRes = await this.client.appsApi.listNamespacedReplicaSet({ namespace });
             const allRs = rsRes?.items || [];
-
-            const cleanWorkloadBase = workloadName.replace(/-(bluegreen|canary)$/, "");
-            const matchingRs = allRs.filter(rs => {
-                const name = rs.metadata?.name || "";
-                const owner = rs.metadata?.ownerReferences?.[0]?.name;
-                if (owner === workloadName || owner === cleanWorkloadBase) return true;
-                return name.startsWith(`${workloadName}-`) || name.startsWith(`${cleanWorkloadBase}-`);
-            });
-
-            if (matchingRs.length === 0) return [];
-
-            matchingRs.sort((a, b) => {
-                const timeA = new Date(a.metadata?.creationTimestamp || 0).getTime();
-                const timeB = new Date(b.metadata?.creationTimestamp || 0).getTime();
-                return timeB - timeA;
-            });
-
-            return matchingRs.map((rs, index) => {
-                const rawRev = rs.metadata?.annotations?.["deployment.kubernetes.io/revision"];
-                const revisionNum = rawRev ? parseInt(rawRev, 10) : (matchingRs.length - index);
-                const container = rs.spec?.template?.spec?.containers?.[0];
-                const imageTag = container?.image || `${workloadName}:latest`;
-                const replicas = rs.status?.replicas ?? 0;
-                const availableReplicas = rs.status?.availableReplicas ?? 0;
-                const deployedAt = rs.metadata?.creationTimestamp
-                    ? new Date(rs.metadata.creationTimestamp).toISOString()
-                    : new Date().toISOString();
-
-                const podHash = rs.metadata?.labels?.["pod-template-hash"] ||
-                    rs.metadata?.labels?.["rollouts-pod-template-hash"] ||
-                    rs.metadata?.name?.split("-").pop() ||
-                    `rev${revisionNum}`;
-
-                const isActive = replicas > 0 || availableReplicas > 0;
-
-                const resolvedStrategy: DeploymentStrategy = currentStrategy || (
-                    workloadName.toLowerCase().includes("canary")
-                        ? "Canary"
-                        : (workloadName.toLowerCase().includes("bluegreen") ? "BlueGreen" : "RollingUpdate")
-                );
-
-                return {
-                    revision: revisionNum,
-                    imageTag,
-                    deployedAt,
-                    status: isActive ? "active" : "superseded",
-                    commitHash: podHash.length > 7 ? podHash.substring(0, 7) : podHash,
-                    author: "ArgoCD / K8s",
-                    strategy: resolvedStrategy
-                };
-            });
+            return this.buildHistoryFromReplicaSets(allRs, workloadName, currentStrategy);
         } catch (err) {
             console.warn(`[K8sDeploymentService] Nem sikerült dinamikusan kigyűjteni a ReplicaSet-eket (${workloadName}):`, (err as any)?.message || err);
             return [];
         }
     };
+
+    private buildHistoryFromReplicaSets(
+        allRs: any[],
+        workloadName: string,
+        currentStrategy?: DeploymentStrategy
+    ): DeploymentRevision[] {
+        const cleanWorkloadBase = workloadName.replace(/-(bluegreen|canary)$/, "");
+        const matchingRs = allRs.filter(rs => {
+            const name = rs.metadata?.name || "";
+            const owner = rs.metadata?.ownerReferences?.[0]?.name;
+            if (owner === workloadName || owner === cleanWorkloadBase) return true;
+            return name.startsWith(`${workloadName}-`) || name.startsWith(`${cleanWorkloadBase}-`);
+        });
+
+        if (matchingRs.length === 0) return [];
+
+        matchingRs.sort((a, b) => {
+            const timeA = new Date(a.metadata?.creationTimestamp || 0).getTime();
+            const timeB = new Date(b.metadata?.creationTimestamp || 0).getTime();
+            return timeB - timeA;
+        });
+
+        return matchingRs.map((rs, index) => {
+            const rawRev = rs.metadata?.annotations?.["deployment.kubernetes.io/revision"];
+            const revisionNum = rawRev ? parseInt(rawRev, 10) : (matchingRs.length - index);
+            const container = rs.spec?.template?.spec?.containers?.[0];
+            const imageTag = container?.image || `${workloadName}:latest`;
+            const replicas = rs.status?.replicas ?? 0;
+            const availableReplicas = rs.status?.availableReplicas ?? 0;
+            const deployedAt = rs.metadata?.creationTimestamp
+                ? new Date(rs.metadata.creationTimestamp).toISOString()
+                : new Date().toISOString();
+
+            const podHash = rs.metadata?.labels?.["pod-template-hash"] ||
+                rs.metadata?.labels?.["rollouts-pod-template-hash"] ||
+                rs.metadata?.name?.split("-").pop() ||
+                `rev${revisionNum}`;
+
+            const isActive = replicas > 0 || availableReplicas > 0;
+
+            const resolvedStrategy: DeploymentStrategy = currentStrategy || (
+                workloadName.toLowerCase().includes("canary")
+                    ? "Canary"
+                    : (workloadName.toLowerCase().includes("bluegreen") ? "BlueGreen" : "RollingUpdate")
+            );
+
+            return {
+                revision: revisionNum,
+                imageTag,
+                deployedAt,
+                status: isActive ? "active" : "superseded",
+                commitHash: podHash.length > 7 ? podHash.substring(0, 7) : podHash,
+                author: "ArgoCD / K8s",
+                strategy: resolvedStrategy
+            };
+        });
+    }
 
     syncGitOps = async (): Promise<DeploymentsOverviewDto> => {
         const argocdNamespaces = [DEFAULT_PLATFORM_NAMESPACE, "platform-infra", "argocd"];

@@ -15,7 +15,7 @@ fi
 DB_PORT="${DB_PORT:-1433}"
 DB_USER="${DB_USER:-sa}"
 DB_PASSWORD="${DB_PASSWORD:-$MSSQL_SA_PASSWORD}"
-DB_NAME="${DB_NAME:-mesdb}"
+DB_NAME="${DB_NAME:-mes_db}"
 
 echo "[MS SQL Backup] Starting native backup for ${DB_HOST},${DB_PORT}/${DB_NAME}..."
 

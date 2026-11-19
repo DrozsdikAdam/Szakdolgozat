@@ -33,6 +33,7 @@ export interface TableForeignKeyDependency {
 export interface DatabaseSyncAdapter {
     readonly engine: string;
     normalizeConfig(config?: EngineConnectionConfig): EngineConnectionConfig;
+    ping(config: EngineConnectionConfig): Promise<void>;
     discoverTables(config: EngineConnectionConfig): Promise<string[]>;
     discoverColumns(tableName: string, config: EngineConnectionConfig): Promise<ColumnDefinition[]>;
     discoverForeignKeys(config: EngineConnectionConfig): Promise<TableForeignKeyDependency[]>;

@@ -157,9 +157,9 @@ export const ReviewStep = ({ data, onGoToStep }: ReviewStepProps) => {
 
                 const engineMap: Record<string, { label: string; port: number; endpoint: string }> = {
                     postgres: {
-                        label: "PostgreSQL 16 (Patroni HA Klaszter)",
+                        label: "PostgreSQL 16 HA (repmgr + PgBouncer)",
                         port: 5432,
-                        endpoint: "mes-postgres-ha.app-mes:5432",
+                        endpoint: "postgres-postgresql-primary.platform-infra:5432",
                     },
                     mssql: {
                         label: "Microsoft SQL Server 2022",
@@ -174,6 +174,7 @@ export const ReviewStep = ({ data, onGoToStep }: ReviewStepProps) => {
                 };
 
                 const currentEngine = engineMap[data.dbEngine] || engineMap.postgres;
+                const defaultDbName = data.dbEngine === "oracle" ? "mesdb" : "mes_db";
 
                 return (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
@@ -188,9 +189,9 @@ export const ReviewStep = ({ data, onGoToStep }: ReviewStepProps) => {
                             data.dbMode === "internal" ? currentEngine.endpoint : data.dbConnectionString || "Egyedi kapcsolati string",
                             <Radio className="w-3.5 h-3.5 text-cud-orange" />
                         )}
-                        {renderDetailItem("Alapértelmezett Séma / DB", "mesdb", <Layers className="w-3.5 h-3.5 text-slate-400" />)}
+                        {renderDetailItem("Alapértelmezett Séma / DB", defaultDbName, <Layers className="w-3.5 h-3.5 text-slate-400" />)}
                         {renderDetailItem("Hálózati Port", `${currentEngine.port} / TCP`, <Shield className="w-3.5 h-3.5 text-slate-400" />)}
-                        {renderDetailItem("Magas Rendelkezésre Állás (HA)", data.dbEngine === "postgres" ? "Patroni Quorum (Aktív)" : "Standalone Deployment", <Zap className="w-3.5 h-3.5 text-cud-teal" />)}
+                        {renderDetailItem("Magas Rendelkezésre Állás (HA)", data.dbEngine === "postgres" ? "PostgreSQL HA Quorum (repmgr, Aktív)" : "Standalone Deployment", <Zap className="w-3.5 h-3.5 text-cud-teal" />)}
                     </div>
                 );
             }

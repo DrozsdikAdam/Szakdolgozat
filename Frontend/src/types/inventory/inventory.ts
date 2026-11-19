@@ -3,6 +3,7 @@ export interface InventoryResponse {
     productId: string | null,
     productName: string | null,
     productSku: string | null,
+    unit?: string | null,
     quantity: number,
     reservedQuantity: number,
     location: string | null,

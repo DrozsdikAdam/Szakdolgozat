@@ -3,6 +3,7 @@ import type { InventoryResponse } from "./inventory"
 export interface InventoryChartProps {
     productName: string | null,
     productSku: string | null,
+    unit?: string | null,
     quantity: number,
     reservedQuantity: number,
     location: string | null

@@ -7,13 +7,17 @@ export const WorkOrderStatsCard = ({ orders }: WorkOrderStatsCardProps) => {
         let planned = 0
         let inProgress = 0
         let completed = 0
+        let completedProduced = 0
         let totalProduced = 0
         let totalScrap = 0
 
         orders.forEach((order) => {
             if (order.status === "PLANNED" || order.status === "PREPARED") planned++
             if (order.status === "IN_PROGRESS" || order.status === "QUALITY_CHECK") inProgress++
-            if (order.status === "COMPLETED") completed++
+            if (order.status === "COMPLETED") {
+                completed++
+                if (order.producedQuantity > 0) completedProduced += order.producedQuantity
+            }
             if (order.producedQuantity > 0) totalProduced += order.producedQuantity
             if (order.scrapQuantity > 0) totalScrap += order.scrapQuantity
         })
@@ -25,6 +29,7 @@ export const WorkOrderStatsCard = ({ orders }: WorkOrderStatsCardProps) => {
             planned,
             inProgress,
             completed,
+            completedProduced,
             totalProduced,
             totalScrap,
             scrapPercentage
@@ -56,7 +61,7 @@ export const WorkOrderStatsCard = ({ orders }: WorkOrderStatsCardProps) => {
             <div className="stats-card shadow-xl">
                 <div className="space-y-1">
                     <span className="text-xs font-semibold text-muted uppercase tracking-wider">Teljesítve</span>
-                    <h3 className="text-2xl font-extrabold text-cud-teal">{stats.completed} <span className="text-xs text-dim font-normal">({stats.totalProduced} db termék)</span></h3>
+                    <h3 className="text-2xl font-extrabold text-cud-teal">{stats.completed} <span className="text-xs text-dim font-normal">({stats.completedProduced} db teljesítve / {stats.totalProduced} db össz.)</span></h3>
                 </div>
                 <div className="p-3 rounded-xl bg-(--cud-teal-bg) border border-(--cud-teal-border) text-cud-teal">
                     <CheckCircle2 size={22} />

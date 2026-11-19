@@ -4,7 +4,8 @@ import {
     DEFAULT_HPA_NAME,
     DEFAULT_VPA_NAME
 } from "../../constants/namespace.constants.js";
-import { HPA_DEFAULTS } from "../../constants/k8s.constants.js";
+import { ARGO_ROLLOUT_CRD, HPA_DEFAULTS } from "../../constants/k8s.constants.js";
+import { FeatureFlag } from "../../models/FeatureFlag.js";
 import type {
     UpdateHpaDto,
     UpdateVpaDto,
@@ -13,9 +14,20 @@ import type {
 
 export class K8sAutoscalingService {
     private client: K8sClientService;
+    private static vpaUnavailableUntil = 0;
 
     constructor() {
         this.client = K8sClientService.getInstance();
+    }
+
+    private isMissingVpaCrdError(error: any): boolean {
+        const status = error?.response?.statusCode || error?.statusCode || error?.code;
+        const msg = String(error?.body || error?.message || error || "");
+        return status === 404 && (
+            msg.includes("404 page not found") ||
+            msg.includes("the server could not find the requested resource") ||
+            msg.includes("verticalpodautoscalers")
+        );
     }
 
     getHpa = async (namespace = DEFAULT_APP_NAMESPACE, name = DEFAULT_HPA_NAME): Promise<UpdateHpaDto> => {
@@ -44,6 +56,28 @@ export class K8sAutoscalingService {
         }
     };
 
+    private resolveRolloutTargetName = async (namespace: string, baseName: string): Promise<string | null> => {
+        try {
+            const customApi = this.client.customObjectsApi as any;
+            const listRes = await customApi.listNamespacedCustomObject({
+                group: ARGO_ROLLOUT_CRD.GROUP,
+                version: ARGO_ROLLOUT_CRD.VERSION,
+                namespace,
+                plural: ARGO_ROLLOUT_CRD.PLURAL
+            });
+            const items = listRes?.items || listRes?.body?.items || [];
+            const candidates = [`${baseName}-bluegreen`, `${baseName}-canary`, baseName];
+            const found = items.find((ro: any) =>
+                candidates.includes(ro.metadata?.name) ||
+                ro.metadata?.labels?.["app.kubernetes.io/name"] === baseName ||
+                ro.metadata?.labels?.["app"] === baseName
+            );
+            return found?.metadata?.name || null;
+        } catch {
+            return null;
+        }
+    };
+
     updateHpa = async (request: UpdateHpaDto, namespace = DEFAULT_APP_NAMESPACE, name = DEFAULT_HPA_NAME): Promise<void> => {
         try {
             const hpa = await this.client.autoscalingApi.readNamespacedHorizontalPodAutoscaler({
@@ -55,6 +89,22 @@ export class K8sAutoscalingService {
                 throw new Error(`HPA spec nem található: ${name}`);
             }
 
+            if (hpa.spec.scaleTargetRef?.kind === "Deployment" && hpa.spec.scaleTargetRef?.name) {
+                const targetDepName = hpa.spec.scaleTargetRef.name;
+                try {
+                    await this.client.appsApi.readNamespacedDeployment({ name: targetDepName, namespace });
+                } catch {
+                    const rolloutName = await this.resolveRolloutTargetName(namespace, targetDepName);
+                    if (rolloutName) {
+                        hpa.spec.scaleTargetRef = {
+                            apiVersion: `${ARGO_ROLLOUT_CRD.GROUP}/${ARGO_ROLLOUT_CRD.VERSION}`,
+                            kind: "Rollout",
+                            name: rolloutName
+                        };
+                    }
+                }
+            }
+
             hpa.spec.minReplicas = request.minReplicas;
             hpa.spec.maxReplicas = request.maxReplicas;
             hpa.spec.targetCPUUtilizationPercentage = request.targetCpuUtil;
@@ -64,6 +114,20 @@ export class K8sAutoscalingService {
                 namespace,
                 body: hpa
             });
+
+            await FeatureFlag.findOne({ where: { name: 'hpa_scaling' } }).then(async (flag) => {
+                if (flag) {
+                    flag.enabled = true;
+                    flag.params = {
+                        ...(flag.params || {}),
+                        minReplicas: request.minReplicas,
+                        maxReplicas: request.maxReplicas,
+                        targetCpuUtil: request.targetCpuUtil
+                    };
+                    flag.changed('params', true);
+                    await flag.save();
+                }
+            }).catch(() => { });
         } catch (error) {
             console.error("[K8sAutoscalingService] Error updating HPA:", error);
             throw error;
@@ -71,6 +135,10 @@ export class K8sAutoscalingService {
     };
 
     getVpa = async (namespace = DEFAULT_APP_NAMESPACE, name = DEFAULT_VPA_NAME): Promise<VpaOverviewDto> => {
+        if (Date.now() < K8sAutoscalingService.vpaUnavailableUntil) {
+            return { name, updateMode: "Off" };
+        }
+
         try {
             const vpa = await this.client.customObjectsApi.getNamespacedCustomObject({
                 group: "autoscaling.k8s.io",
@@ -98,8 +166,13 @@ export class K8sAutoscalingService {
             if (recommendation?.memory) dto.targetMemory = recommendation.memory;
 
             return dto;
-        } catch (error) {
-            console.warn("[K8sAutoscalingService] VPA nem érhető el vagy nem található:", (error as any)?.message || error);
+        } catch (error: any) {
+            if (this.isMissingVpaCrdError(error)) {
+                K8sAutoscalingService.vpaUnavailableUntil = Date.now() + 5 * 60_000;
+                console.info("[K8sAutoscalingService] VPA CRD nincs telepítve a klaszterben (5 percig gyorsítótárazva).");
+            } else {
+                console.warn("[K8sAutoscalingService] VPA nem érhető el vagy nem található:", error?.message || error);
+            }
             return {
                 name,
                 updateMode: "Off"
@@ -108,6 +181,12 @@ export class K8sAutoscalingService {
     };
 
     updateVpa = async (request: UpdateVpaDto, namespace = DEFAULT_APP_NAMESPACE, name = DEFAULT_VPA_NAME): Promise<void> => {
+        if (Date.now() < K8sAutoscalingService.vpaUnavailableUntil) {
+            const err: any = new Error("A Vertical Pod Autoscaler (VPA) CRD nincs telepítve ebben a Kubernetes klaszterben.");
+            err.isMissingCrd = true;
+            throw err;
+        }
+
         try {
             const vpa = await this.client.customObjectsApi.getNamespacedCustomObject({
                 group: "autoscaling.k8s.io",
@@ -142,7 +221,13 @@ export class K8sAutoscalingService {
                 name,
                 body: vpa
             });
-        } catch (error) {
+        } catch (error: any) {
+            if (this.isMissingVpaCrdError(error)) {
+                K8sAutoscalingService.vpaUnavailableUntil = Date.now() + 5 * 60_000;
+                const crdErr: any = new Error("A Vertical Pod Autoscaler (VPA) CRD nincs telepítve ebben a Kubernetes klaszterben.");
+                crdErr.isMissingCrd = true;
+                throw crdErr;
+            }
             console.error("[K8sAutoscalingService] Error updating VPA:", error);
             throw error;
         }

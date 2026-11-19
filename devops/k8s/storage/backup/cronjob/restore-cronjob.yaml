@@ -22,7 +22,7 @@ spec:
           restartPolicy: OnFailure
           initContainers:
             - name: minio-download
-              image: minio/mc:latest
+              image: bitnamilegacy/minio-client:latest
               command: ["/bin/sh", "/scripts/download-s3.sh"]
               env:
                 - name: TARGET_BACKUP
@@ -54,7 +54,7 @@ spec:
                   mountPath: /scripts
           containers:
             - name: postgres-restore
-              image: bitnami/postgresql:latest
+              image: postgres:16
               command: ["/bin/sh", "/scripts/restore-postgres.sh"]
               env:
                 - name: DB_HOST

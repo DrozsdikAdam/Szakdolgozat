@@ -193,32 +193,56 @@ export class ResilienceService {
         }
     };
 
+    private isPlaceholderLog = (logs?: string): boolean => {
+        if (!logs) return true;
+        return logs.startsWith('A teszt pod még nem jött létre') || logs.startsWith('A konténer naplója még nem áll rendelkezésre');
+    };
+
     getLoadTestDetails = async (jobName: string): Promise<LoadTestDetailDto> => {
         if (!jobName) {
             throw new Error("A jobName megadása kötelező.");
         }
 
-        let status: LoadTestJobStatus = 'UNKNOWN';
-        let completionTime: string | undefined;
+        const existing = this.loadTestHistory.find(t => t.jobName === jobName);
+        let status: LoadTestJobStatus = existing?.status || 'UNKNOWN';
+        let completionTime: string | undefined = existing?.completionTime;
+        let jobFoundInCluster = false;
 
         try {
             const jobRes = await this.k8sClient.batchApi.readNamespacedJob({
                 name: jobName,
                 namespace: DEFAULT_PLATFORM_NAMESPACE
             });
-            status = this.resolveJobStatus(jobRes.status);
-            completionTime = jobRes.status?.completionTime?.toISOString();
+            jobFoundInCluster = true;
+            const resolved = this.resolveJobStatus(jobRes.status);
+            if (resolved !== 'UNKNOWN' || !existing || existing.status === 'PENDING' || existing.status === 'RUNNING') {
+                status = resolved;
+            }
+            completionTime = jobRes.status?.completionTime?.toISOString() || completionTime;
         } catch {
-            status = 'UNKNOWN';
+            // Ha a Kubernetes Job a TTL lejárta után már törlődött, őrizzük meg a korábban mentett végállapotot
+            if (!existing) {
+                status = 'UNKNOWN';
+            }
         }
 
-        const rawLogs = await this.getJobPodLogs(jobName);
+        const fetchedLogs = await this.getJobPodLogs(jobName);
+        let rawLogs = fetchedLogs;
 
-        const existing = this.loadTestHistory.find(t => t.jobName === jobName);
+        if (this.isPlaceholderLog(fetchedLogs)) {
+            if (existing?.logs && !this.isPlaceholderLog(existing.logs)) {
+                rawLogs = existing.logs;
+            } else if (!jobFoundInCluster && (status === 'COMPLETED' || status === 'FAILED')) {
+                rawLogs = 'A teszt lefutott, a konténer naplója a Kubernetes Job TTL lejárta miatt már nem kérdezhető le közvetlenül a podból.';
+            }
+        }
+
         if (existing) {
             existing.status = status;
             if (completionTime) existing.completionTime = completionTime;
-            existing.logs = rawLogs;
+            if (!this.isPlaceholderLog(rawLogs) || !existing.logs) {
+                existing.logs = rawLogs;
+            }
         }
 
         return {
@@ -326,6 +350,12 @@ export class ResilienceService {
                         test.status = status;
                         if (jobRes.status?.completionTime) {
                             test.completionTime = jobRes.status.completionTime.toISOString();
+                        }
+                        if (!test.logs || this.isPlaceholderLog(test.logs)) {
+                            const capturedLogs = await this.getJobPodLogs(test.jobName);
+                            if (!this.isPlaceholderLog(capturedLogs)) {
+                                test.logs = capturedLogs;
+                            }
                         }
                     }
                 } catch {

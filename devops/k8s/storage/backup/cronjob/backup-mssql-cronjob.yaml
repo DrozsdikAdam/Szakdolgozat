@@ -9,6 +9,7 @@ metadata:
     app.kubernetes.io/part-of: paas-platform
 spec:
   schedule: "0 2 * * *"  # Minden nap éjjel 2:00-kor fut le
+  suspend: true  # Csak aktív MSSQL motor esetén engedélyezi a backend
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
@@ -39,7 +40,7 @@ spec:
                 - name: DB_USER
                   value: "sa"
                 - name: DB_NAME
-                  value: "mesdb"
+                  value: "mes_db"
                 - name: MSSQL_SA_PASSWORD
                   valueFrom:
                     secretKeyRef:
@@ -52,7 +53,7 @@ spec:
                   mountPath: /scripts
           containers:
             - name: minio-upload
-              image: minio/mc:latest
+              image: bitnamilegacy/minio-client:latest
               securityContext:
                 runAsUser: 0
               command: ["/bin/sh", "/scripts/upload-s3.sh"]

@@ -26,14 +26,14 @@ export const DEFAULT_INTERNAL_CONFIGS: Record<DatabaseEngine, { host: string; po
     mssql: {
         host: "mssql.platform-infra.svc.cluster.local",
         port: 1433,
-        database: "mesdb",
+        database: "mes_db",
         username: "sa",
         password: "MesStrongPass123!"
     },
     oracle: {
         host: "oracle.platform-infra.svc.cluster.local",
         port: 1521,
-        database: "FREEPDB1",
+        database: "mesdb",
         username: "mesuser",
         password: "mespassword"
     }

@@ -18,7 +18,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: init-bucket
-          image: minio/mc:latest
+          image: bitnamilegacy/minio-client:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: ROOT_USER

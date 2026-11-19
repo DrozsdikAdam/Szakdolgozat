@@ -62,6 +62,27 @@ function Invoke-Kube {
     return $LASTEXITCODE
 }
 
+function Invoke-KubeKustomize {
+    param(
+        [string]$Directory,
+        [string]$Namespace
+    )
+    $applyArgs = @("apply", "-f", "-")
+    if ($Namespace) {
+        $applyArgs += @("-n", $Namespace)
+    }
+    $rendered = & kubectl kustomize $Directory --load-restrictor LoadRestrictionsNone
+    if ($LASTEXITCODE -ne 0) {
+        return $LASTEXITCODE
+    }
+    $allArgs = $kubeArgs + $applyArgs
+    if ($DryRun) {
+        $allArgs += "--dry-run=client"
+    }
+    $rendered | & kubectl $allArgs
+    return $LASTEXITCODE
+}
+
 # 1. Kubernetes Fürt Kapcsolat Ellenőrzése
 Write-Host "`n[1/8] Kubernetes furt kapcsolat ellenorzese..." -ForegroundColor Yellow
 $prevEAP = $ErrorActionPreference
@@ -111,19 +132,43 @@ if (-not $SkipDatabases) {
     $helmDir = Join-Path $PSScriptRoot "..\..\helm\postgres-ha"
 
     # PostgreSQL HA klaszter telepítése Helm-mel (ha a helm elérhető)
+    if (-not (Get-Command helm -ErrorAction SilentlyContinue)) {
+        $wingetHelm = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\Helm.Helm*" -Filter "helm.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($wingetHelm) { $env:Path += ";$($wingetHelm.DirectoryName)" }
+    }
     $hasHelm = Get-Command helm -ErrorAction SilentlyContinue
     $pgValues = Join-Path $helmDir "values.yaml"
     if ($hasHelm -and (Test-Path $pgValues)) {
         Write-Host "PostgreSQL HA klaszter (Bitnami) ellenorzese/telepitese Helm segitsegevel..." -ForegroundColor Cyan
         if (-not $DryRun) {
-            helm repo add bitnami https://charts.bitnami.com/bitnami --force-update 2>&1 | Out-Null
-            $helmKubeArgs = if ($KubeConfig) { @("--kubeconfig", $KubeConfig) } else { @() }
-            helm upgrade --install postgres bitnami/postgresql-ha -n platform-infra -f $pgValues $helmKubeArgs 2>&1 | Out-Null
+            $prevEAP = $ErrorActionPreference
+            $ErrorActionPreference = "SilentlyContinue"
+            $helmVer = (& helm version --short 2>$null)
+            $ErrorActionPreference = $prevEAP
+            $helmArgs = @(
+                "upgrade", "--install", "postgres",
+                "oci://registry-1.docker.io/bitnamicharts/postgresql-ha",
+                "--version", "16.3.2",
+                "-n", "platform-infra",
+                "-f", $pgValues
+            )
+            if ($helmVer -match '^v?4\.') { $helmArgs += "--force-conflicts" }
+            if ($KubeConfig) { $helmArgs += @("--kubeconfig", $KubeConfig) }
+            if ($Context) { $helmArgs += @("--kube-context", $Context) }
+            & helm @helmArgs
+            if ($LASTEXITCODE -ne 0) { throw "Hiba tortent a PostgreSQL HA Helm telepitese soran!" }
             Write-Host "PostgreSQL HA Klaszter konfiguracio sikeresen atadva a Helmnek!" -ForegroundColor Green
         }
         else {
             Write-Host "[DRY-RUN] PostgreSQL HA Helm chart frissites szimulalva." -ForegroundColor Gray
         }
+    }
+
+    # PostgreSQL Primary Service & Secret (Kustomize - a postgres StatefulSet replicas: 0 marad)
+    $postgresDir = Join-Path $dbDir "postgres"
+    if (Test-Path (Join-Path $postgresDir "kustomization.yaml")) {
+        Invoke-KubeKustomize -Directory $postgresDir | Out-Null
+        Write-Host "PostgreSQL Primary Service es Secret ervenyesitve!" -ForegroundColor Green
     }
 
     # PgBouncer (Connection Pooling & Read/Write Splitting)
@@ -149,7 +194,11 @@ if (-not $SkipDatabases) {
         Write-Host "Tobb-adatbazisos (MSSQL / Oracle) kontenerek telepitese..." -ForegroundColor Cyan
         foreach ($dbType in @("mssql", "oracle")) {
             $tDir = Join-Path $dbDir $dbType
-            if (Test-Path $tDir) {
+            if (Test-Path (Join-Path $tDir "kustomization.yaml")) {
+                Invoke-KubeKustomize -Directory $tDir | Out-Null
+                Write-Host "${dbType} adatbazis komponensek (Kustomize + Secret) ervenyesitve!" -ForegroundColor Green
+            }
+            elseif (Test-Path $tDir) {
                 foreach ($f in (Get-ChildItem -Path $tDir -Filter *.yaml)) {
                     Invoke-Kube @("apply", "-f", $f.FullName) | Out-Null
                 }
@@ -202,13 +251,18 @@ else {
 Write-Host "`n[6/8] GitOps strategiak es ArgoCD applikaciok alkalmazasa..." -ForegroundColor Yellow
 $gitopsDir = Join-Path $PSScriptRoot "..\..\k8s\gitops"
 
-# Canary és Blue/Green stratégiák
-foreach ($rf in @("rollout-canary.yaml", "rollout-bluegreen.yaml")) {
-    $rPath = Join-Path $gitopsDir $rf
-    if (Test-Path $rPath) {
-        Invoke-Kube @("apply", "-f", $rPath) | Out-Null
-        Write-Host "Telepitesi strategia ervenyesitve: $rf" -ForegroundColor Green
-    }
+# Aktiv GitOps Rollout strategia kivalasztasa (egyszerre csak egy birtokolhatja a mes-backend Service-t)
+$defaultStrategy = if ($config["DEFAULT_STRATEGY"]) { $config["DEFAULT_STRATEGY"].ToLower() } else { "blue-green" }
+$activeRolloutFile = if ($defaultStrategy -match "blue") { "rollout-bluegreen.yaml" } else { "rollout-canary.yaml" }
+$inactiveRolloutName = if ($defaultStrategy -match "blue") { "mes-backend-canary" } else { "mes-backend-bluegreen" }
+
+if (-not $DryRun) {
+    Invoke-Kube @("delete", "rollout", $inactiveRolloutName, "-n", $appNamespace, "--ignore-not-found") | Out-Null
+}
+$rPath = Join-Path $gitopsDir $activeRolloutFile
+if (Test-Path $rPath) {
+    Invoke-Kube @("apply", "-f", $rPath) | Out-Null
+    Write-Host "Aktiv telepitesi strategia ervenyesitve: $activeRolloutFile ($inactiveRolloutName eltavolitva)" -ForegroundColor Green
 }
 
 # ArgoCD Application / ApplicationSet
@@ -248,9 +302,8 @@ Write-Host "`n[7/8] PaaS Portal RBAC es S3 Backup infrastruktura..." -Foreground
 # Portál K8s infrastruktúra (RBAC, PVC, Ingress, NetworkPolicy, Secret)
 $portalDir = Join-Path $PSScriptRoot "..\..\k8s\portal"
 if (Test-Path (Join-Path $portalDir "kustomization.yaml")) {
-    $dryFlag = if ($DryRun) { "--dry-run=client" } else { "" }
-    kubectl kustomize $portalDir --load-restrictor LoadRestrictionsNone | kubectl apply -f - $dryFlag
-    Write-Host "PaaS Portal K8s reteg (RBAC, PVC, Ingress, NetworkPolicy, Secret) ervenyesitve!" -ForegroundColor Green
+    Invoke-KubeKustomize -Directory $portalDir | Out-Null
+    Write-Host "PaaS Portal K8s reteg (RBAC, PVC, Ingress, NetworkPolicy, Secret, Portal) ervenyesitve!" -ForegroundColor Green
 }
 
 # Cert-Manager és Automatikus TLS Issuer-ek
@@ -269,26 +322,25 @@ if (Test-Path (Join-Path $certManagerDir "kustomization.yaml")) {
 # Reziliencia & Terhelesiteszt RBAC es JMeter forgatokonyvtar
 $resilienceScript = Join-Path $PSScriptRoot "apply-resilience.ps1"
 if (Test-Path $resilienceScript) {
-    $resilienceArgs = @()
-    if ($DryRun) { $resilienceArgs += "-DryRun" }
-    if ($KubeConfig) { $resilienceArgs += @("-KubeConfig", $KubeConfig) }
-    if ($Context) { $resilienceArgs += @("-Context", $Context) }
-    & powershell -ExecutionPolicy Bypass -File $resilienceScript @resilienceArgs
+    $resilienceParams = @{}
+    if ($DryRun) { $resilienceParams["DryRun"] = $true }
+    if ($KubeConfig) { $resilienceParams["KubeConfig"] = $KubeConfig }
+    if ($Context) { $resilienceParams["Context"] = $Context }
+    & $resilienceScript @resilienceParams
 }
 
 # MinIO S3 Backup és Alkalmazás Tárhely (Kustomize)
 if (-not $SkipStorage) {
     $backupDir = Join-Path $PSScriptRoot "..\..\k8s\storage\backup"
     $appStorageDir = Join-Path $PSScriptRoot "..\..\k8s\storage\app"
-    $dryFlag = if ($DryRun) { "--dry-run=client" } else { "" }
 
     if (Test-Path (Join-Path $backupDir "kustomization.yaml")) {
-        kubectl kustomize $backupDir --load-restrictor LoadRestrictionsNone | kubectl apply -f - $dryFlag
+        Invoke-KubeKustomize -Directory $backupDir | Out-Null
         Write-Host "S3 Backup Kustomize reteg (backup-secret, backup-config, MinIO, CronJob-ok) ervenyesitve!" -ForegroundColor Green
     }
 
     if (Test-Path (Join-Path $appStorageDir "kustomization.yaml")) {
-        kubectl kustomize $appStorageDir --load-restrictor LoadRestrictionsNone | kubectl apply -f - $dryFlag
+        Invoke-KubeKustomize -Directory $appStorageDir | Out-Null
         Write-Host "Alkalmazas S3 Tarhely Kustomize reteg (app-storage-secret, app-storage StatefulSet/PVC/Service) ervenyesitve!" -ForegroundColor Green
     }
 }
@@ -300,9 +352,15 @@ else {
 # 7.5 Alkalmazás Kustomize réteg (backend-secret, workloadok, ingress)
 $baseDir = Join-Path $PSScriptRoot "..\..\k8s\base"
 if (Test-Path (Join-Path $baseDir "kustomization.yaml")) {
-    $dryFlag = if ($DryRun) { "--dry-run=client" } else { "" }
-    kubectl kustomize $baseDir --load-restrictor LoadRestrictionsNone | kubectl apply -n $appNamespace -f - $dryFlag
-    Write-Host "Alkalmazas Kustomize reteg (backend-secret, deploymentek, ingress) ervenyesitve a '$appNamespace' nevterben!" -ForegroundColor Green
+    Invoke-KubeKustomize -Directory $baseDir -Namespace $appNamespace | Out-Null
+    $activeHpaTarget = if ($defaultStrategy -match "blue") { "mes-backend-bluegreen" } else { "mes-backend-canary" }
+    if (-not $DryRun) {
+        Invoke-Kube @("delete", "deployment", "mes-backend", "-n", $appNamespace, "--ignore-not-found") | Out-Null
+        if ($activeHpaTarget -ne "mes-backend-bluegreen") {
+            Invoke-Kube @("patch", "hpa", "mes-backend-hpa", "-n", $appNamespace, "--type=merge", "-p", "{`"spec`":{`"scaleTargetRef`":{`"apiVersion`":`"argoproj.io/v1alpha1`",`"kind`":`"Rollout`",`"name`":`"$activeHpaTarget`"}}}") | Out-Null
+        }
+    }
+    Write-Host "Alkalmazas Kustomize reteg (backend-secret, frontend, ingress; aktiv backend Rollout mellett duplikalt Deployment torolve) ervenyesitve a '$appNamespace' nevterben!" -ForegroundColor Green
 }
 
 # 8. Megfigyelhetőség (Prometheus & Grafana)

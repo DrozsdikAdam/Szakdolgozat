@@ -61,31 +61,43 @@ const normalizeEntityName = (name: string, endpoint: string): string => {
     return name || "Unknown";
 };
 
+let quarantineRefreshPromise: Promise<number> | null = null;
+
 export const refreshQuarantineCount = async (): Promise<number> => {
-    let localCount = 0;
-    try {
-        const localConflicts = await offlineDb.getConflictedActions();
-        localCount = localConflicts.length;
-    } catch {
-        localCount = 0;
+    if (quarantineRefreshPromise) {
+        return quarantineRefreshPromise;
     }
 
-    if (!navigator.onLine) {
-        state.conflictCount = localCount;
-        notifySyncStatusChange(state);
-        return state.conflictCount;
-    }
+    quarantineRefreshPromise = (async () => {
+        let localCount = 0;
+        try {
+            const localConflicts = await offlineDb.getConflictedActions();
+            localCount = localConflicts.length;
+        } catch {
+            localCount = 0;
+        }
 
-    try {
-        const serverCount = await quarantineService.getPendingConflictCount();
-        state.conflictCount = Number(serverCount || 0) + localCount;
-        notifySyncStatusChange(state);
-        return state.conflictCount;
-    } catch {
-        state.conflictCount = localCount;
-        notifySyncStatusChange(state);
-        return state.conflictCount;
-    }
+        if (!navigator.onLine) {
+            state.conflictCount = localCount;
+            notifySyncStatusChange(state);
+            return state.conflictCount;
+        }
+
+        try {
+            const serverCount = await quarantineService.getPendingConflictCount();
+            state.conflictCount = Number(serverCount || 0) + localCount;
+            notifySyncStatusChange(state);
+            return state.conflictCount;
+        } catch {
+            state.conflictCount = localCount;
+            notifySyncStatusChange(state);
+            return state.conflictCount;
+        }
+    })().finally(() => {
+        quarantineRefreshPromise = null;
+    });
+
+    return quarantineRefreshPromise;
 };
 
 export const syncOfflineQueue = async () => {

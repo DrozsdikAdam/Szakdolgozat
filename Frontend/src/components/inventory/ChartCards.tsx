@@ -1,9 +1,10 @@
-﻿import { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import type { InventoryChartProps } from "../../types/inventory/inventoryProps"
 
-export const InventoryChartCards = ({ productName, productSku, quantity, reservedQuantity, location }: InventoryChartProps) => {
+export const InventoryChartCards = ({ productName, productSku, unit, quantity, reservedQuantity, location }: InventoryChartProps) => {
 
     const [isAnimated, setIsAnimated] = useState<boolean>(false)
+    const displayUnit = unit || "db"
 
     const availableStock = Math.max(0, quantity - reservedQuantity)
     const stockPercentage = quantity > 0 ? 100 : 0
@@ -30,9 +31,9 @@ export const InventoryChartCards = ({ productName, productSku, quantity, reserve
 
             <div className="flex flex-row justify-around items-end h-40 p-4 rounded-xl bg-slate-800/40 border border-slate-700/40 relative">
                 <div className="flex flex-col items-center h-full justify-end w-1/3">
-                    <span className="text-xs font-bold text-cud-skyblue mb-1">{quantity} db</span>
+                    <span className="text-xs font-bold text-cud-skyblue mb-1">{quantity} {displayUnit}</span>
                     <div
-                        title={`Fizikai készlet: ${quantity} db`}
+                        title={`Fizikai készlet: ${quantity} ${displayUnit}`}
                         className="w-full bg-(--cud-skyblue) rounded-t-lg transition-all duration-1000 ease-out shadow-md shadow-(--cud-skyblue)/20"
                         style={{ height: isAnimated ? `${stockPercentage}%` : "0%" }}
                     />
@@ -40,9 +41,9 @@ export const InventoryChartCards = ({ productName, productSku, quantity, reserve
                 </div>
 
                 <div className="flex flex-col items-center h-full justify-end w-1/3">
-                    <span className="text-xs font-bold text-cud-orange mb-1">{reservedQuantity} db</span>
+                    <span className="text-xs font-bold text-cud-orange mb-1">{reservedQuantity} {displayUnit}</span>
                     <div
-                        title={`Lefoglalt készlet: ${reservedQuantity} db`}
+                        title={`Lefoglalt készlet: ${reservedQuantity} ${displayUnit}`}
                         className="w-full bg-(--cud-orange) rounded-t-lg transition-all duration-1000 ease-out shadow-md shadow-(--cud-orange)/20"
                         style={{ height: isAnimated ? `${reservedPercentage}%` : "0%" }}
                     />

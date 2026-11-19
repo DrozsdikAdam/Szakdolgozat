@@ -1,6 +1,5 @@
 {
-  "dashboard": {
-    "uid": "nginx-ingress-l4",
+  "uid": "nginx-ingress-l4",
     "title": "NGINX Ingress (Lokális L4 Hálózat)",
     "timezone": "browser",
     "schemaVersion": 39,
@@ -89,6 +88,4 @@
         ]
       }
     ]
-  },
-  "overwrite": true
 }

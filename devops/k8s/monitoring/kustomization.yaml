@@ -14,10 +14,12 @@ resources:
   - grafana/dashboards-provisioning-configmap.yaml
   - grafana/deployment.yaml
   - grafana/service.yaml
+  - grafana/ingress.yaml
 
 configMapGenerator:
   - name: grafana-dashboards
     files:
       - k8s-cluster.json=grafana/dashboard-cluster.json
       - nginx-ingress-l7.json=grafana/dashboard-ingress-l7.json
+      - nginx-ingress-l4.json=grafana/dashboard-ingress.json
       - postgresql-ha.json=grafana/dashboard-postgres.json

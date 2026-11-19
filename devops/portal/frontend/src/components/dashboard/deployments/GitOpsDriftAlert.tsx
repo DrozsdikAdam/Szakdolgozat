@@ -3,11 +3,10 @@ import { Button } from "../../common/Button";
 import type { GitOpsDriftAlertProps } from "../../../types/component/deployments/gitOpsDriftAlertProps";
 
 export const GitOpsDriftAlert = ({ driftReport, onSync, isSyncing = false }: GitOpsDriftAlertProps) => {
-    if (!driftReport || driftReport.syncStatus === "Synced") {
+    const outOfSyncCount = driftReport?.outOfSyncResources?.length ?? 0;
+    if (!driftReport || (driftReport.syncStatus !== "OutOfSync" && outOfSyncCount === 0)) {
         return null;
     }
-
-    const outOfSyncCount = driftReport.outOfSyncResources?.length ?? 0;
 
     return (
         <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 space-y-3 shadow-lg shadow-black/20 animate-in fade-in duration-300">

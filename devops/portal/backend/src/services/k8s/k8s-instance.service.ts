@@ -2,15 +2,17 @@ import { K8sClientService } from "./k8s-client.service.js";
 import { K8sAutoscalingService } from "./k8s-autoscaling.service.js";
 import {
     DEFAULT_APP_NAMESPACE,
-    DEFAULT_APP_NAME
+    DEFAULT_APP_NAME,
+    DEFAULT_PLATFORM_NAMESPACE
 } from "../../constants/namespace.constants.js";
+import { ENGINE_BACKUP_CRONJOBS } from "../../constants/database.constants.js";
 import {
     ARGO_ROLLOUT_CRD,
     K8S_CONTENT_TYPES,
     INSTANCE_SIZE_MAP,
     DEFAULT_INSTANCE_RESOURCES
 } from "../../constants/k8s.constants.js";
-import type { InstanceSize } from "../../types/setup.types.js";
+import type { DatabaseEngine, InstanceSize } from "../../types/setup.types.js";
 
 export class K8sInstanceService {
     private client: K8sClientService;
@@ -211,12 +213,51 @@ export class K8sInstanceService {
                 return { success: false, message: `CronJob spec nem található: ${name}` };
             }
 
+            if (Boolean(cronJob.spec.suspend) === suspended) {
+                return { success: true, message: `CronJob (${name}) állapota változatlan (suspend=${suspended})` };
+            }
+
             cronJob.spec.suspend = suspended;
             await this.client.batchApi.replaceNamespacedCronJob({ name, namespace, body: cronJob });
-            return { success: true, message: `CronJob (${name}) sikeresen felfüggesztve (${suspended})` };
+            return { success: true, message: `CronJob (${name}) sikeresen frissítve (suspend=${suspended})` };
         } catch (error) {
-            console.warn(`[K8sInstanceService] Nem sikerült felfüggeszteni a CronJobot (${name}):`, (error as any)?.message || error);
-            return { success: false, message: `Felfüggesztési figyelmeztetés: ${(error as any)?.message || error}` };
+            console.warn(`[K8sInstanceService] Nem sikerült frissíteni a CronJobot (${name}):`, (error as any)?.message || error);
+            return { success: false, message: `CronJob figyelmeztetés: ${(error as any)?.message || error}` };
         }
+    };
+
+    syncBackupCronJobsForEngine = async (
+        activeEngine: DatabaseEngine,
+        explicitEnabled?: boolean,
+        namespace = DEFAULT_PLATFORM_NAMESPACE
+    ): Promise<{ activeCronJob: string; enabled: boolean }> => {
+        const entries = Object.entries(ENGINE_BACKUP_CRONJOBS) as Array<[DatabaseEngine, string]>;
+        let shouldEnableActive = explicitEnabled;
+
+        if (shouldEnableActive === undefined) {
+            const states = await Promise.all(
+                entries.map(async ([, name]) => {
+                    try {
+                        const cj = await this.client.batchApi.readNamespacedCronJob({ name, namespace });
+                        return cj.spec?.suspend !== true;
+                    } catch {
+                        return false;
+                    }
+                })
+            );
+            shouldEnableActive = states.some(Boolean);
+        }
+
+        const activeCronJob = ENGINE_BACKUP_CRONJOBS[activeEngine] || ENGINE_BACKUP_CRONJOBS.postgres;
+
+        await Promise.all(
+            entries.map(([engine, cronJobName]) => {
+                const isTarget = engine === activeEngine;
+                const suspend = isTarget ? !shouldEnableActive : true;
+                return this.setCronJobSuspended(cronJobName, namespace, suspend).catch(() => { });
+            })
+        );
+
+        return { activeCronJob, enabled: Boolean(shouldEnableActive) };
     };
 }

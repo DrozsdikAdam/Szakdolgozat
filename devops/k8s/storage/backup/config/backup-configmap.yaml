@@ -7,8 +7,8 @@ data:
   S3_ENDPOINT: http://minio:9000
   S3_BUCKET: mes-backups
   S3_REGION: us-east-1
-  DB_HOST: postgres-postgresql-read
+  DB_HOST: postgres-postgresql-primary
   DB_PORT: "5432"
-  DB_NAME: "mesdb"
+  DB_NAME: "mes_db"
   DB_USER: "postgres"
   DB_PRIMARY_HOST: postgres-postgresql-primary

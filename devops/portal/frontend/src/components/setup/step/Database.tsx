@@ -103,15 +103,15 @@ export const DatabaseStep = ({ data, onChange, disabled }: SetupStepComponentPro
                                 {currentEngine === "postgres" && (
                                     <>
                                         <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80 flex flex-col gap-1">
-                                            <span className="text-xs font-semibold text-slate-400">Elsődleges Írási Cím (Master):</span>
+                                            <span className="text-xs font-semibold text-slate-400">Elsődleges Írási Cím (Primary):</span>
                                             <code className="text-xs font-mono text-cud-teal break-all">
-                                                postgres-master.storage.svc.cluster.local:5432
+                                                postgres-postgresql-primary.platform-infra.svc.cluster.local:5432
                                             </code>
                                         </div>
                                         <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80 flex flex-col gap-1">
-                                            <span className="text-xs font-semibold text-slate-400">Olvasási Cím (Replica HA):</span>
+                                            <span className="text-xs font-semibold text-slate-400">Kapcsolati Pooler (PgBouncer HA):</span>
                                             <code className="text-xs font-mono text-cud-skyblue break-all">
-                                                postgres-replica.storage.svc.cluster.local:5432
+                                                pgbouncer.platform-infra.svc.cluster.local:5432
                                             </code>
                                         </div>
                                     </>
@@ -128,7 +128,7 @@ export const DatabaseStep = ({ data, onChange, disabled }: SetupStepComponentPro
                                         <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80 flex flex-col gap-1">
                                             <span className="text-xs font-semibold text-slate-400">Adatbázis & Rendszergazda:</span>
                                             <span className="text-xs font-mono text-slate-300">
-                                                DB: <strong className="text-cud-skyblue">mesdb</strong> | Felhasználó: <strong className="text-cud-skyblue">sa</strong>
+                                                DB: <strong className="text-cud-skyblue">mes_db</strong> | Felhasználó: <strong className="text-cud-skyblue">sa</strong>
                                             </span>
                                         </div>
                                     </>

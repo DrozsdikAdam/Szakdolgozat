@@ -2,7 +2,7 @@ import type { AuditEntityType } from "../types/audit/AuditLog";
 
 export interface TypeDefinition {
     key: AuditEntityType,
-    label: "Felhasználó" | "Gép" | "Munka" | "Karbantartás" | "Készlet" | "Termék" | "Robogépes tervek" | "Hitelesítés",
+    label: "Felhasználó" | "Gép" | "Munka" | "Karbantartás" | "Készlet" | "Termék" | "Gyártási tervek" | "Hitelesítés",
     badgeStyle: string
 }
 
@@ -39,7 +39,7 @@ export const TYPES: Record<AuditEntityType, TypeDefinition> = {
     },
     BOM: {
         key: "BOM",
-        label: "Robogépes tervek",
+        label: "Gyártási tervek",
         badgeStyle: "badge-danger"
     },
     AUTHENTICATION: {

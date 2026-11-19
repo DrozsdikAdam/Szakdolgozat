@@ -23,6 +23,7 @@ import { LoginTab } from './view/LoginTab'
 import { ProtectedRoute } from './components/auth'
 import { useAuth } from './hooks/useAuth'
 import { ErrorState } from './components/common/ErrorState'
+import { ErrorBoundary } from './components/common/ErrorBoundary'
 import { computeDynamicServices } from './constants/serviceStatus'
 
 function ServiceLayout() {
@@ -71,7 +72,12 @@ function NotFoundPage() {
 
 function App() {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const auth = useAuth()
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior })
+  }, [pathname])
   const [services, setService] = useState<ServiceItem[]>(DEFAULT_SERVICES)
   const [isClusterHealthy, setIsClusterHealthy] = useState<boolean>(true)
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
@@ -143,7 +149,8 @@ function App() {
     <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-sans">
       <Navbar isClusterHealthy={isClusterHealthy} onRefresh={handleRefresh} isRefreshing={isRefreshing} />
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Routes>
+        <ErrorBoundary>
+          <Routes>
           <Route path="/login" element={<LoginTab />} />
 
           <Route element={<ProtectedRoute />}>
@@ -182,7 +189,8 @@ function App() {
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Route>
-        </Routes>
+          </Routes>
+        </ErrorBoundary>
       </main>
     </div>
   )
