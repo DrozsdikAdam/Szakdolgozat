@@ -33,7 +33,7 @@ export const DEFAULT_INTERNAL_CONFIGS: Record<DatabaseEngine, { host: string; po
     oracle: {
         host: "oracle.platform-infra.svc.cluster.local",
         port: 1521,
-        database: "FREEPDB1",
+        database: "mesdb",
         username: "mesuser",
         password: "mespassword"
     }

@@ -137,22 +137,20 @@ export class DatabaseMigrationService {
         }
     };
 
-    private waitForTargetReadiness = async (engine: string, config?: EngineConnectionConfig, maxAttempts = 30): Promise<boolean> => {
+    private waitForTargetReadiness = async (engine: string, config?: EngineConnectionConfig, maxAttempts = 120): Promise<boolean> => {
         const podName = engine === 'postgres' ? 'postgres-postgresql-ha-postgresql-0' : `${engine}-0`;
         const namespace = DATABASE_DEFAULTS.INFRA_NAMESPACE;
         const k8sClient = K8sClientService.getInstance();
+        const adapter = SyncAdapterFactory.getAdapter(engine);
+        const norm = adapter.normalizeConfig(config);
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 const pod = await k8sClient.coreApi.readNamespacedPod({ name: podName, namespace });
                 const isReady = pod?.status?.phase === 'Running' && (pod?.status?.containerStatuses?.every(c => c.ready) ?? false);
                 if (isReady) {
-                    const adapter = SyncAdapterFactory.getAdapter(engine);
-                    const norm = adapter.normalizeConfig(config);
-                    const tables = await adapter.discoverTables(norm);
-                    if (tables && Array.isArray(tables)) {
-                        return true;
-                    }
+                    await adapter.ping(norm);
+                    return true;
                 }
             } catch { }
             await delay(2000);
@@ -228,7 +226,10 @@ export class DatabaseMigrationService {
         await this.step(jobId, 'SCHEMA_INIT', MIGRATION_CONSTANTS.SCHEMA_PROGRESS, `Cél adatbázis (${dto.targetEngine.toUpperCase()}) provisioning és készenlét ellenőrzése...`, 1000);
         if (dto.targetConfig.mode === 'internal') {
             await this.k8sService.deployDatabaseEngine(dto.targetEngine, 'internal').catch(() => { });
-            await this.waitForTargetReadiness(dto.targetEngine, dto.targetConfig);
+            const ready = await this.waitForTargetReadiness(dto.targetEngine, dto.targetConfig);
+            if (!ready) {
+                throw new Error(`A cél adatbázis (${dto.targetEngine.toUpperCase()}) nem vált elérhetővé a várakozási időn belül.`);
+            }
         }
 
         const discoveredTables = await this.dataSyncService.discoverSourceTables(dto.sourceEngine, sourceConfigWithAuth);

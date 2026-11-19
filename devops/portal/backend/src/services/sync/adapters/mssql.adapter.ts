@@ -32,7 +32,7 @@ export class MssqlSyncAdapter extends BaseSyncAdapter {
         const { host, port } = this.resolveTcpEndpoint(conf, 1433, 31433);
         const user = conf.username || 'sa';
         const pass = conf.password || 'MesStrongPass123!';
-        const db = conf.database || 'mesdb';
+        const db = conf.database || 'mes_db';
 
         const pool = new sql.ConnectionPool({
             user,
@@ -48,6 +48,15 @@ export class MssqlSyncAdapter extends BaseSyncAdapter {
             }
         });
         return await pool.connect();
+    }
+
+    public async ping(config: EngineConnectionConfig): Promise<void> {
+        const pool = await this.getPool(config);
+        try {
+            await pool.request().query('SELECT 1');
+        } finally {
+            await pool.close().catch(() => { });
+        }
     }
 
     public async discoverForeignKeys(config: EngineConnectionConfig): Promise<TableForeignKeyDependency[]> {
@@ -130,7 +139,7 @@ export class MssqlSyncAdapter extends BaseSyncAdapter {
         if (dt.includes('int') || dt.includes('smallint')) return 'BIGINT';
         if (dt.includes('bool') || dt.includes('bit')) return 'BIT';
         if (dt.includes('date') || dt.includes('time')) return 'DATETIME2';
-        if (dt.includes('decimal') || dt.includes('numeric') || dt.includes('float') || dt.includes('real')) return 'DECIMAL(19,4)';
+        if (dt.includes('decimal') || dt.includes('numeric') || dt.includes('float') || dt.includes('real') || dt.includes('double') || dt.includes('precision')) return 'DECIMAL(19,4)';
         if (c.maxLength && c.maxLength > 0 && c.maxLength < 1000) return `NVARCHAR(${c.maxLength})`;
         return 'NVARCHAR(MAX)';
     }
@@ -193,7 +202,7 @@ export class MssqlSyncAdapter extends BaseSyncAdapter {
 
         const rowKeys = Object.keys(firstRow).map(k => k.toLowerCase());
         const colNames = rowKeys.map(c => `[${c}]`).join(', ');
-        const batchSize = 100;
+        const batchSize = 50;
 
         try {
             await pool.request().query(`ALTER TABLE [${tableName}] NOCHECK CONSTRAINT ALL; DELETE FROM [${tableName}];`);

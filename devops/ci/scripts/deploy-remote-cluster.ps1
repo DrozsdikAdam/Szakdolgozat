@@ -132,17 +132,30 @@ if (-not $SkipDatabases) {
     $helmDir = Join-Path $PSScriptRoot "..\..\helm\postgres-ha"
 
     # PostgreSQL HA klaszter telepítése Helm-mel (ha a helm elérhető)
+    if (-not (Get-Command helm -ErrorAction SilentlyContinue)) {
+        $wingetHelm = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\Helm.Helm*" -Filter "helm.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($wingetHelm) { $env:Path += ";$($wingetHelm.DirectoryName)" }
+    }
     $hasHelm = Get-Command helm -ErrorAction SilentlyContinue
     $pgValues = Join-Path $helmDir "values.yaml"
     if ($hasHelm -and (Test-Path $pgValues)) {
         Write-Host "PostgreSQL HA klaszter (Bitnami) ellenorzese/telepitese Helm segitsegevel..." -ForegroundColor Cyan
         if (-not $DryRun) {
-            $helmKubeArgs = @()
-            if ($KubeConfig) { $helmKubeArgs += @("--kubeconfig", $KubeConfig) }
-            if ($Context) { $helmKubeArgs += @("--kube-context", $Context) }
+            $prevEAP = $ErrorActionPreference
+            $ErrorActionPreference = "SilentlyContinue"
             $helmVer = (& helm version --short 2>$null)
-            $helmForceArgs = if ($helmVer -match '^v?4\.') { @("--force-conflicts") } else { @() }
-            helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql-ha --version 16.3.2 -n platform-infra -f $pgValues @helmForceArgs @helmKubeArgs
+            $ErrorActionPreference = $prevEAP
+            $helmArgs = @(
+                "upgrade", "--install", "postgres",
+                "oci://registry-1.docker.io/bitnamicharts/postgresql-ha",
+                "--version", "16.3.2",
+                "-n", "platform-infra",
+                "-f", $pgValues
+            )
+            if ($helmVer -match '^v?4\.') { $helmArgs += "--force-conflicts" }
+            if ($KubeConfig) { $helmArgs += @("--kubeconfig", $KubeConfig) }
+            if ($Context) { $helmArgs += @("--kube-context", $Context) }
+            & helm @helmArgs
             if ($LASTEXITCODE -ne 0) { throw "Hiba tortent a PostgreSQL HA Helm telepitese soran!" }
             Write-Host "PostgreSQL HA Klaszter konfiguracio sikeresen atadva a Helmnek!" -ForegroundColor Green
         }
@@ -374,5 +387,5 @@ else {
 Write-Host "==========================================================" -ForegroundColor Green
 
 Write-Host "`nAktiv platform komponensek a furtben:" -ForegroundColor Cyan
-& kubectl $kubeArgs get deployments,statefulsets -n platform-infra
+& kubectl $kubeArgs get deployments, statefulsets -n platform-infra
 & kubectl $kubeArgs get deployments -n argo-rollouts

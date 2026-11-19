@@ -1,4 +1,8 @@
-// Ez a teszt mesterséges intelligencia segítségével jön létre
+/*
+================================================================
+Ez a fájl mesterséges intelligencia segítségével íródott. 
+================================================================
+*/
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { requestPasswordReset, resetPassword, getMe } from "../../services/authService";
 import { apiFetch } from "../../utils/apiFetch";

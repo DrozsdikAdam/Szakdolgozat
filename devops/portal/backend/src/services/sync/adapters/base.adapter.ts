@@ -33,8 +33,9 @@ export abstract class BaseSyncAdapter implements DatabaseSyncAdapter {
             return config || {};
         }
 
+        const isStalePgHost = config?.host && (config.host.includes('postgres-master') || config.host.includes('postgres-postgresql-primary'));
         return {
-            host: config?.host && !config.host.includes('postgres-master') ? config.host : DEFAULT_INTERNAL_HOSTS[engineKey],
+            host: config?.host && !isStalePgHost ? config.host : DEFAULT_INTERNAL_HOSTS[engineKey],
             port: config?.port || (this.engine === 'postgres' ? 5432 : this.engine === 'mssql' ? 1433 : 1521),
             database: defaults.database,
             username: defaults.username,
@@ -155,6 +156,7 @@ export abstract class BaseSyncAdapter implements DatabaseSyncAdapter {
         });
     }
 
+    abstract ping(config: EngineConnectionConfig): Promise<void>;
     abstract discoverTables(config: EngineConnectionConfig): Promise<string[]>;
     abstract discoverColumns(tableName: string, config: EngineConnectionConfig): Promise<ColumnDefinition[]>;
     abstract discoverForeignKeys(config: EngineConnectionConfig): Promise<TableForeignKeyDependency[]>;

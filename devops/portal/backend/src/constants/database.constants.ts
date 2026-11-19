@@ -14,7 +14,7 @@ export const ENGINE_BACKUP_CRONJOBS: Record<DatabaseEngine, string> = {
 };
 
 export const DEFAULT_INTERNAL_HOSTS: Record<DatabaseEngine, string> = {
-    postgres: 'postgres-postgresql-primary.platform-infra.svc.cluster.local',
+    postgres: 'postgres-postgresql-ha-postgresql.platform-infra.svc.cluster.local',
     mssql: 'mssql.platform-infra.svc.cluster.local',
     oracle: 'oracle.platform-infra.svc.cluster.local'
 };
@@ -26,12 +26,12 @@ export const DEFAULT_INTERNAL_CREDENTIALS: Record<DatabaseEngine, { database: st
         password: 'VnUH22Refo'
     },
     mssql: {
-        database: 'mesdb',
+        database: 'mes_db',
         username: 'sa',
         password: 'MesStrongPass123!'
     },
     oracle: {
-        database: 'FREEPDB1',
+        database: 'mesdb',
         username: 'mesuser',
         password: 'mespassword'
     }
@@ -75,7 +75,7 @@ export const MIGRATION_CONSTANTS = {
 export const FALLBACK_DATABASE_OVERVIEW: DatabaseOverviewDto = {
     engine: 'postgres',
     mode: 'internal',
-    host: 'postgres-postgresql-primary.platform-infra.svc.cluster.local',
+    host: 'postgres-postgresql-ha-postgresql.platform-infra.svc.cluster.local',
     port: 5432,
     database: 'mes_db',
     username: 'mes_user',

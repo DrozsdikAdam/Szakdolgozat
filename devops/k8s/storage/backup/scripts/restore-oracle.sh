@@ -16,7 +16,7 @@ DB_USER="${DB_USER:-$APP_USER}"
 DB_USER="${DB_USER:-system}"
 DB_PASSWORD="${DB_PASSWORD:-$ORACLE_PASSWORD}"
 DB_NAME="${DB_NAME:-$ORACLE_DATABASE}"
-DB_NAME="${DB_NAME:-FREEPDB1}"
+DB_NAME="${DB_NAME:-mesdb}"
 
 echo "[Oracle Restore] Decompressing $TARGET_FILE..."
 gunzip -c "$TARGET_FILE" > "$RESTORE_DMP"

@@ -1,3 +1,8 @@
+/*
+================================================================
+Ez a fájl mesterséges intelligencia segítségével íródott. 
+================================================================
+*/
 package hu.mes.backend;
 
 import org.junit.jupiter.api.Test;

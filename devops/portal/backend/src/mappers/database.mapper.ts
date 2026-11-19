@@ -25,7 +25,10 @@ export class DatabaseMapper {
         const engine = (configMap.get('db_engine') as DatabaseEngine) || DATABASE_DEFAULTS.ENGINE;
         const mode = (configMap.get('db_mode') as DatabaseMode) || DATABASE_DEFAULTS.MODE;
         const defaultHost = mode === 'internal' ? DEFAULT_INTERNAL_HOSTS[engine] : 'localhost';
-        const host = configMap.get('db_host') || defaultHost;
+        const rawHost = configMap.get('db_host') || defaultHost;
+        const host = (engine === 'postgres' && (rawHost.includes('postgres-master') || rawHost.includes('postgres-postgresql-primary')))
+            ? DEFAULT_INTERNAL_HOSTS.postgres
+            : rawHost;
         const defaultPort = DEFAULT_DB_PORTS[engine] || 5432;
         const port = parseInt(configMap.get('db_port') || String(defaultPort), 10);
         const database = configMap.get('db_name') || DATABASE_DEFAULTS.DB_NAME;

@@ -275,29 +275,64 @@ export class K8sConfigService {
             } catch (err) {
                 try {
                     const customApi = this.client.customObjectsApi as any;
-                    await customApi.patchNamespacedCustomObject({
+                    const roRes = await customApi.getNamespacedCustomObject({
                         group: ARGO_ROLLOUT_CRD.GROUP,
                         version: ARGO_ROLLOUT_CRD.VERSION,
                         namespace,
                         plural: ARGO_ROLLOUT_CRD.PLURAL,
-                        name,
-                        body: {
-                            spec: {
-                                template: {
-                                    metadata: {
-                                        annotations: {
-                                            'kubectl.kubernetes.io/restartedAt': restartedAt
-                                        }
-                                    }
+                        name
+                    });
+                    const ro = roRes?.body || roRes;
+                    if (ro?.spec) {
+                        ro.spec.restartAt = restartedAt;
+                        await customApi.replaceNamespacedCustomObject({
+                            group: ARGO_ROLLOUT_CRD.GROUP,
+                            version: ARGO_ROLLOUT_CRD.VERSION,
+                            namespace,
+                            plural: ARGO_ROLLOUT_CRD.PLURAL,
+                            name,
+                            body: ro
+                        });
+
+                        const appLabel = ro.spec?.selector?.matchLabels?.app;
+                        if (appLabel) {
+                            const pods = await this.client.coreApi.listNamespacedPod({
+                                namespace,
+                                labelSelector: `app=${appLabel}`
+                            });
+                            for (const pod of pods.items || []) {
+                                if (pod.metadata?.name) {
+                                    await this.client.coreApi.deleteNamespacedPod({
+                                        name: pod.metadata.name,
+                                        namespace
+                                    }).catch(() => { });
                                 }
                             }
                         }
-                    }, { headers: { 'content-type': K8S_CONTENT_TYPES.MERGE_PATCH } });
-                    successNames.push(name);
+
+                        successNames.push(name);
+                    }
                 } catch {
                     console.warn(`[K8sConfigService] Nem sikerült újraindítani a '${name}' workloadot (deployment vagy rollout):`, (err as any)?.message || err);
                 }
             }
+        }
+
+        if (workloadNames.some(n => n.startsWith('mes-backend'))) {
+            try {
+                const pods = await this.client.coreApi.listNamespacedPod({
+                    namespace,
+                    labelSelector: 'app=mes-backend'
+                });
+                for (const pod of pods.items || []) {
+                    if (pod.metadata?.name) {
+                        await this.client.coreApi.deleteNamespacedPod({
+                            name: pod.metadata.name,
+                            namespace
+                        }).catch(() => { });
+                    }
+                }
+            } catch { }
         }
 
         return {

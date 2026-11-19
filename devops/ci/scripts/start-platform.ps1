@@ -84,12 +84,15 @@ else {
 
 # 1.5 DBaaS & Adatbázis podok öngyógyítása (beragadt PID fájlok automatikus feloldása gép újraindulás után)
 if (-not $DryRun -and $k8sOk) {
-    $crashedPgPods = & kubectl get pods -n platform-infra -l app.kubernetes.io/name=postgresql-ha --no-headers 2>$null | Where-Object { $_ -match "CrashLoopBackOff|Error" }
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = "SilentlyContinue"
+    $crashedPgPods = & kubectl get pods -n platform-infra -l app.kubernetes.io/name=postgresql-ha --no-headers --ignore-not-found 2>$null | Where-Object { $_ -match "CrashLoopBackOff|Error" }
     if ($crashedPgPods) {
         Write-Host "Beragadt PostgreSQL podok eszlelve, automatikus helyreallitas..." -ForegroundColor Yellow
         & kubectl delete pod -n platform-infra -l app.kubernetes.io/name=postgresql-ha --force --grace-period=0 2>$null | Out-Null
         Write-Host "PostgreSQL podok automatikusan ujrainditva tiszta ideiglenes taroloval!" -ForegroundColor Green
     }
+    $ErrorActionPreference = $prevEAP
 }
 
 
@@ -203,10 +206,11 @@ Write-Host "   SIKER: A MES PAAS PLATFORM TELJES EGESZEBEN ELINDULT!   " -Foregr
 Write-Host "==========================================================" -ForegroundColor Green
 
 Write-Host "`nSzolgaltatasok es Vezerlo Vegpontok:" -ForegroundColor Cyan
-Write-Host "  * MES Portal (UI):        http://localhost:8088" -ForegroundColor Yellow
-Write-Host "  * MES Portal API:         http://localhost:3002" -ForegroundColor Yellow
+Write-Host "  * PaaS DevOps Portal (UI):http://portal.localhost (vagy http://localhost:8088)" -ForegroundColor Yellow
+Write-Host "  * PaaS DevOps Portal API: http://localhost:3002" -ForegroundColor Yellow
+Write-Host "  * MES Alkalmazas (UI):    http://mes.localhost (vagy http://localhost:3005)" -ForegroundColor Yellow
 Write-Host "  * Prometheus Telemetria:  http://localhost:9090 (Online)" -ForegroundColor Yellow
-Write-Host "  * Grafana Dashboardok:    http://localhost:3001 (Online - admin / admin)" -ForegroundColor Yellow
+Write-Host "  * Grafana Dashboardok:    http://grafana.localhost (vagy http://localhost:3001 - admin / admin)" -ForegroundColor Yellow
 Write-Host "  * ArgoCD GitOps Dashboard:https://localhost:8080 (Online - admin / titok)" -ForegroundColor Yellow
 
 Write-Host "`nHasznos vezerlo parancsok a fejleszteshez:" -ForegroundColor Cyan

@@ -48,7 +48,7 @@ data:
     DB_PORT="${DB_PORT:-1433}"
     DB_USER="${DB_USER:-sa}"
     DB_PASSWORD="${DB_PASSWORD:-$MSSQL_SA_PASSWORD}"
-    DB_NAME="${DB_NAME:-mesdb}"
+    DB_NAME="${DB_NAME:-mes_db}"
 
     echo "[MS SQL Backup] Starting native backup for ${DB_HOST},${DB_PORT}/${DB_NAME}..."
 
@@ -88,7 +88,7 @@ data:
     DB_USER="${DB_USER:-system}"
     DB_PASSWORD="${DB_PASSWORD:-$ORACLE_PASSWORD}"
     DB_NAME="${DB_NAME:-$ORACLE_DATABASE}"
-    DB_NAME="${DB_NAME:-FREEPDB1}"
+    DB_NAME="${DB_NAME:-mesdb}"
 
     echo "[Oracle Backup] Exporting schema/database from ${DB_HOST}:${DB_PORT}/${DB_NAME}..."
 
@@ -279,7 +279,7 @@ data:
     DB_PORT="${DB_PORT:-1433}"
     DB_USER="${DB_USER:-sa}"
     DB_PASSWORD="${DB_PASSWORD:-$MSSQL_SA_PASSWORD}"
-    DB_NAME="${DB_NAME:-mesdb}"
+    DB_NAME="${DB_NAME:-mes_db}"
 
     echo "[MS SQL Restore] Decompressing $TARGET_FILE..."
     gunzip -c "$TARGET_FILE" > "$RESTORE_BAK"
@@ -312,7 +312,7 @@ data:
     DB_USER="${DB_USER:-system}"
     DB_PASSWORD="${DB_PASSWORD:-$ORACLE_PASSWORD}"
     DB_NAME="${DB_NAME:-$ORACLE_DATABASE}"
-    DB_NAME="${DB_NAME:-FREEPDB1}"
+    DB_NAME="${DB_NAME:-mesdb}"
 
     echo "[Oracle Restore] Decompressing $TARGET_FILE..."
     gunzip -c "$TARGET_FILE" > "$RESTORE_DMP"
