@@ -78,10 +78,14 @@ public class WorkOrderService {
 				.assignedUser(user)
 				.build();
 
-		workOrderRepository.save(workOrder);
+		WorkOrder savedWorkOrder = workOrderRepository.save(workOrder);
+		if (savedWorkOrder == null) {
+			savedWorkOrder = workOrder;
+		}
+		workOrderRepository.flush();
 		auditLogService.log("PLANNER", null, AuditAction.CREATE, AuditEntityType.WORKORDER, orderNumber,
-				"Új rendelés létrehozva: " + workOrder.getTargetQuantity() + " db " + product.getName());
-		return workOrderMapper.convertToResponse(workOrder);
+				"Új rendelés létrehozva: " + savedWorkOrder.getTargetQuantity() + " db " + product.getName());
+		return workOrderMapper.convertToResponse(savedWorkOrder);
 	}
 
 	public WorkOrderResponse updateWorkOrderStatus(UUID id, WorkOrderStatusUpdateRequest request) {
@@ -105,24 +109,23 @@ public class WorkOrderService {
 		}
 
 		if (newStatus.equals(WorkOrderStatus.COMPLETED)) {
-			BigDecimal scrap = request.getScrapQuantity() != null ? request.getScrapQuantity()
-					: BigDecimal.ZERO;
-			BigDecimal goodProduced = request.getProducedQuantity().subtract(scrap);
-
-			if (goodProduced.compareTo(BigDecimal.ZERO) < 0)
-				goodProduced = BigDecimal.ZERO;
 			bomInventoryService.consumeComponentStock(workOrder.getProduct(), workOrder.getTargetQuantity());
-			InventoryUpdateRequest stockUpdate = new InventoryUpdateRequest(
-					workOrder.getProduct().getId(),
-					goodProduced,
-					null);
 
-			notificationService.send("✅ Gyártási rendelés lezárva: " + workOrder.getOrderNumber(),
-					"A késztermékek (" + goodProduced + " db) bevételezve a raktárba.",
+			BigDecimal producedQty = (request.getProducedQuantity() != null
+					&& request.getProducedQuantity().compareTo(BigDecimal.ZERO) > 0)
+							? request.getProducedQuantity()
+							: workOrder.getTargetQuantity();
+
+			inventoryService.adjustStock(new InventoryUpdateRequest(
+					workOrder.getProduct().getId(),
+					producedQty,
+					null));
+
+			notificationService.send("✅ Gyártás befejezve: " + workOrder.getOrderNumber(),
+					"A termék (" + producedQty + " db) sikeresen legyártva és raktárra vételezve.",
 					NotificationType.SUCCESS,
 					"/workorder");
 
-			inventoryService.adjustStock(stockUpdate);
 			workOrder.setEndDate(LocalDateTime.now());
 		}
 

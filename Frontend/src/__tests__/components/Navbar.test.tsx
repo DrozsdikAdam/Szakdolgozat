@@ -1,4 +1,8 @@
-// Ez a teszt mesterséges intelligencia segítségével jön létre
+/*
+================================================================
+Ez a fájl mesterséges intelligencia segítségével íródott. 
+================================================================
+*/
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -59,7 +63,8 @@ describe("Navbar component", () => {
             conflictCount: 0,
             current: 0,
             total: 0,
-            syncNow: vi.fn()
+            syncNow: vi.fn(),
+            refreshCount: vi.fn().mockResolvedValue(0)
         });
     });
 
@@ -181,7 +186,8 @@ describe("Navbar component", () => {
             conflictCount: 0,
             current: 2,
             total: 5,
-            syncNow: vi.fn()
+            syncNow: vi.fn(),
+            refreshCount: vi.fn().mockResolvedValue(0)
         });
 
         render(

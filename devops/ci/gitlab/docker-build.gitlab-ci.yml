@@ -1,0 +1,14 @@
+build-and-push:
+  stage: build
+  image: docker:27
+  services:
+    - docker:27-dind
+  needs:
+    - load-env
+    - test-backend
+    - test-frontend
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker build -t ${BACKEND_IMAGE:-mes-backend}:latest -t ${BACKEND_IMAGE:-mes-backend}:${CI_COMMIT_SHA} ./Backend
+    - docker build -t ${FRONTEND_IMAGE:-mes-frontend}:latest -t ${FRONTEND_IMAGE:-mes-frontend}:${CI_COMMIT_SHA} ./Frontend

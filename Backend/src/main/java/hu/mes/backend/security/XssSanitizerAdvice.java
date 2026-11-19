@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
@@ -20,16 +21,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import hu.mes.backend.models.enums.AuditAction;
 import hu.mes.backend.models.enums.AuditEntityType;
 import hu.mes.backend.services.AuditLogService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @ControllerAdvice
-@RequiredArgsConstructor
 public class XssSanitizerAdvice extends RequestBodyAdviceAdapter {
 
     private final AuditLogService auditLogService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+
+    public XssSanitizerAdvice(AuditLogService auditLogService, ObjectProvider<ObjectMapper> objectMapperProvider) {
+        this.auditLogService = auditLogService;
+        this.objectMapper = objectMapperProvider.getIfAvailable(() -> new ObjectMapper().findAndRegisterModules());
+    }
 
     @Override
     public boolean supports(MethodParameter methodParameter, Type targetType,

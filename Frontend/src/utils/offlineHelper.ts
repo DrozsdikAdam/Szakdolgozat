@@ -1,8 +1,17 @@
 import type { Table } from "dexie";
 import type { PagedResponse } from "../types/common/PagedResponse";
 import type { OfflineAction } from "../types/offline/offline";
-import { apiFetch } from "./apiFetch";
+import { apiFetch, ApiError } from "./apiFetch";
 import { offlineDb } from "../services/offlineDb";
+
+export const isNetworkError = (error: unknown): boolean => {
+    if (!navigator.onLine) return true;
+    if (error instanceof ApiError) return false;
+    if (typeof error === "object" && error !== null && "status" in error) return false;
+    if (error instanceof TypeError) return true;
+    if (error instanceof DOMException && error.name === "AbortError") return true;
+    return false;
+};
 
 export const createOfflinePagedResponse = <T>(
     items: T[],
@@ -43,7 +52,7 @@ export const fetchPagedWithOfflineCache = async <TResponse, TCached>(
         }
         return response;
     } catch (error) {
-        if (!navigator.onLine || (error instanceof TypeError && error.message.includes("fetch"))) {
+        if (isNetworkError(error)) {
             const cached = await table.toArray();
             return createOfflinePagedResponse(cached.map(mapToResponse));
         }
@@ -76,8 +85,10 @@ export const fetchItemWithOfflineCache = async <TResponse, TCached>(
         }
         return response;
     } catch (error) {
-        const cached = await getCached();
-        if (cached) return mapToResponse(cached);
+        if (isNetworkError(error)) {
+            const cached = await getCached();
+            if (cached) return mapToResponse(cached);
+        }
         throw error;
     }
 };
@@ -112,7 +123,11 @@ export const mutateWithOfflineQueue = async <TResponse>(
         }
         return response;
     } catch (error) {
-        await offlineDb.saveOfflineAction(url, method, payload, actionType, entityName);
-        return await applyOptimistic();
+        if (isNetworkError(error)) {
+            await offlineDb.saveOfflineAction(url, method, payload, actionType, entityName);
+            return await applyOptimistic();
+        }
+        throw error;
     }
 };
+

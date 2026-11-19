@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: network-proxy-config
+  namespace: platform-infra
+  labels:
+    app: resilience-proxy
+    app.kubernetes.io/part-of: paas-resilience
+data:
+  nginx.conf: |
+    server {
+        listen 8080;
+        server_name _;
+
+        # 1. Kubernetes Health Check
+        location /healthz {
+            access_log off;
+            return 200 "OK\n";
+            add_header Content-Type text/plain;
+        }
+
+        # 2. Normál átjáró (Transzparens proxy / válasz)
+        location /proxy/normal/ {
+            default_type application/json;
+            return 200 '{"status":"ok","mode":"normal","statusCode":200,"message":"Sikeres normál proxy átvitel","timestamp":"$time_iso8601"}\n';
+        }
+
+        # 3. Mesterséges hálózati lassítás / késleltetés
+        location /proxy/latency/ {
+            default_type application/json;
+            limit_rate 30;
+            return 200 '{"status":"ok","mode":"latency","statusCode":200,"message":"Sikeres késleltetett proxy átvitel","timestamp":"$time_iso8601","data":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}\n';
+        }
+
+        # 4. Hiba-injektálás: HTTP 500 (Circuit Breaker teszteléshez)
+        location /proxy/fault/ {
+            default_type application/json;
+            return 500 '{"error":"Injected Chaos Fault","status":500,"type":"chaos-500","timestamp":"$time_iso8601"}\n';
+        }
+
+        # 5. Kiesés-injektálás: HTTP 503 (Service Unavailable)
+        location /proxy/unavailable/ {
+            default_type application/json;
+            return 503 '{"error":"Service Temporarily Unavailable (Chaos Test)","status":503,"type":"chaos-503","timestamp":"$time_iso8601"}\n';
+        }
+    }

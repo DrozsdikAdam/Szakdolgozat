@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: paas-portal-backend
+  namespace: platform-infra
+  labels:
+    app: paas-portal-backend
+    app.kubernetes.io/part-of: paas-resilience
+spec:
+  type: ClusterIP
+  selector:
+    app: paas-portal-backend
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+      protocol: TCP

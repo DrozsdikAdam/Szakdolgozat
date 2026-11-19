@@ -1,4 +1,8 @@
-// Ez a teszt mesterséges intelligencia segítségével jön létre
+/*
+================================================================
+Ez a fájl mesterséges intelligencia segítségével íródott. 
+================================================================
+*/
 import { describe, it, expect } from 'vitest';
 import {
     validateUsername,

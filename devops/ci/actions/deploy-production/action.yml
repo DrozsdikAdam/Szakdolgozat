@@ -1,0 +1,27 @@
+name: deploy-production
+description: "Deploys application workloads to Kubernetes production overlay with zero-downtime strategy"
+
+inputs:
+  image-tag:
+    description: "Docker image tag to deploy"
+    required: false
+    default: "latest"
+  strategy:
+    description: "Deployment rollout strategy (canary or blue-green)"
+    required: false
+    default: "canary"
+  timeout:
+    description: "Maximum timeout for rollout completion (e.g. 300s)"
+    required: false
+    default: "300s"
+
+runs:
+  using: composite
+  steps:
+    - name: "Set up Kustomize"
+      uses: imranismail/setup-kustomize@v3
+
+    - name: "Execute Zero-Downtime Rollout"
+      shell: bash
+      run: |
+        bash devops/ci/scripts/deploy-rollout.sh "${{ inputs.strategy }}" "${{ inputs.image-tag }}" "${{ inputs.timeout }}"

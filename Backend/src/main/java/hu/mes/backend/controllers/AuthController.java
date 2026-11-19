@@ -87,7 +87,7 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cleanAccess.toString())
                 .header(HttpHeaders.SET_COOKIE, cleanRefresh.toString())
-                .body("Sikeres kijelentkezés");
+                .body(Map.of("message", "Sikeres kijelentkezés"));
     }
 
     @PostMapping("/refresh")
@@ -98,9 +98,9 @@ public class AuthController {
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, newAccessCookie.toString())
-                    .body("Token sikeresen frissítve");
+                    .body(Map.of("message", "Token sikeresen frissítve"));
         } catch (Exception e) {
-            return ResponseEntity.status(401).body("Hiba a token frissítésekor: " + e.getMessage());
+            return ResponseEntity.status(401).body(Map.of("error", "Hiba a token frissítésekor: " + e.getMessage()));
         }
     }
 

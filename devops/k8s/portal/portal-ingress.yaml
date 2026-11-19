@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: paas-portal-ingress
+  namespace: platform-infra
+  labels:
+    app.kubernetes.io/name: paas-portal
+    app.kubernetes.io/part-of: paas-platform
+  annotations:
+    cert-manager.io/cluster-issuer: "selfsigned-issuer"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - portal.localhost
+      secretName: paas-portal-tls
+  rules:
+    - host: portal.localhost
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: portal-frontend
+                port:
+                  number: 80

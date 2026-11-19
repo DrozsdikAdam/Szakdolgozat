@@ -5,6 +5,18 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet id="006-create-audit-and-notifications" author="mes-admin">
+        <validCheckSum>any</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="audit_logs" />
+            </not>
+        </preConditions>
+        <comment>Legacy changeset kept for backward compatibility with existing databases</comment>
+    </changeSet>
+
+    <!-- Resilient audit_logs table creation with ANSI-compliant created_at column -->
+    <changeSet id="006-create-audit-logs" author="mes-admin">
+        <validCheckSum>any</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="audit_logs" />
@@ -28,10 +40,20 @@
             <column name="entity_id" type="VARCHAR(255)" />
             <column name="ip_address" type="VARCHAR(100)" />
             <column name="details" type="VARCHAR(2000)" />
-            <column name="timestamp" type="TIMESTAMP">
+            <column name="created_at" type="TIMESTAMP">
                 <constraints nullable="false" />
             </column>
         </createTable>
+    </changeSet>
+
+    <!-- Resilient notifications table creation -->
+    <changeSet id="006-create-notifications" author="mes-admin">
+        <validCheckSum>any</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="notifications" />
+            </not>
+        </preConditions>
 
         <createTable tableName="notifications">
             <column name="id" type="UUID">
@@ -57,7 +79,6 @@
                 <constraints nullable="false" />
             </column>
         </createTable>
-
     </changeSet>
 
 </databaseChangeLog>

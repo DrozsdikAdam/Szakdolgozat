@@ -6,18 +6,18 @@ export const usePermission = () => {
     const { user } = useAuth();
 
     const hasRole = (role: UserRole): boolean => {
-        if (!role || !user) return false;
-        return user.roles.includes(role)
+        if (!role || !user || !Array.isArray(user.roles)) return false;
+        return user.roles.includes(role);
     }
 
     const hasAnyRole = (roles: UserRole[]): boolean => {
-        if (!roles || !user) return false;
-        return roles.some((role) => hasRole(role))
+        if (!roles || !user || !Array.isArray(user.roles)) return false;
+        return roles.some((role) => hasRole(role));
     }
 
     const hasAllRoles = (roles: UserRole[]): boolean => {
-        if (!roles || !user) return false;
-        return roles.every((role) => hasRole(role))
+        if (!roles || !user || !Array.isArray(user.roles)) return false;
+        return roles.every((role) => hasRole(role));
     }
 
     return {

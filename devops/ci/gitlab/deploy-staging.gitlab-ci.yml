@@ -1,0 +1,20 @@
+deploy-staging:
+  stage: deploy-staging
+  image: line/kubectl-kustomize:latest
+  needs:
+    - load-env
+    - build-and-push
+    - security-scan
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH =~ /^develop.*/i'
+  environment:
+    name: staging
+    url: $STAGING_URL
+  script:
+    - echo "Staging telepítés frissítése Kustomize segítségével..."
+    - '[ -f devops/platform.env ] || cp devops/platform.env.example devops/platform.env || cp devops/ci/pipeline.env devops/platform.env'
+    - cd devops/k8s/overlays/staging
+    - kustomize edit set image mes-backend=${BACKEND_IMAGE:-mes-backend}:${CI_COMMIT_SHA} || true
+    - kustomize edit set image mes-frontend=${FRONTEND_IMAGE:-mes-frontend}:${CI_COMMIT_SHA} || true
+    - kustomize build . --load-restrictor LoadRestrictionsNone > /dev/null
+    - echo "Staging sikeresen frissítve a(z) ${CI_COMMIT_SHA} verzióra!"

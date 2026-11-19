@@ -1,0 +1,32 @@
+import type { ReactNode } from "react"
+
+export type ServiceId = 'cluster'
+    | 'traffic'
+    | 'autoscaling'
+    | 'vpa'
+    | 'backup'
+    | 'storage'
+    | 'features'
+    | 'audit'
+    | 'setup'
+    | 'events'
+    | 'configs'
+    | 'health'
+    | 'deployments'
+    | 'telemetry'
+    | 'security'
+    | 'resilience'
+    | 'database'
+
+export interface ServiceItem {
+    id: ServiceId
+    label: string
+    description: string
+    iconName: ReactNode
+    badgeText: string
+    badgeVariant: 'teal' | 'vermillon' | 'orange' | 'skyblue' | 'purple'
+    accentColor: string
+    isConfigured: boolean
+    statusLabel?: string
+    statusVariant?: 'teal' | 'orange' | 'vermillon' | 'skyblue'
+}

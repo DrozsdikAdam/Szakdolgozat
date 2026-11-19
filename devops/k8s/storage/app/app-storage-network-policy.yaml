@@ -1,0 +1,54 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: app-storage-network-policy
+  namespace: platform-infra
+  labels:
+    app: app-storage
+    app.kubernetes.io/name: app-storage
+    app.kubernetes.io/part-of: paas-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: app-storage
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: app-mes
+          podSelector:
+            matchLabels:
+              app: mes-backend
+      ports:
+        - port: 9000
+          protocol: TCP
+
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: platform-infra
+      ports:
+        - port: 9000
+          protocol: TCP
+        - port: 9001
+          protocol: TCP
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 9001
+          protocol: TCP
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

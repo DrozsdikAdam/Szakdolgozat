@@ -1,4 +1,8 @@
-// Ez a teszt mesterséges intelligencia segítségével jön létre
+/*
+================================================================
+Ez a fájl mesterséges intelligencia segítségével íródott. 
+================================================================
+*/
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { usePermission } from '../../hooks/UsePermission';

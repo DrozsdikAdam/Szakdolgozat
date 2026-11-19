@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Background } from "../components/common/Background"
 import type { InventoryResponse } from "../types/inventory/inventory"
 import { getInventories } from "../services/inventoryService"
+import { getActiveProducts } from "../services/productService"
 import { Title } from "../components/common/Title"
 import { InventoryFilterBar } from "../components/inventory/FilterBar"
 import { InventoryTable } from "../components/inventory/Table"
@@ -34,8 +35,21 @@ export const InventoryView = () => {
         if (showSpinner) setIsLoading(true)
         setError(null)
         try {
-            const response = await getInventories(pagedInventories.pageNumber, pagedInventories.pageSize)
-            setPagedInventories(response)
+            const [response, products] = await Promise.all([
+                getInventories(pagedInventories.pageNumber, pagedInventories.pageSize),
+                getActiveProducts().catch(() => [])
+            ])
+            const unitByProductId = new Map<string, string>()
+            const unitBySku = new Map<string, string>()
+            for (const p of products) {
+                if (p.id && p.unit) unitByProductId.set(p.id, p.unit)
+                if (p.sku && p.unit) unitBySku.set(p.sku, p.unit)
+            }
+            const enrichedContent = response.content.map((inv) => ({
+                ...inv,
+                unit: inv.unit ?? (inv.productId ? unitByProductId.get(inv.productId) : undefined) ?? (inv.productSku ? unitBySku.get(inv.productSku) : undefined) ?? "db"
+            }))
+            setPagedInventories({ ...response, content: enrichedContent })
         } catch (error) {
             setError(error instanceof Error ? error.message : String(error))
         } finally {
@@ -58,13 +72,13 @@ export const InventoryView = () => {
     }
 
     useEffect(() => {
-        loadInventories(true)
-        const interval = setInterval(() => loadInventories(false), 5000)
+        loadInventories(pagedInventories.content.length === 0)
+        const interval = setInterval(() => loadInventories(false), 15000)
         return () => clearInterval(interval)
     }, [pagedInventories.pageNumber, pagedInventories.pageSize])
 
     useEffect(() => {
-        setPagedInventories(prev => ({ ...prev, pageNumber: 0 }))
+        setPagedInventories(prev => prev.pageNumber === 0 ? prev : ({ ...prev, pageNumber: 0 }))
     }, [searchTerm, locationFilter])
 
     const filteredInventories = pagedInventories.content.filter((inv) => {

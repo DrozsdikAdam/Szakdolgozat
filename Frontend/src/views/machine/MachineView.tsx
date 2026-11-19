@@ -170,13 +170,13 @@ export const MachineView = () => {
     }, [pagedMachines.content, searchTerm, statusFilter, typeFilter])
 
     useEffect(() => {
-        loadData(true)
-        const interval = setInterval(() => loadData(false), 5000)
+        loadData(pagedMachines.content.length === 0)
+        const interval = setInterval(() => loadData(false), 15000)
         return () => clearInterval(interval)
     }, [pagedMachines.pageNumber, pagedMachines.pageSize])
 
     useEffect(() => {
-        setPagedMachines(prev => ({ ...prev, pageNumber: 0 }))
+        setPagedMachines(prev => prev.pageNumber === 0 ? prev : ({ ...prev, pageNumber: 0 }))
     }, [searchTerm, statusFilter, typeFilter])
 
     return (

@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-ClusterRoleBinding
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-sa
+    namespace: platform-monitoring
+roleRef:
+  kind: ClusterRole
+  name: prometheus-ClusterRole
+  apiGroup: rbac.authorization.k8s.io

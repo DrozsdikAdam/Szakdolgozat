@@ -1,40 +1,65 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSyncStatus } from "../../../hooks/UseSyncStatus";
+import { usePermission } from "../../../hooks/UsePermission";
 import { getConflictedActions, getPendingActions, syncOfflineQueue } from "../../../services/syncEngine";
+import { quarantineService } from "../../../services/quarantineService";
 import type { OfflineAction } from "../../../types/offline/offline";
+import type { QuarantineItemResponse } from "../../../types/offline/quarantine";
 import { LoadingSpinner } from "../../common/LoadingSpinner";
 import { ConflictCard } from "../ConflictCard";
-import { Clock, AlertTriangle, RefreshCw } from "lucide-react";
+import { Clock, AlertTriangle, RefreshCw, ShieldAlert } from "lucide-react";
 import type { SyncConflictModalProps } from "../../../types/offline/offlineProps";
 import { NavbarModal } from "../../common/modal/Navbar";
 
 export const SyncConflictModal = ({ isOpen, onClose }: SyncConflictModalProps) => {
     const [activeTab, setActiveTab] = useState<"pending" | "conflicts">("pending");
-    const [conflicts, setConflicts] = useState<OfflineAction[]>([]);
+    const [conflicts, setConflicts] = useState<(QuarantineItemResponse | OfflineAction)[]>([]);
     const [pendingList, setPendingList] = useState<OfflineAction[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const { conflictCount, isSyncing } = useSyncStatus();
+    const { hasAnyRole } = usePermission();
+    const canManage = hasAnyRole(["SYSTEMADMIN", "CEO", "MANAGER"]);
 
     const loadData = async () => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const [conflictsData, pendingData] = await Promise.all([
-                getConflictedActions(),
-                getPendingActions()
-            ]);
-            setConflicts(conflictsData);
-            setPendingList(pendingData);
+            if (navigator.onLine) {
+                const [serverConflicts, localConflicts, pendingData] = await Promise.all([
+                    quarantineService.getAllPendingConflicts().catch(() => [] as QuarantineItemResponse[]),
+                    getConflictedActions(),
+                    getPendingActions()
+                ]);
 
-            // Ha vannak konfliktusok, de nincs várakozó feladat, automatikusan a konfliktus fülre váltunk
-            if (conflictsData.length > 0 && pendingData.length === 0) {
-                setActiveTab("conflicts");
+                const combinedConflicts: (QuarantineItemResponse | OfflineAction)[] = [
+                    ...serverConflicts,
+                    ...localConflicts
+                ];
+
+                setConflicts(combinedConflicts);
+                setPendingList(pendingData);
+
+                if (combinedConflicts.length > 0 && pendingData.length === 0) {
+                    setActiveTab("conflicts");
+                }
+            } else {
+                const [localConflicts, pendingData] = await Promise.all([
+                    getConflictedActions(),
+                    getPendingActions()
+                ]);
+
+                setConflicts(localConflicts);
+                setPendingList(pendingData);
+
+                if (localConflicts.length > 0 && pendingData.length === 0) {
+                    setActiveTab("conflicts");
+                }
             }
-        } catch (error) {
-            setError(error instanceof Error ? error.message : "Ismeretlen hiba");
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Ismeretlen hiba");
         } finally {
             setIsLoading(false);
         }
@@ -42,7 +67,7 @@ export const SyncConflictModal = ({ isOpen, onClose }: SyncConflictModalProps) =
 
     const handleRefresh = async () => {
         await syncOfflineQueue();
-        loadData();
+        await loadData();
     };
 
     useEffect(() => {
@@ -59,7 +84,7 @@ export const SyncConflictModal = ({ isOpen, onClose }: SyncConflictModalProps) =
             title={
                 <span className="flex items-center gap-2">
                     <RefreshCw size={16} className={`text-cud-skyblue ${isSyncing ? "animate-spin" : ""}`} />
-                    <span>Offline Szinkronizáció</span>
+                    <span>Offline Szinkronizáció és Karantén</span>
                 </span>
             }
             headerRight={
@@ -101,7 +126,7 @@ export const SyncConflictModal = ({ isOpen, onClose }: SyncConflictModalProps) =
                         }`}
                 >
                     <AlertTriangle size={13} />
-                    <span>Ütközések</span>
+                    <span>Karantén & Ütközések</span>
                     {conflicts.length > 0 && (
                         <span className="text-[10px] bg-(--cud-vermillon) text-white px-1.5 py-0.2 rounded-full animate-pulse">
                             {conflicts.length}
@@ -141,20 +166,30 @@ export const SyncConflictModal = ({ isOpen, onClose }: SyncConflictModalProps) =
                 )}
 
                 {!isLoading && !error && activeTab === "conflicts" && (
-                    conflicts.length === 0 ? (
-                        <div className="p-6 text-center text-xs text-slate-500 space-y-1">
-                            <p className="font-medium text-slate-400">Nincsenek szinkronizációs ütközések.</p>
-                            <p className="text-[11px]">A karantén sor jelenleg üres.</p>
-                        </div>
-                    ) : (
-                        conflicts.map((conflict) => (
-                            <ConflictCard
-                                key={conflict.id}
-                                conflict={conflict}
-                                onResolved={loadData}
-                            />
-                        ))
-                    )
+                    <>
+                        {!canManage && conflicts.length > 0 && (
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/90 border border-slate-700 text-[11px] text-slate-300">
+                                <ShieldAlert size={14} className="text-cud-orange shrink-0" />
+                                <span>Az ütközések feloldása műszakvezetői (Manager) vagy adminisztrátori jóváhagyást igényel.</span>
+                            </div>
+                        )}
+
+                        {conflicts.length === 0 ? (
+                            <div className="p-6 text-center text-xs text-slate-500 space-y-1">
+                                <p className="font-medium text-slate-400">Nincsenek szinkronizációs ütközések.</p>
+                                <p className="text-[11px]">A karantén sor jelenleg üres.</p>
+                            </div>
+                        ) : (
+                            conflicts.map((conflict) => (
+                                <ConflictCard
+                                    key={"payloadJson" in conflict ? (conflict as QuarantineItemResponse).id : (conflict as OfflineAction).id}
+                                    conflict={conflict}
+                                    canManage={canManage}
+                                    onResolved={loadData}
+                                />
+                            ))
+                        )}
+                    </>
                 )}
             </div>
         </NavbarModal>

@@ -1,0 +1,19 @@
+security-scan:
+  stage: security-scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  needs:
+    - load-env
+    - build-and-push
+  script:
+    - mkdir -p security-reports
+    - echo "Backend forráskód és függőségek Trivy biztonsági vizsgálata..."
+    - trivy fs --format json --output security-reports/trivy-backend.json ./Backend || true
+    - echo "Frontend forráskód és csomagok Trivy biztonsági vizsgálata..."
+    - trivy fs --format json --output security-reports/trivy-frontend.json ./Frontend || true
+  artifacts:
+    when: always
+    paths:
+      - security-reports/
+    expire_in: 1 week

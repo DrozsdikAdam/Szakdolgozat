@@ -33,9 +33,11 @@ import hu.mes.backend.mappers.WorkOrderMapper;
 import hu.mes.backend.models.Product;
 import hu.mes.backend.models.User;
 import hu.mes.backend.models.WorkOrder;
+import hu.mes.backend.dtos.inventory.InventoryUpdateRequest;
 import hu.mes.backend.models.enums.NotificationType;
 import hu.mes.backend.models.enums.WorkOrderPriority;
 import hu.mes.backend.models.enums.WorkOrderStatus;
+import hu.mes.backend.repositories.InventoryRepository;
 import hu.mes.backend.repositories.ProductRepository;
 import hu.mes.backend.repositories.UserRepository;
 import hu.mes.backend.repositories.WorkOrderRepository;
@@ -61,6 +63,9 @@ public class WorkOrderServiceTest {
 
         @Mock
         private InventoryService inventoryService;
+
+        @Mock
+        private InventoryRepository inventoryRepository;
 
         @Mock
         private BOMInventoryService bomInventoryService;
@@ -182,8 +187,8 @@ public class WorkOrderServiceTest {
                 WorkOrderResponse response = workOrderService.createWorkOrder(request);
 
                 assertNotNull(response);
-                verify(bomInventoryService).validateComponentStock(eq(mockProduct), eq(BigDecimal.valueOf(20)));
-                verify(bomInventoryService).reserveComponentStock(eq(mockProduct), eq(BigDecimal.valueOf(20)));
+                verify(bomInventoryService).validateComponentStock(mockProduct, request.getTargetQuantity());
+                verify(bomInventoryService).reserveComponentStock(mockProduct, request.getTargetQuantity());
                 verify(workOrderRepository).save(any(WorkOrder.class));
         }
 
@@ -220,6 +225,7 @@ public class WorkOrderServiceTest {
         void updateWorkOrderStatus_PlannedToPrepared_ValidatesAndReservesStock() {
                 Product mockProduct = new Product();
                 mockProduct.setId(UUID.randomUUID());
+                mockProduct.setName("Test Product");
 
                 User mockUser = new User();
                 mockUser.setId(UUID.randomUUID());
@@ -249,8 +255,8 @@ public class WorkOrderServiceTest {
 
                 assertNotNull(response);
                 assertEquals(WorkOrderStatus.PREPARED, response.getStatus());
-                verify(bomInventoryService).validateComponentStock(eq(mockProduct), eq(BigDecimal.valueOf(30)));
-                verify(bomInventoryService).reserveComponentStock(eq(mockProduct), eq(BigDecimal.valueOf(30)));
+                verify(bomInventoryService).validateComponentStock(mockProduct, workOrder.getTargetQuantity());
+                verify(bomInventoryService).reserveComponentStock(mockProduct, workOrder.getTargetQuantity());
                 verify(workOrderRepository).save(workOrder);
         }
 
@@ -258,6 +264,7 @@ public class WorkOrderServiceTest {
         void updateWorkOrderStatus_PlannedToInProgress_SetsStartDateAndReservesStock() {
                 Product mockProduct = new Product();
                 mockProduct.setId(UUID.randomUUID());
+                mockProduct.setName("Test Product");
 
                 User mockUser = new User();
                 mockUser.setId(UUID.randomUUID());
@@ -287,8 +294,8 @@ public class WorkOrderServiceTest {
 
                 assertNotNull(response);
                 assertNotNull(workOrder.getStartDate());
-                verify(bomInventoryService).validateComponentStock(eq(mockProduct), eq(BigDecimal.valueOf(50)));
-                verify(bomInventoryService).reserveComponentStock(eq(mockProduct), eq(BigDecimal.valueOf(50)));
+                verify(bomInventoryService).validateComponentStock(mockProduct, workOrder.getTargetQuantity());
+                verify(bomInventoryService).reserveComponentStock(mockProduct, workOrder.getTargetQuantity());
                 verify(workOrderRepository).save(workOrder);
         }
 
@@ -332,8 +339,8 @@ public class WorkOrderServiceTest {
                 assertNotNull(response);
                 assertEquals(WorkOrderStatus.COMPLETED, response.getStatus());
                 assertNotNull(workOrder.getEndDate());
-                verify(bomInventoryService).consumeComponentStock(eq(mockProduct), eq(BigDecimal.valueOf(100)));
-                verify(inventoryService).adjustStock(any());
+                verify(bomInventoryService).consumeComponentStock(mockProduct, workOrder.getTargetQuantity());
+                verify(inventoryService).adjustStock(any(InventoryUpdateRequest.class));
                 verify(notificationService).send(any(), any(), eq(NotificationType.SUCCESS), any());
                 verify(workOrderRepository).save(workOrder);
                 verify(auditLogService).log(any(), any(), any(), any(), any(), any());
@@ -373,7 +380,7 @@ public class WorkOrderServiceTest {
                 assertNotNull(response);
                 assertEquals(WorkOrderStatus.CANCELLED, response.getStatus());
                 assertNotNull(workOrder.getEndDate());
-                verify(bomInventoryService).releaseComponentStock(eq(mockProduct), eq(BigDecimal.valueOf(40)));
+                verify(bomInventoryService).releaseComponentStock(mockProduct, workOrder.getTargetQuantity());
                 verify(workOrderRepository).save(workOrder);
         }
 
@@ -405,7 +412,7 @@ public class WorkOrderServiceTest {
                 WorkOrderResponse response = workOrderService.updateWorkOrderStatus(workOrder.getId(), request);
 
                 assertNotNull(response);
-                verify(bomInventoryService, never()).releaseComponentStock(any(), any());
+                verify(inventoryService, never()).releaseReservedStock(any());
                 verify(workOrderRepository).save(workOrder);
         }
 

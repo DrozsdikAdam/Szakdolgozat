@@ -1,0 +1,373 @@
+import { sequelize } from "../config/database.js";
+import type { FeatureTogglePayload } from "../dtos/feature.dto.js";
+import type { SetupWizardPayload } from "../dtos/setup.dto.js";
+import type { PlatformStatusResponse } from "../dtos/status.dto.js";
+import { FeatureFlag } from "../models/FeatureFlag.js";
+import { SystemConfig } from "../models/SystemConfig.js";
+import type { FeatureFlagName, InactivationStrategy, FeatureWorkloadTarget } from "../types/feature.types.js";
+import type { DatabaseEngine, DatabaseMode, GitProvider, InstanceSize, S3Provider } from "../types/setup.types.js";
+import { AuditService } from "./audit.service.js";
+import { K8sService } from "./k8s.service.js";
+import {
+    DEFAULT_APP_NAMESPACE,
+    DEFAULT_PLATFORM_NAMESPACE,
+    DEFAULT_APP_NAME,
+    DEFAULT_FRONTEND_NAME
+} from "../constants/namespace.constants.js";
+
+const FEATURE_WORKLOAD_MAP: Partial<Record<FeatureFlagName, FeatureWorkloadTarget>> = {
+    pgbouncer: { type: 'deployment', name: 'pgbouncer', namespace: DEFAULT_PLATFORM_NAMESPACE },
+    haproxy: { type: 'deployment', name: 'haproxy', namespace: DEFAULT_PLATFORM_NAMESPACE },
+    app_storage: { type: 'statefulset', name: 'app-storage', namespace: DEFAULT_PLATFORM_NAMESPACE }
+};
+
+const DEFAULT_APP_STORAGE_ENDPOINT =
+    process.env.APP_STORAGE_ENDPOINT || 'http://app-storage.platform-infra.svc.cluster.local:9000';
+const DEFAULT_BACKUP_STORAGE_ENDPOINT =
+    process.env.INTERNAL_MINIO_ENDPOINT || process.env.S3_ENDPOINT || 'http://minio.platform-infra.svc.cluster.local:9000';
+
+const PLATFORM_FEATURE_DEFAULTS: Partial<Record<FeatureFlagName, Record<string, any>>> = {
+    rate_limiting: { rps: 100, burst: 5 },
+    hpa_scaling: { minReplicas: 2, maxReplicas: 6, targetCpuUtil: 70 },
+    vpa_scaling: {
+        updateMode: 'Auto',
+        minAllowedCpu: '100m',
+        maxAllowedCpu: '1000m',
+        minAllowedMemory: '128Mi',
+        maxAllowedMemory: '2Gi'
+    },
+    cronjob_backup: { schedule: '0 2 * * *' },
+    app_storage: {
+        mode: 'internal',
+        bucket: 'mes-app-storage',
+        endpoint: DEFAULT_APP_STORAGE_ENDPOINT
+    },
+    backup_storage: {
+        mode: 'internal',
+        bucket: 'mes-backups',
+        endpoint: DEFAULT_BACKUP_STORAGE_ENDPOINT
+    }
+};
+
+export class ConfigService {
+
+    private auditService: AuditService;
+    private k8sService: K8sService;
+
+    constructor() {
+        this.auditService = new AuditService();
+        this.k8sService = new K8sService();
+    }
+
+    private getActiveDbEngine = async (): Promise<DatabaseEngine> => {
+        const dbEngineConfig = await SystemConfig.findOne({ where: { key: 'db_engine' } });
+        return (dbEngineConfig?.value as DatabaseEngine) || 'postgres';
+    };
+
+    initDatabase = async (): Promise<void> => {
+        try {
+            await sequelize.sync();
+
+            const options: FeatureFlagName[] = [
+                'rate_limiting',
+                'pgbouncer',
+                'haproxy',
+                'cronjob_backup',
+                'hpa_scaling',
+                'vpa_scaling',
+                'maintenance_mode',
+                'app_storage',
+                'backup_storage'
+            ];
+
+            for (const option of options) {
+                const defaults = PLATFORM_FEATURE_DEFAULTS[option] || {};
+                const [flag] = await FeatureFlag.findOrCreate({
+                    where: {
+                        name: option
+                    },
+                    defaults: {
+                        name: option,
+                        enabled: option === 'app_storage' || option === 'backup_storage',
+                        params: defaults
+                    }
+                });
+
+                if (option === 'backup_storage' && flag.params?.endpoint === 'http://app-storage.platform-infra.svc.cluster.local:9000') {
+                    flag.params = { ...flag.params, endpoint: DEFAULT_BACKUP_STORAGE_ENDPOINT };
+                    await flag.save();
+                }
+            }
+
+            const activeEngine = await this.getActiveDbEngine();
+            await this.k8sService.syncBackupCronJobsForEngine(activeEngine).catch(() => { });
+
+            console.log('Database connection has been established successfully.');
+        } catch (error) {
+            console.error('Error initializing database:', error);
+            throw error;
+        }
+    }
+
+    getPlatformStatus = async (): Promise<PlatformStatusResponse> => {
+        try {
+            const [configs, flags, hpaRes, rateLimitRes] = await Promise.all([
+                SystemConfig.findAll(),
+                FeatureFlag.findAll(),
+                this.k8sService.getHpa().catch(() => null),
+                this.k8sService.getRateLimit().catch(() => null)
+            ]);
+            const configMap = new Map(configs.map(c => [c.key, c.value]));
+
+            const activeFeatures = flags.reduce((acc, flag) => {
+                acc[flag.name] = flag.enabled;
+                return acc;
+            }, {} as Record<FeatureFlagName, boolean>);
+
+            const featureParams = flags.reduce((acc, flag) => {
+                const defaults = PLATFORM_FEATURE_DEFAULTS[flag.name] || {};
+                const merged = { ...defaults, ...(flag.params || {}) };
+                if (flag.name === 'backup_storage' && (!merged.endpoint || merged.endpoint === 'http://app-storage.platform-infra.svc.cluster.local:9000')) {
+                    merged.endpoint = DEFAULT_BACKUP_STORAGE_ENDPOINT;
+                }
+                acc[flag.name] = merged;
+                return acc;
+            }, {} as Partial<Record<FeatureFlagName, Record<string, any>>>);
+
+            if (hpaRes && hpaRes.maxReplicas > 0) {
+                featureParams.hpa_scaling = {
+                    ...(featureParams.hpa_scaling || {}),
+                    minReplicas: hpaRes.minReplicas,
+                    maxReplicas: hpaRes.maxReplicas,
+                    targetCpuUtil: hpaRes.targetCpuUtil
+                };
+            }
+
+            if (rateLimitRes && rateLimitRes.rps > 0) {
+                featureParams.rate_limiting = {
+                    ...(featureParams.rate_limiting || {}),
+                    rps: rateLimitRes.rps,
+                    burst: rateLimitRes.burst ?? 5
+                };
+            }
+
+            const response: PlatformStatusResponse = {
+                isInitialized: configMap.get('is_initialized') === 'true',
+                gitProvider: configMap.get('git_provider') as GitProvider,
+                repoUrl: configMap.get('repo_url') as string,
+                dbEngine: (configMap.get('db_engine') as DatabaseEngine) || 'postgres',
+                dbMode: configMap.get('db_mode') as DatabaseMode,
+                s3Provider: configMap.get('s3_provider') as S3Provider,
+                instanceSize: (configMap.get('instance_size') as InstanceSize) || 'small',
+                inactivationStrategy: (configMap.get('inactivation_strategy') as InactivationStrategy) || 'scale_to_zero',
+                activeFeatures: activeFeatures,
+                featureParams: featureParams
+            }
+
+            return response;
+        } catch (error) {
+            console.error('Error getting platform status:', error);
+            throw error;
+        }
+    }
+
+    saveSetupWizard = async (request: SetupWizardPayload): Promise<void> => {
+        try {
+            const engine = request.dbEngine ?? 'postgres';
+            const size = request.instanceSize ?? 'small';
+            const strategy = request.inactivationStrategy ?? 'scale_to_zero';
+            const map: Record<string, string> = {
+                'is_initialized': 'true',
+                'git_provider': request.gitProvider,
+                'repo_url': request.repoUrl,
+                'db_mode': request.dbMode,
+                'db_engine': engine,
+                's3_provider': request.s3Provider,
+                's3_bucket': request.s3Bucket ?? 'mes-backups',
+                's3_bucket_size': request.s3BucketSize ?? '5Gi',
+                'instance_size': size,
+                'inactivation_strategy': strategy
+            }
+
+            await Promise.all(
+                Object.entries(map).map(([key, value]) =>
+                    SystemConfig.upsert({ key: key as any, value })
+                )
+            );
+
+            await Promise.all(request.enabledFeatures.map(async (feature) => {
+                await FeatureFlag.update({ enabled: true }, {
+                    where: { name: feature }
+                })
+            }));
+
+            const dbResult = await this.k8sService.deployDatabaseEngine(engine, request.dbMode);
+            await this.k8sService.syncBackupCronJobsForEngine(engine).catch(() => { });
+            await this.auditService.logAudit('SETUP_DATABASE_PROVISION', `Database provisioning (${engine}, ${request.dbMode}): ${dbResult.message}`, dbResult.success ? 'SUCCESS' : 'FAILED');
+
+            const isAutoscalingActive = request.enabledFeatures.includes('hpa_scaling') || request.enabledFeatures.includes('vpa_scaling');
+            if (!isAutoscalingActive) {
+                const sizeResult = await this.k8sService.applyInstanceSize(size);
+                await this.auditService.logAudit('SETUP_INSTANCE_SIZE', `Static instance sizing (${size}): ${sizeResult.message}`, sizeResult.success ? 'SUCCESS' : 'FAILED');
+            }
+
+            await this.auditService.logAudit('SETUP_WIZARD', 'Platform setup wizard completed');
+
+        } catch (error) {
+            await this.auditService.logAudit('SETUP_WIZARD', 'Platform setup wizard failed', 'FAILED');
+
+            console.error('Error saving setup wizard:', error);
+            throw error;
+        }
+    }
+
+    private applyWorkloadStrategy = async (featureName: FeatureFlagName, enabled: boolean, strategy: InactivationStrategy, params?: Record<string, any>): Promise<void> => {
+        const target = FEATURE_WORKLOAD_MAP[featureName];
+        if (!target) return;
+
+        if (target.type === 'deployment') {
+            const replicas = enabled ? 1 : (strategy === 'scale_to_zero' ? 0 : 1);
+            await this.k8sService.scaleDeployment(target.name, target.namespace, replicas);
+            if (featureName === 'pgbouncer') {
+                await this.k8sService.scaleDeployment('postgres-postgresql-ha-pgpool', target.namespace, replicas).catch(() => { });
+            }
+        } else if (target.type === 'statefulset') {
+            const isExternal = params?.mode === 'external';
+            const replicas = (enabled && !isExternal) ? 1 : (strategy === 'scale_to_zero' ? 0 : 1);
+            await this.k8sService.scaleStatefulSet(target.name, target.namespace, replicas);
+
+            const mode = params?.mode || 'internal';
+            const endpoint = mode === 'external' ? (params?.endpoint || '') : 'http://app-storage.platform-infra.svc.cluster.local:9000';
+            const bucket = params?.bucket || (featureName === 'app_storage' ? 'mes-app-storage' : 'mes-backups');
+
+            await this.k8sService.saveSecret({
+                name: 'backend-secret',
+                namespace: DEFAULT_APP_NAMESPACE,
+                data: {
+                    S3_ENDPOINT: endpoint,
+                    S3_BUCKET: bucket,
+                    APP_STORAGE_BUCKET: bucket
+                }
+            }).catch(() => { });
+        } else if (target.type === 'cronjob') {
+            const isSuspended = !enabled && strategy === 'scale_to_zero';
+            await this.k8sService.setCronJobSuspended(target.name, target.namespace, isSuspended);
+        }
+    };
+
+    toggleFeature = async (request: FeatureTogglePayload): Promise<FeatureFlag> => {
+        try {
+            const [flag] = await FeatureFlag.findOrCreate({
+                where: { name: request.name },
+                defaults: { name: request.name, enabled: request.enabled }
+            });
+
+            const strategy: InactivationStrategy = request.strategy || request.inactivationStrategy || (request.params?.strategy as InactivationStrategy) || 'scale_to_zero';
+            const defaults = PLATFORM_FEATURE_DEFAULTS[request.name] || {};
+            const mergedParams: Record<string, any> = { ...defaults, ...(flag.params || {}), ...(request.params || {}), strategy };
+
+            flag.enabled = request.enabled;
+            flag.params = mergedParams;
+            flag.changed('params', true);
+            await flag.save();
+
+            if (request.name === 'app_storage') {
+                const mode = mergedParams.mode || 'internal';
+                const endpoint = mode === 'external' ? (mergedParams.endpoint || '') : DEFAULT_APP_STORAGE_ENDPOINT;
+                const bucket = mergedParams.bucket || 'mes-app-storage';
+                await SystemConfig.upsert({ key: 'storage_mode', value: mode });
+                await SystemConfig.upsert({ key: 's3_provider', value: mode });
+                await SystemConfig.upsert({ key: 's3_endpoint', value: endpoint });
+                await SystemConfig.upsert({ key: 's3_bucket', value: bucket });
+                await this.applyWorkloadStrategy(request.name, request.enabled, strategy, mergedParams);
+            } else if (request.name === 'backup_storage') {
+                const mode = mergedParams.mode || 'internal';
+                const endpoint = mode === 'external' ? (mergedParams.endpoint || '') : DEFAULT_BACKUP_STORAGE_ENDPOINT;
+                const bucket = mergedParams.bucket || 'mes-backups';
+                await SystemConfig.upsert({ key: 'backup_storage_mode', value: mode });
+                await SystemConfig.upsert({ key: 'backup_storage_endpoint', value: endpoint });
+                await SystemConfig.upsert({ key: 'backup_storage_bucket', value: bucket });
+            } else if (request.name === 'rate_limiting') {
+                if (request.enabled) {
+                    await this.k8sService.updateRateLimit({
+                        rps: Number(mergedParams.rps ?? 100),
+                        burst: Number(mergedParams.burst ?? 5)
+                    });
+                } else {
+                    await this.k8sService.updateRateLimit({ rps: 0, burst: 0 });
+                }
+            } else if (request.name === 'hpa_scaling') {
+                if (request.enabled) {
+                    await FeatureFlag.update({ enabled: false }, { where: { name: 'vpa_scaling' } });
+                    await this.k8sService.updateVpa({
+                        minAllowedCpu: '100m',
+                        maxAllowedCpu: '1000m',
+                        minAllowedMemory: '128Mi',
+                        maxAllowedMemory: '2Gi',
+                        updateMode: 'Off'
+                    }).catch(() => { });
+
+                    await this.k8sService.updateHpa({
+                        minReplicas: Number(mergedParams.minReplicas ?? 2),
+                        maxReplicas: Number(mergedParams.maxReplicas ?? 6),
+                        targetCpuUtil: Number(mergedParams.targetCpuUtil ?? 70)
+                    });
+                } else {
+                    await this.k8sService.scaleDeployment(DEFAULT_APP_NAME, DEFAULT_APP_NAMESPACE, 1);
+                }
+            } else if (request.name === 'vpa_scaling') {
+                if (request.enabled) {
+                    try {
+                        await this.k8sService.updateVpa({
+                            minAllowedCpu: String(mergedParams.minAllowedCpu ?? '100m'),
+                            maxAllowedCpu: String(mergedParams.maxAllowedCpu ?? '1000m'),
+                            minAllowedMemory: String(mergedParams.minAllowedMemory ?? '128Mi'),
+                            maxAllowedMemory: String(mergedParams.maxAllowedMemory ?? '2Gi'),
+                            updateMode: 'Auto'
+                        });
+                        await FeatureFlag.update({ enabled: false }, { where: { name: 'hpa_scaling' } });
+                        await this.k8sService.scaleDeployment(DEFAULT_APP_NAME, DEFAULT_APP_NAMESPACE, 1);
+                    } catch (vpaErr: any) {
+                        flag.enabled = false;
+                        await flag.save().catch(() => { });
+                        throw vpaErr;
+                    }
+                } else {
+                    await this.k8sService.updateVpa({
+                        minAllowedCpu: String(mergedParams.minAllowedCpu ?? '100m'),
+                        maxAllowedCpu: String(mergedParams.maxAllowedCpu ?? '1000m'),
+                        minAllowedMemory: String(mergedParams.minAllowedMemory ?? '128Mi'),
+                        maxAllowedMemory: String(mergedParams.maxAllowedMemory ?? '2Gi'),
+                        updateMode: 'Off'
+                    }).catch(() => { });
+                }
+            } else if (request.name === 'maintenance_mode') {
+                await this.k8sService.setMaintenanceMode(request.enabled);
+                if (strategy === 'scale_to_zero') {
+                    const targetReplicas = request.enabled ? 0 : 1;
+                    await this.k8sService.scaleDeployment(DEFAULT_APP_NAME, DEFAULT_APP_NAMESPACE, targetReplicas).catch(() => { });
+                    await this.k8sService.scaleDeployment(DEFAULT_FRONTEND_NAME, DEFAULT_APP_NAMESPACE, targetReplicas).catch(() => { });
+                }
+            } else if (request.name === 'cronjob_backup') {
+                const activeEngine = await this.getActiveDbEngine();
+                await this.k8sService.syncBackupCronJobsForEngine(activeEngine, request.enabled);
+            } else {
+                await this.applyWorkloadStrategy(request.name, request.enabled, strategy, mergedParams);
+            }
+
+            await this.auditService.logAudit(
+                'TOGGLE_FEATURE',
+                `Feature flag ${request.name} set to ${request.enabled} (Strategy: ${strategy})`
+            );
+
+            return flag;
+        } catch (error) {
+            await this.auditService.logAudit('TOGGLE_FEATURE', `Feature flag ${request.name} set to ${request.enabled}`, 'FAILED');
+            console.error('Error toggling feature:', error);
+            throw error;
+        }
+    }
+
+
+}
+

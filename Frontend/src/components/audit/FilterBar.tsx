@@ -13,7 +13,7 @@ export const FilterBar = ({ searchTerm, setSearchTerm, selectedEntity, setSelect
                 <FilterSearch
                     value={searchTerm}
                     onChange={setSearchTerm}
-                    placeholder="Keresés - cím, gépkód, technikus..."
+                    placeholder="Keresés - felhasználó, művelet, entitás..."
                 />
 
                 <FilterSelect

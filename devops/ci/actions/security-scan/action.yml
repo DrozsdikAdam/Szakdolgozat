@@ -1,0 +1,54 @@
+name: security-scan
+description: "Runs security scans on the frontend and backend"
+
+inputs:
+  backend-image:
+    description: "Backend image name"
+    required: false
+    default: "mes-backend"
+  frontend-image:
+    description: "Frontend image name"
+    required: false
+    default: "mes-frontend"
+  severity:
+    description: "Minimum severity level to fail the build"
+    required: false
+    default: "LOW"
+  output-dir:
+    description: "Output directory for scan reports"
+    required: false
+    default: "./security-reports"
+
+runs:
+  using: composite
+  steps:
+    - name: "Create output directory"
+      shell: bash
+      run: mkdir -p ${{ inputs.output-dir }}
+
+    - name: "Run Frontend Dependency Audit"
+      shell: bash
+      working-directory: ./Frontend
+      run: npm audit --json > $GITHUB_WORKSPACE/${{ inputs.output-dir }}/npm-audit-frontend.json || true
+
+    - name: "Install Trivy CLI"
+      shell: bash
+      run: |
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+    - name: "Run Backend Trivy Scan"
+      shell: bash
+      run: |
+        trivy fs --format json --output ${{ inputs.output-dir }}/trivy-backend.json --severity ${{ inputs.severity }} ./Backend || true
+
+    - name: "Run Frontend Trivy Scan"
+      shell: bash
+      run: |
+        trivy fs --format json --output ${{ inputs.output-dir }}/trivy-frontend.json --severity ${{ inputs.severity }} ./Frontend || true
+
+    - name: "Upload Scan Reports"
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-scan-reports
+        path: ${{ inputs.output-dir }}

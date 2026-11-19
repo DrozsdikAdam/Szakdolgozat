@@ -5,6 +5,9 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet id="004-create-machines-and-telemetry" author="mes-admin">
+        <validCheckSum>any</validCheckSum>
+        <validCheckSum>9:3d2acc3c3ef6b26ee0abdaad86f1afc5</validCheckSum>
+        <validCheckSum>9:87f0703cb0648af73d308b3b555074d1</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="machines" />
@@ -74,7 +77,7 @@
             </column>
             <column name="downtime_minutes" type="INT" />
             <column name="cost" type="DECIMAL(19, 2)" />
-            <column name="start" type="TIMESTAMP" />
+            <column name="start_date" type="TIMESTAMP" />
             <column name="maintenance_end" type="TIMESTAMP" />
             <column name="created_at" type="TIMESTAMP">
                 <constraints nullable="false" />
@@ -91,7 +94,7 @@
             <column name="machine_id" type="UUID">
                 <constraints nullable="false" foreignKeyName="fk_telemetry_machine" references="machines(id)" />
             </column>
-            <column name="timestamp" type="TIMESTAMP">
+            <column name="recorded_at" type="TIMESTAMP">
                 <constraints nullable="false" />
             </column>
             <column name="machine_status" type="VARCHAR(50)">
@@ -114,7 +117,7 @@
 
         <createIndex indexName="idx_telemetry_machine_timestamp" tableName="machine_telemetry">
             <column name="machine_id" />
-            <column name="timestamp" />
+            <column name="recorded_at" />
         </createIndex>
 
     </changeSet>

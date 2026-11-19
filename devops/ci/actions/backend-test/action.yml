@@ -1,0 +1,29 @@
+name: backend-test
+description: "Sets up Java 21 and runs Spring Boot unit and integration tests"
+
+runs:
+  using: composite
+  steps:
+    - name: "Set up JDK 21"
+      uses: actions/setup-java@v4
+      with:
+        java-version: 21
+        distribution: "temurin"
+        cache: "maven"
+
+    - name: "Grant execute permission for Maven Wrapper"
+      shell: bash
+      working-directory: ./Backend
+      run: chmod +x mvnw
+
+    - name: "Run Backend Test"
+      shell: bash
+      working-directory: ./Backend
+      run: ./mvnw clean test
+
+    - name: "Upload Test Reports"
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-test-reports
+        path: Backend/target/surefire-reports/

@@ -36,7 +36,7 @@ public class MachineTelemetry extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "machine_id", nullable = false)
     private Machine machine;
-    @Column(nullable = false)
+    @Column(name = "recorded_at", nullable = false)
     private LocalDateTime timestamp;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, name = "machine_status")

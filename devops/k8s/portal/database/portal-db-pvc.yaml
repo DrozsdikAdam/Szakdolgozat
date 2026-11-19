@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: portal-db-pvc
+  namespace: platform-infra
+  labels:
+    app.kubernetes.io/name: portal-db
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: paas-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

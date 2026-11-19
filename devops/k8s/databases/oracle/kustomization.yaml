@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: platform-infra
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+resources:
+  - oracle-headless-service.yaml
+  - oracle-service.yaml
+  - oracle-statefulset.yaml
+
+secretGenerator:
+  - name: oracle-secret
+    envs:
+      - ../../../platform.env

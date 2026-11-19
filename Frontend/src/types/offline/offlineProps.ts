@@ -1,7 +1,9 @@
 import type { OfflineAction } from "./offline";
+import type { QuarantineItemResponse } from "./quarantine";
 
 export interface ConflictCardProps {
-    conflict: OfflineAction;
+    conflict: QuarantineItemResponse | OfflineAction;
+    canManage?: boolean;
     onResolved: () => void;
 }
 

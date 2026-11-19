@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+@theme {
+    /* Okabe & Ito (2002/2008) Color Universal Design (CUD) Palette */
+    --color-cud-teal: #009E73;
+    --color-cud-vermillon: #D55E00;
+    --color-cud-orange: #E69F00;
+    --color-cud-skyblue: #56B4E9;
+    --color-cud-yellow: #F0E442;
+    --color-cud-blue: #0072B2;
+    --color-cud-purple: #CC79A7;
+    --color-cud-black: #000000;
+
+    --color-cud-teal-bg: rgba(0, 158, 115, 0.15);
+    --color-cud-teal-border: rgba(0, 158, 115, 0.35);
+
+    --color-cud-vermillon-bg: rgba(213, 94, 0, 0.15);
+    --color-cud-vermillon-border: rgba(213, 94, 0, 0.35);
+
+    --color-cud-orange-bg: rgba(230, 159, 0, 0.15);
+    --color-cud-orange-border: rgba(230, 159, 0, 0.35);
+
+    --color-cud-skyblue-bg: rgba(86, 180, 233, 0.15);
+    --color-cud-skyblue-border: rgba(86, 180, 233, 0.35);
+
+    --color-cud-yellow-bg: rgba(240, 228, 66, 0.15);
+    --color-cud-yellow-border: rgba(240, 228, 66, 0.35);
+
+    --color-cud-blue-bg: rgba(0, 114, 178, 0.15);
+    --color-cud-blue-border: rgba(0, 114, 178, 0.35);
+
+    --color-cud-purple-bg: rgba(204, 121, 167, 0.15);
+    --color-cud-purple-border: rgba(204, 121, 167, 0.35);
+}
+
+
+:root {
+    /* Okabe & Ito (2002/2008) Color Universal Design (CUD) Palette */
+    --cud-teal: #009E73;
+
+    --cud-vermillon: #D55E00;
+
+    --cud-orange: #E69F00;
+
+    --cud-skyblue: #56B4E9;
+
+    --cud-yellow: #F0E442;
+
+    --cud-blue: #0072B2;
+
+    --cud-purple: #CC79A7;
+
+    --cud-black: #000000;
+
+    --cud-teal-bg: rgba(0, 158, 115, 0.15);
+    --cud-teal-border: rgba(0, 158, 115, 0.35);
+
+    --cud-vermillon-bg: rgba(213, 94, 0, 0.15);
+    --cud-vermillon-border: rgba(213, 94, 0, 0.35);
+
+    --cud-orange-bg: rgba(230, 159, 0, 0.15);
+    --cud-orange-border: rgba(230, 159, 0, 0.35);
+
+    --cud-skyblue-bg: rgba(86, 180, 233, 0.15);
+    --cud-skyblue-border: rgba(86, 180, 233, 0.35);
+
+    --cud-yellow-bg: rgba(240, 228, 66, 0.15);
+    --cud-yellow-border: rgba(240, 228, 66, 0.35);
+
+    --cud-blue-bg: rgba(0, 114, 178, 0.15);
+    --cud-blue-border: rgba(0, 114, 178, 0.35);
+
+    --cud-purple-bg: rgba(204, 121, 167, 0.15);
+    --cud-purple-border: rgba(204, 121, 167, 0.35);
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+body,
+html {
+    background-color: #0b0f19;
+    color: #f8fafc;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #64748b; /* slate-500 */
+}
+
+@keyframes pulse-subtle {
+    0% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.4;
+    }
+}
+
+.animate-pulse-subtle {
+    animation: pulse-subtle 2s ease-in-out infinite;
+}

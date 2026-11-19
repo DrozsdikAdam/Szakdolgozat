@@ -1,0 +1,36 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: app-mes
+
+resources:
+  - ../../base
+  - ../../gitops/rollout-bluegreen.yaml
+
+patches:
+  - patch: |-
+      $patch: delete
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: mes-backend
+        namespace: app-mes
+
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: mes-backend-hpa
+    patch: |-
+      - op: replace
+        path: /spec/scaleTargetRef/apiVersion
+        value: argoproj.io/v1alpha1
+      - op: replace
+        path: /spec/scaleTargetRef/kind
+        value: Rollout
+      - op: replace
+        path: /spec/scaleTargetRef/name
+        value: mes-backend-bluegreen
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 10

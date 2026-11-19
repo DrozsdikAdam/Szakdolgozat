@@ -1,0 +1,89 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: paas-portal-network-policy
+  namespace: platform-infra
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values: ["portal-backend", "portal-frontend"]
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 80
+          protocol: TCP
+        - port: 3000
+          protocol: TCP
+    - from:
+        - podSelector:
+            matchLabels:
+              app: portal-frontend
+      ports:
+        - port: 3000
+          protocol: TCP
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - ports:
+        - port: 443
+          protocol: TCP
+        - port: 6443
+          protocol: TCP
+        - port: 80
+          protocol: TCP
+        - port: 8080
+          protocol: TCP
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: portal-db
+      ports:
+        - port: 5432
+          protocol: TCP
+    - to:
+        - podSelector:
+            matchLabels:
+              app: portal-backend
+      ports:
+        - port: 3000
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: platform-monitoring
+      ports:
+        - port: 9090
+          protocol: TCP
+        - port: 3000
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: platform-infra
+      ports:
+        - port: 5432
+          protocol: TCP
+        - port: 1433
+          protocol: TCP
+        - port: 1521
+          protocol: TCP
+        - port: 9000
+          protocol: TCP
+        - port: 8080
+          protocol: TCP
+

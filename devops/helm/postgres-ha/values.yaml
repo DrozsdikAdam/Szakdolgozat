@@ -1,0 +1,70 @@
+global:
+  imageRegistry: "docker.io"
+  security:
+    allowInsecureImages: true
+
+pgpool:
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/pgpool
+    tag: "4.6.3-debian-12-r0"
+  customUsers:
+    usernames: "postgres"
+    passwords: "VnUH22Refo"
+
+postgresql:
+  username: mes_user
+  password: "VnUH22Refo"
+  postgresPassword: "VnUH22Refo"
+  database: mes_db
+  replicaCount: 3
+  persistence:
+    size: 2Gi
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "768Mi"
+      cpu: "1000m"
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/postgresql-repmgr
+    tag: "16.3.0-debian-12-r1"
+  command:
+    - /bin/bash
+    - -ec
+    - |
+      rm -f /tmp/repmgrd.pid /tmp/*.pid /opt/bitnami/postgresql/tmp/*.pid 2>/dev/null || true
+      exec /opt/bitnami/scripts/postgresql-repmgr/entrypoint.sh /opt/bitnami/scripts/postgresql-repmgr/run.sh
+  customLivenessProbe:
+    exec:
+      command:
+        - pg_isready
+        - -U
+        - postgres
+        - -h
+        - 127.0.0.1
+        - -p
+        - "5432"
+    initialDelaySeconds: 20
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+  customReadinessProbe:
+    exec:
+      command:
+        - pg_isready
+        - -U
+        - postgres
+        - -h
+        - 127.0.0.1
+        - -p
+        - "5432"
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+

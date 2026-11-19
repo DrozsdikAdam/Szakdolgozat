@@ -1,0 +1,391 @@
+[CmdletBinding()]
+param (
+    [string]$KubeConfig,
+    [string]$Context,
+    [switch]$DryRun,
+    [switch]$SkipDatabases,
+    [switch]$IncludeMultiDB,
+    [switch]$SkipMonitoring,
+    [switch]$SkipStorage,
+    [ValidateSet("staging", "production", "all")]
+    [string]$TargetEnv = "all"
+)
+
+$ErrorActionPreference = "Stop"
+
+Write-Host "==========================================================" -ForegroundColor Cyan
+Write-Host "   MES PAAS PLATFORM - KLASZTER BOOTSTRAP & FELKESZITO    " -ForegroundColor Cyan
+Write-Host "==========================================================" -ForegroundColor Cyan
+
+# 0. pipeline.env dinamikus beolvasása
+$envFile = Join-Path $PSScriptRoot "..\pipeline.env"
+$config = @{}
+
+if (Test-Path $envFile) {
+    Write-Host "`n[0/8] Konfiguracio betoltese a pipeline.env fajlbol..." -ForegroundColor Yellow
+    Get-Content $envFile | Where-Object { $_ -match '^[^#].*=' } | ForEach-Object {
+        $key, $value = $_.Split('=', 2)
+        $config[$key.Trim()] = $value.Trim()
+    }
+    Write-Host "Konfiguracio sikeresen beolvasva a pipeline.env-bol!" -ForegroundColor Green
+}
+else {
+    Write-Error "A kozponti konfiguracios fajl nem talalhato: $envFile"
+    exit 1
+}
+
+$appNamespace = if ($config["APP_NAMESPACE"]) { $config["APP_NAMESPACE"] } else { "app-mes" }
+$stagingEnv = if ($config["STAGING_ENV"]) { $config["STAGING_ENV"] } else { "staging" }
+$prodEnv = if ($config["TARGET_ENV"]) { $config["TARGET_ENV"] } else { "production" }
+
+Write-Host "Alkalmazas nevter: $appNamespace (staging: $stagingEnv, prod: $prodEnv)" -ForegroundColor Cyan
+
+# Kubeconfig és Context beállítások felépítése
+$kubeArgs = @()
+if ($KubeConfig) {
+    if (-not (Test-Path $KubeConfig)) { throw "A megadott KubeConfig fajl nem talalhato: $KubeConfig" }
+    $kubeArgs += @("--kubeconfig", $KubeConfig)
+    Write-Host "KubeConfig: $KubeConfig" -ForegroundColor Gray
+}
+if ($Context) {
+    $kubeArgs += @("--context", $Context)
+    Write-Host "Context: $Context" -ForegroundColor Gray
+}
+
+function Invoke-Kube {
+    param([string[]]$CommandArgs)
+    $allArgs = $kubeArgs + $CommandArgs
+    if ($DryRun -and ($CommandArgs -contains "apply" -or $CommandArgs -contains "create") -and (-not ($CommandArgs -contains "--dry-run=client"))) {
+        $allArgs += "--dry-run=client"
+    }
+    & kubectl $allArgs
+    return $LASTEXITCODE
+}
+
+function Invoke-KubeKustomize {
+    param(
+        [string]$Directory,
+        [string]$Namespace
+    )
+    $applyArgs = @("apply", "-f", "-")
+    if ($Namespace) {
+        $applyArgs += @("-n", $Namespace)
+    }
+    $rendered = & kubectl kustomize $Directory --load-restrictor LoadRestrictionsNone
+    if ($LASTEXITCODE -ne 0) {
+        return $LASTEXITCODE
+    }
+    $allArgs = $kubeArgs + $applyArgs
+    if ($DryRun) {
+        $allArgs += "--dry-run=client"
+    }
+    $rendered | & kubectl $allArgs
+    return $LASTEXITCODE
+}
+
+# 1. Kubernetes Fürt Kapcsolat Ellenőrzése
+Write-Host "`n[1/8] Kubernetes furt kapcsolat ellenorzese..." -ForegroundColor Yellow
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = "SilentlyContinue"
+$clusterInfo = & kubectl $kubeArgs cluster-info --request-timeout=8s 2>&1
+$k8sOk = ($LASTEXITCODE -eq 0)
+$ErrorActionPreference = $prevEAP
+
+if (-not $k8sOk) {
+    if ($DryRun) {
+        Write-Host "Figyelem: A Kubernetes furt nem erheto el (Dry-Run szimulacio)." -ForegroundColor DarkYellow
+    }
+    else {
+        Write-Error "Nem erheto el a Kubernetes furt! Hiba: $clusterInfo"
+        exit 1
+    }
+}
+else {
+    Write-Host "Kubernetes furt elerheto es aktiv!" -ForegroundColor Green
+}
+
+# 2. Alapértelmezett Névterek Létrehozása
+Write-Host "`n[2/8] Alapertelmezett nevterek felallitasa..." -ForegroundColor Yellow
+$nsDir = Join-Path $PSScriptRoot "..\..\k8s\namespaces"
+$nsFile = Join-Path $PSScriptRoot "..\..\k8s\namespaces.yaml"
+if (Test-Path $nsDir) {
+    Invoke-Kube @("apply", "-k", $nsDir) | Out-Null
+    Write-Host "Fo nevterek ervenyesitve ($appNamespace, platform-infra, platform-monitoring, app-generic-demo) a namespaces mappabol!" -ForegroundColor Green
+}
+elseif (Test-Path $nsFile) {
+    Invoke-Kube @("apply", "-f", $nsFile) | Out-Null
+    Write-Host "Fo nevterek ervenyesitve ($appNamespace, platform-infra, platform-monitoring, app-generic-demo)!" -ForegroundColor Green
+}
+
+
+# argo-rollouts névtér biztosítása
+$argoRolloutsNs = & kubectl $kubeArgs get namespace argo-rollouts --ignore-not-found -o name
+if (-not $argoRolloutsNs) {
+    Invoke-Kube @("create", "namespace", "argo-rollouts") | Out-Null
+    Write-Host "argo-rollouts nevter letrehozva!" -ForegroundColor Green
+}
+
+# 3. DBaaS Infrastruktúra és Adatbázis Proxyk (Postgres HA, PgBouncer, HAProxy)
+Write-Host "`n[3/8] DBaaS es Adatbazis Proxy reteg elokeszitese..." -ForegroundColor Yellow
+if (-not $SkipDatabases) {
+    $dbDir = Join-Path $PSScriptRoot "..\..\k8s\databases"
+    $helmDir = Join-Path $PSScriptRoot "..\..\helm\postgres-ha"
+
+    # PostgreSQL HA klaszter telepítése Helm-mel (ha a helm elérhető)
+    if (-not (Get-Command helm -ErrorAction SilentlyContinue)) {
+        $wingetHelm = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\Helm.Helm*" -Filter "helm.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($wingetHelm) { $env:Path += ";$($wingetHelm.DirectoryName)" }
+    }
+    $hasHelm = Get-Command helm -ErrorAction SilentlyContinue
+    $pgValues = Join-Path $helmDir "values.yaml"
+    if ($hasHelm -and (Test-Path $pgValues)) {
+        Write-Host "PostgreSQL HA klaszter (Bitnami) ellenorzese/telepitese Helm segitsegevel..." -ForegroundColor Cyan
+        if (-not $DryRun) {
+            $prevEAP = $ErrorActionPreference
+            $ErrorActionPreference = "SilentlyContinue"
+            $helmVer = (& helm version --short 2>$null)
+            $ErrorActionPreference = $prevEAP
+            $helmArgs = @(
+                "upgrade", "--install", "postgres",
+                "oci://registry-1.docker.io/bitnamicharts/postgresql-ha",
+                "--version", "16.3.2",
+                "-n", "platform-infra",
+                "-f", $pgValues
+            )
+            if ($helmVer -match '^v?4\.') { $helmArgs += "--force-conflicts" }
+            if ($KubeConfig) { $helmArgs += @("--kubeconfig", $KubeConfig) }
+            if ($Context) { $helmArgs += @("--kube-context", $Context) }
+            & helm @helmArgs
+            if ($LASTEXITCODE -ne 0) { throw "Hiba tortent a PostgreSQL HA Helm telepitese soran!" }
+            Write-Host "PostgreSQL HA Klaszter konfiguracio sikeresen atadva a Helmnek!" -ForegroundColor Green
+        }
+        else {
+            Write-Host "[DRY-RUN] PostgreSQL HA Helm chart frissites szimulalva." -ForegroundColor Gray
+        }
+    }
+
+    # PostgreSQL Primary Service & Secret (Kustomize - a postgres StatefulSet replicas: 0 marad)
+    $postgresDir = Join-Path $dbDir "postgres"
+    if (Test-Path (Join-Path $postgresDir "kustomization.yaml")) {
+        Invoke-KubeKustomize -Directory $postgresDir | Out-Null
+        Write-Host "PostgreSQL Primary Service es Secret ervenyesitve!" -ForegroundColor Green
+    }
+
+    # PgBouncer (Connection Pooling & Read/Write Splitting)
+    $pgbouncerDir = Join-Path $dbDir "pgbouncer"
+    if (Test-Path $pgbouncerDir) {
+        foreach ($f in (Get-ChildItem -Path $pgbouncerDir -Filter *.yaml)) {
+            Invoke-Kube @("apply", "-f", $f.FullName) | Out-Null
+        }
+        Write-Host "PgBouncer Terheleseloszto es Kapcsolati Proxy ervenyesitve!" -ForegroundColor Green
+    }
+
+    # HAProxy (Routing & Load Balancing)
+    $haproxyDir = Join-Path $dbDir "haproxy"
+    if (Test-Path $haproxyDir) {
+        foreach ($f in (Get-ChildItem -Path $haproxyDir -Filter *.yaml)) {
+            Invoke-Kube @("apply", "-f", $f.FullName) | Out-Null
+        }
+        Write-Host "HAProxy Proxy reteg ervenyesitve!" -ForegroundColor Green
+    }
+
+    # Több-adatbázisos támogatás (MSSQL & Oracle), ha kérve van (-IncludeMultiDB)
+    if ($IncludeMultiDB) {
+        Write-Host "Tobb-adatbazisos (MSSQL / Oracle) kontenerek telepitese..." -ForegroundColor Cyan
+        foreach ($dbType in @("mssql", "oracle")) {
+            $tDir = Join-Path $dbDir $dbType
+            if (Test-Path (Join-Path $tDir "kustomization.yaml")) {
+                Invoke-KubeKustomize -Directory $tDir | Out-Null
+                Write-Host "${dbType} adatbazis komponensek (Kustomize + Secret) ervenyesitve!" -ForegroundColor Green
+            }
+            elseif (Test-Path $tDir) {
+                foreach ($f in (Get-ChildItem -Path $tDir -Filter *.yaml)) {
+                    Invoke-Kube @("apply", "-f", $f.FullName) | Out-Null
+                }
+                Write-Host "${dbType} adatbazis komponensek ervenyesitve!" -ForegroundColor Green
+            }
+        }
+    }
+}
+else {
+    Write-Host "Adatbazis reteg kihagyva (-SkipDatabases kapcsolo)." -ForegroundColor DarkGray
+}
+
+# 4. GitOps Alaprendszerek (Argo Rollouts és ArgoCD Vezérlők)
+Write-Host "`n[4/8] Argo Rollouts es ArgoCD vezerlok ellenorzese..." -ForegroundColor Yellow
+
+$hasRolloutCRD = & kubectl $kubeArgs get crd rollouts.argoproj.io --ignore-not-found -o name
+$hasArgoCDCRD = & kubectl $kubeArgs get crd applications.argoproj.io --ignore-not-found -o name
+
+if (-not $hasRolloutCRD) {
+    Write-Host "Argo Rollouts vezerlo es CRD-k telepitese (server-side apply)..." -ForegroundColor Cyan
+    Invoke-Kube @("apply", "--server-side", "-n", "argo-rollouts", "-f", "https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml") | Out-Null
+    Write-Host "Argo Rollouts sikeresen telepitve!" -ForegroundColor Green
+}
+else {
+    Write-Host "Argo Rollouts CRD-k mar aktivak a furtben." -ForegroundColor DarkGray
+}
+
+if (-not $hasArgoCDCRD) {
+    Write-Host "ArgoCD vezerlo es CRD-k telepitese a platform-infra nevterbe (server-side apply)..." -ForegroundColor Cyan
+    Invoke-Kube @("apply", "--server-side", "-n", "platform-infra", "-f", "https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml") | Out-Null
+    Write-Host "ArgoCD sikeresen telepitve!" -ForegroundColor Green
+}
+else {
+    Write-Host "ArgoCD CRD-k mar aktivak a furtben." -ForegroundColor DarkGray
+}
+
+# 5. Git Repository Hitelesítési Titkok Bejuttatása
+Write-Host "`n[5/8] Git repository hitelesites ellenorzese..." -ForegroundColor Yellow
+$secretFile = Join-Path $PSScriptRoot "..\..\k8s\gitops\argocd-repo-secret.yaml"
+if (Test-Path $secretFile) {
+    Invoke-Kube @("apply", "-f", $secretFile) | Out-Null
+    Write-Host "Privat repo hitelesitesi Secret ervenyesitve a platform-infra nevterben!" -ForegroundColor Green
+}
+else {
+    Write-Host "Figyelem: argocd-repo-secret.yaml nem talalhato a gepen!" -ForegroundColor DarkYellow
+    Write-Host "Masold le az 'argocd-repo-secret-ssh.template.yaml' fajlt privat repohoz." -ForegroundColor DarkYellow
+}
+
+# 6. GitOps Stratégiák és ArgoCD Alkalmazások
+Write-Host "`n[6/8] GitOps strategiak es ArgoCD applikaciok alkalmazasa..." -ForegroundColor Yellow
+$gitopsDir = Join-Path $PSScriptRoot "..\..\k8s\gitops"
+
+# Aktiv GitOps Rollout strategia kivalasztasa (egyszerre csak egy birtokolhatja a mes-backend Service-t)
+$defaultStrategy = if ($config["DEFAULT_STRATEGY"]) { $config["DEFAULT_STRATEGY"].ToLower() } else { "blue-green" }
+$activeRolloutFile = if ($defaultStrategy -match "blue") { "rollout-bluegreen.yaml" } else { "rollout-canary.yaml" }
+$inactiveRolloutName = if ($defaultStrategy -match "blue") { "mes-backend-canary" } else { "mes-backend-bluegreen" }
+
+if (-not $DryRun) {
+    Invoke-Kube @("delete", "rollout", $inactiveRolloutName, "-n", $appNamespace, "--ignore-not-found") | Out-Null
+}
+$rPath = Join-Path $gitopsDir $activeRolloutFile
+if (Test-Path $rPath) {
+    Invoke-Kube @("apply", "-f", $rPath) | Out-Null
+    Write-Host "Aktiv telepitesi strategia ervenyesitve: $activeRolloutFile ($inactiveRolloutName eltavolitva)" -ForegroundColor Green
+}
+
+# ArgoCD Application / ApplicationSet
+if ($TargetEnv -eq "all") {
+    $appSet = Join-Path $gitopsDir "argocd-applicationset.yaml"
+    if (Test-Path $appSet) {
+        Invoke-Kube @("apply", "-f", $appSet) | Out-Null
+        Write-Host "ArgoCD ApplicationSet (Staging + Production generator) ervenyesitve!" -ForegroundColor Green
+    }
+}
+elseif ($TargetEnv -eq "production" -or $TargetEnv -eq $prodEnv) {
+    $prodApp = Join-Path $gitopsDir "argocd-production.yaml"
+    if (Test-Path $prodApp) {
+        Invoke-Kube @("apply", "-f", $prodApp) | Out-Null
+        Write-Host "ArgoCD Production Application ervenyesitve!" -ForegroundColor Green
+    }
+}
+elseif ($TargetEnv -eq "staging" -or $TargetEnv -eq $stagingEnv) {
+    $stagingApp = Join-Path $gitopsDir "argocd-staging.yaml"
+    if (Test-Path $stagingApp) {
+        Invoke-Kube @("apply", "-f", $stagingApp) | Out-Null
+        Write-Host "ArgoCD Staging Application ervenyesitve!" -ForegroundColor Green
+    }
+}
+else {
+    Write-Host "Ismeretlen celkornyezet ($TargetEnv), alapertelmezett Staging alkalmazas ervenyesitese..." -ForegroundColor DarkYellow
+    $stagingApp = Join-Path $gitopsDir "argocd-staging.yaml"
+    if (Test-Path $stagingApp) {
+        Invoke-Kube @("apply", "-f", $stagingApp) | Out-Null
+        Write-Host "ArgoCD Staging Application ervenyesitve!" -ForegroundColor Green
+    }
+}
+
+# 7. PaaS Portál RBAC és MinIO S3 Backup Rendszer
+Write-Host "`n[7/8] PaaS Portal RBAC es S3 Backup infrastruktura..." -ForegroundColor Yellow
+
+# Portál K8s infrastruktúra (RBAC, PVC, Ingress, NetworkPolicy, Secret)
+$portalDir = Join-Path $PSScriptRoot "..\..\k8s\portal"
+if (Test-Path (Join-Path $portalDir "kustomization.yaml")) {
+    Invoke-KubeKustomize -Directory $portalDir | Out-Null
+    Write-Host "PaaS Portal K8s reteg (RBAC, PVC, Ingress, NetworkPolicy, Secret, Portal) ervenyesitve!" -ForegroundColor Green
+}
+
+# Cert-Manager és Automatikus TLS Issuer-ek
+$certManagerDir = Join-Path $PSScriptRoot "..\..\k8s\cert-manager"
+if (Test-Path (Join-Path $certManagerDir "kustomization.yaml")) {
+    $hasCertManager = & kubectl $kubeArgs get crd clusterissuers.cert-manager.io --ignore-not-found -o name
+    if ($hasCertManager) {
+        Invoke-Kube @("apply", "-k", $certManagerDir) | Out-Null
+        Write-Host "Cert-Manager ClusterIssuerek (selfsigned, letsencrypt) ervenyesitve!" -ForegroundColor Green
+    }
+    else {
+        Write-Host "Megjegyzes: cert-manager CRD-k jelenleg nincsenek a furtben, ClusterIssuerek kihagyva." -ForegroundColor DarkGray
+    }
+}
+
+# Reziliencia & Terhelesiteszt RBAC es JMeter forgatokonyvtar
+$resilienceScript = Join-Path $PSScriptRoot "apply-resilience.ps1"
+if (Test-Path $resilienceScript) {
+    $resilienceParams = @{}
+    if ($DryRun) { $resilienceParams["DryRun"] = $true }
+    if ($KubeConfig) { $resilienceParams["KubeConfig"] = $KubeConfig }
+    if ($Context) { $resilienceParams["Context"] = $Context }
+    & $resilienceScript @resilienceParams
+}
+
+# MinIO S3 Backup és Alkalmazás Tárhely (Kustomize)
+if (-not $SkipStorage) {
+    $backupDir = Join-Path $PSScriptRoot "..\..\k8s\storage\backup"
+    $appStorageDir = Join-Path $PSScriptRoot "..\..\k8s\storage\app"
+
+    if (Test-Path (Join-Path $backupDir "kustomization.yaml")) {
+        Invoke-KubeKustomize -Directory $backupDir | Out-Null
+        Write-Host "S3 Backup Kustomize reteg (backup-secret, backup-config, MinIO, CronJob-ok) ervenyesitve!" -ForegroundColor Green
+    }
+
+    if (Test-Path (Join-Path $appStorageDir "kustomization.yaml")) {
+        Invoke-KubeKustomize -Directory $appStorageDir | Out-Null
+        Write-Host "Alkalmazas S3 Tarhely Kustomize reteg (app-storage-secret, app-storage StatefulSet/PVC/Service) ervenyesitve!" -ForegroundColor Green
+    }
+}
+
+else {
+    Write-Host "MinIO S3 tarolo kihagyva (-SkipStorage kapcsolo)." -ForegroundColor DarkGray
+}
+
+# 7.5 Alkalmazás Kustomize réteg (backend-secret, workloadok, ingress)
+$baseDir = Join-Path $PSScriptRoot "..\..\k8s\base"
+if (Test-Path (Join-Path $baseDir "kustomization.yaml")) {
+    Invoke-KubeKustomize -Directory $baseDir -Namespace $appNamespace | Out-Null
+    $activeHpaTarget = if ($defaultStrategy -match "blue") { "mes-backend-bluegreen" } else { "mes-backend-canary" }
+    if (-not $DryRun) {
+        Invoke-Kube @("delete", "deployment", "mes-backend", "-n", $appNamespace, "--ignore-not-found") | Out-Null
+        if ($activeHpaTarget -ne "mes-backend-bluegreen") {
+            Invoke-Kube @("patch", "hpa", "mes-backend-hpa", "-n", $appNamespace, "--type=merge", "-p", "{`"spec`":{`"scaleTargetRef`":{`"apiVersion`":`"argoproj.io/v1alpha1`",`"kind`":`"Rollout`",`"name`":`"$activeHpaTarget`"}}}") | Out-Null
+        }
+    }
+    Write-Host "Alkalmazas Kustomize reteg (backend-secret, frontend, ingress; aktiv backend Rollout mellett duplikalt Deployment torolve) ervenyesitve a '$appNamespace' nevterben!" -ForegroundColor Green
+}
+
+# 8. Megfigyelhetőség (Prometheus & Grafana)
+Write-Host "`n[8/8] Telemetria es megfigyelhetoseg (Prometheus / Grafana)..." -ForegroundColor Yellow
+if (-not $SkipMonitoring) {
+    $monDir = Join-Path $PSScriptRoot "..\..\k8s\monitoring"
+    if (Test-Path (Join-Path $monDir "kustomization.yaml")) {
+        Invoke-Kube @("apply", "-k", $monDir) | Out-Null
+        Write-Host "Prometheus es Grafana megfigyelhetosegi stack ervenyesitve!" -ForegroundColor Green
+    }
+}
+else {
+    Write-Host "Monitoring stack kihagyva (-SkipMonitoring kapcsolo)." -ForegroundColor DarkGray
+}
+
+# ÖSSZEGZŐ JELENTÉS
+Write-Host "`n==========================================================" -ForegroundColor Green
+if ($DryRun) {
+    Write-Host " SIKER: A furt felkeszitesi szimulacio (Dry-Run) lezajlott!" -ForegroundColor Green
+}
+else {
+    Write-Host " SIKER: A Kubernetes furt teljeskoruen felkeszitve es aktiv!" -ForegroundColor Green
+}
+Write-Host "==========================================================" -ForegroundColor Green
+
+Write-Host "`nAktiv platform komponensek a furtben:" -ForegroundColor Cyan
+& kubectl $kubeArgs get deployments, statefulsets -n platform-infra
+& kubectl $kubeArgs get deployments -n argo-rollouts

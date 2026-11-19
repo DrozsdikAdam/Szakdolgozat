@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: platform-monitoring
+
+resources:
+  - rbac/serviceaccount.yaml
+  - rbac/clusterrole.yaml
+  - rbac/clusterrolebinding.yaml
+  - prometheus/configmap.yaml
+  - prometheus/deployment.yaml
+  - prometheus/service.yaml
+  - grafana/datasources-configmap.yaml
+  - grafana/dashboards-provisioning-configmap.yaml
+  - grafana/deployment.yaml
+  - grafana/service.yaml
+  - grafana/ingress.yaml
+
+configMapGenerator:
+  - name: grafana-dashboards
+    files:
+      - k8s-cluster.json=grafana/dashboard-cluster.json
+      - nginx-ingress-l7.json=grafana/dashboard-ingress-l7.json
+      - nginx-ingress-l4.json=grafana/dashboard-ingress.json
+      - postgresql-ha.json=grafana/dashboard-postgres.json
